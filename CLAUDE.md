@@ -45,4 +45,6 @@ Kept in the tracker's Decisions tab. The ones that shape code:
 
 ## Commands
 
-None yet. Each part adds the commands it introduces here.
+Run from the repository root. The virtual environment is `.venv` (Python 3.12, created with `py -3.12 -m venv .venv`); call its interpreter directly, e.g. `.venv/Scripts/python.exe -m pip ...` on Windows.
+
+Each part adds the commands it introduces here.

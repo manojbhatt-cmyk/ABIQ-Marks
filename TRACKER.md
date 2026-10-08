@@ -13,7 +13,7 @@ Where the build stands, phase by phase. Built only from the md specs and the pro
 1. **Build from `docs/specs/` only**: the md specs and `Alliance Bernstein Marks Process.pptx`. Nothing outside that folder. If code ever needs to differ from a spec, log it in section 4 and fix the spec first.
 2. **One phase at a time, one part at a time.** Phases come from `Build Plan Transorg Deck.md` section 1; each phase's parts are set out in its plan, from that phase's "Delivers" list.
 3. **Plan first, then code.** Before a phase starts, Claude explains what will be done in it; coding starts only after approval.
-4. **Phase exit = the phase's demo works**, and it is signed off. The manager sees demos when they want; they do not block.
+4. **Phase exit = the phase's demo works**, and you have signed it off.
 5. **Part exit = the definition of done** from `Build Plan Transorg Deck.md` section 4: code merged with tests, screen states implemented, audit events written, the spec's acceptance line passing, the part marked Done in the tracker.
 6. **Clean and simple code.** Plain solutions, small focused files, a tidy repo after every part.
 7. **Dev matches prod.** Free and open-source tools, the same containers and config path everywhere, settings only through environment variables, real Postgres, migrations from day one, external systems behind interfaces so a live backend can be swapped in later.
@@ -48,16 +48,16 @@ Not in the specs. It exists so P0 does not stall on missing access or open choic
 
 | # | Item | Status | Notes |
 | --- | --- | --- | --- |
-| 1 | Put the project under git and connect the manager's GitHub repo | Done | On top of the manager's initial commit |
+| 1 | Put the project under git and connect the GitHub repo | Done | On top of the repo's initial commit |
 | 2 | Specs and deck into `docs/specs`; README, `.gitignore`, `.gitattributes` | Done | |
 | 3 | `CLAUDE.md`, `CONTRIBUTING.md`, `.env.example` | Done | D-12 |
-| 4 | First commit and push to `main` | Not started | |
-| 5 | Python 3.12 virtual environment | Waiting | uv or python.org |
+| 4 | First commit and push to `main` | Done | Commit 86f6e59 |
+| 5 | Python 3.12 virtual environment | Done | Python 3.12.10 from python.org; `.venv` with the standard `venv` module |
 | 6 | Free disk space before P0 builds images | Waiting | 27 GB free |
 | 7 | LLM: OpenAI gpt-4o-mini | Decided | D-10; key needed from P1 |
 | 8 | Object store: MinIO built from official source | Decided | D-08 |
 | 9 | Tracing: LangSmith free plan | Decided | D-06; key needed from P1 |
-| 10 | Warehouse: Snowflake account | Waiting | Q-06; P0 can start on the DuckDB fallback |
+| 10 | Warehouse: Snowflake account | Waiting | Q-06 | Snowflake account: a trial (signup.snowflake.com) or an existing account; Claude needs the account identifier, then scripts the database, warehouse and app user | The demo runs on Snowflake; needed by P0's warehouse part | Open |
 
 ---
 
@@ -83,7 +83,7 @@ Choices the specs leave open, or where we differ from them. Newest last.
 
 ---
 
-## 5. Open questions for the manager
+## 5. Open questions
 
 | # | Question | Why it matters | Status |
 | --- | --- | --- | --- |

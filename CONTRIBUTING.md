@@ -18,9 +18,16 @@ You need Git, Docker Desktop, Node.js 20 or newer, and Python 3.12.
 git clone https://github.com/transorg-engineering/private-credit-underwriting.git
 cd private-credit-underwriting
 cp .env.example .env      # then fill in your own values
+
+# Python 3.12 virtual environment (Windows; install 3.12 from python.org first)
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
 ```
 
-Each later part adds its own setup steps (virtual environment, `docker compose up`, tests) to this section as it lands.
+On macOS or Linux, create it with `python3.12 -m venv .venv` and activate with `source .venv/bin/activate`.
+
+Each later part adds its own setup steps (`docker compose up`, tests) to this section as it lands.
 
 ## 3. Pick up work
 
