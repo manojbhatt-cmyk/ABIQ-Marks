@@ -51,8 +51,8 @@ Not in the specs. It exists so P0 does not stall on missing access or open choic
 | 1 | Put the project under git and connect the manager's GitHub repo | Done | On top of the manager's initial commit |
 | 2 | Specs and deck into `docs/specs`; README, `.gitignore`, `.gitattributes` | Done | |
 | 3 | `CLAUDE.md`, `CONTRIBUTING.md`, `.env.example` | Done | D-12 |
-| 4 | First commit and push to `main` | Not started | |
-| 5 | Python 3.12 virtual environment | Waiting | uv or python.org |
+| 4 | First commit and push to `main` | Done | Commit 86f6e59 |
+| 5 | Python 3.12 virtual environment | Done | Python 3.12.10 from python.org; `.venv` with the standard `venv` module |
 | 6 | Free disk space before P0 builds images | Waiting | 27 GB free |
 | 7 | LLM: OpenAI gpt-4o-mini | Decided | D-10; key needed from P1 |
 | 8 | Object store: MinIO built from official source | Decided | D-08 |
