@@ -1,0 +1,35 @@
+# Secrets: only .env.example is committed
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Local data written by containers and tools
+local-data/
+*.log
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Office lock files (an open Excel or PowerPoint file)
+~$*
