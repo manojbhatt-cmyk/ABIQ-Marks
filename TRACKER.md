@@ -80,6 +80,7 @@ Choices the specs leave open, or where we differ from them. Newest last.
 | D-11 | 8 Oct 2026 | Embeddings: OpenAI `text-embedding-3-small` | Costs pennies, same API key | Proposed |
 | D-12 | 8 Oct 2026 | Build for a team: working rules live in the repo (`CLAUDE.md`, `CONTRIBUTING.md`), each member uses their own keys (`.env.example`), every part goes through its own branch and pull request, every log row names who did it | Teammates may join later | Agreed |
 | D-13 | 8 Oct 2026 | Build only from the md specs and the process deck in `docs/specs/`; the feature roadmap Excel and everything outside this folder are not used | User decision | Agreed |
+| D-14 | 12 Oct 2026 | Protect the Snowflake trial credits: app and demos on Snowflake; automated tests and repeated dev checks on DuckDB only; X-Small warehouse, 60-second auto-suspend, a credit cap | The trial has $400 of credits for 30 days | Agreed |
 
 ---
 
