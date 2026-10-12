@@ -56,7 +56,7 @@ Not in the specs. It exists so P0 does not stall on missing access or open choic
 | 6 | Free disk space before P0 builds images | Waiting | 27 GB free |
 | 7 | LLM: OpenAI gpt-4o-mini | Decided | D-10; key needed from P1 |
 | 8 | Object store: MinIO built from official source | Decided | D-08 |
-| 9 | Tracing: LangSmith free plan | Decided | D-06; key needed from P1 |
+| 9 | Tracing: off for now | Decided | D-06 | 8 Oct 2026 | Tracing off for now (`LANGSMITH_TRACING=false`); LangSmith or self-hosted Langfuse can be switched on later by configuration | `agent_run` already records tokens, cost and status; Langfuse self-hosted is too heavy for the laptop today | Agreed |
 | 10 | Warehouse: Snowflake account | Waiting | Q-06 | Snowflake account: a trial (signup.snowflake.com) or an existing account; Claude needs the account identifier, then scripts the database, warehouse and app user | The demo runs on Snowflake; needed by P0's warehouse part | Open |
 
 ---
@@ -80,6 +80,7 @@ Choices the specs leave open, or where we differ from them. Newest last.
 | D-11 | 8 Oct 2026 | Embeddings: OpenAI `text-embedding-3-small` | Costs pennies, same API key | Proposed |
 | D-12 | 8 Oct 2026 | Build for a team: working rules live in the repo (`CLAUDE.md`, `CONTRIBUTING.md`), each member uses their own keys (`.env.example`), every part goes through its own branch and pull request, every log row names who did it | Teammates may join later | Agreed |
 | D-13 | 8 Oct 2026 | Build only from the md specs and the process deck in `docs/specs/`; the feature roadmap Excel and everything outside this folder are not used | User decision | Agreed |
+| D-14 | 12 Oct 2026 | Protect the Snowflake trial credits: app and demos on Snowflake; automated tests and repeated dev checks on DuckDB only; X-Small warehouse, 60-second auto-suspend, a credit cap | The trial has $400 of credits for 30 days | Agreed |
 
 ---
 

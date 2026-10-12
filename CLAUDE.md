@@ -37,9 +37,9 @@ The TIQ Marks POC: AllianceBernstein Private Credit's marks (loan valuation) pro
 Kept in the tracker's Decisions tab. The ones that shape code:
 
 - Models: OpenAI `gpt-4o-mini` for both tiers to start, configured by name; embeddings `text-embedding-3-small`.
-- Warehouse: Snowflake for the demo; DuckDB fallback for offline work, behind the same connector.
+- Warehouse: Snowflake for running the app and demos; DuckDB for automated tests and repeated dev checks, behind the same connector. **Never point tests at Snowflake**: the trial's credits are limited. Snowflake runs on an X-Small warehouse with 60-second auto-suspend and a credit cap.
 - Object store: MinIO, built from MinIO's official source at tag `RELEASE.2025-10-15T17-29-55Z`. Never pull MinIO from a third-party image mirror.
-- Tracing: LangSmith free plan, switchable to self-hosted Langfuse by configuration.
+- Tracing: off for now (`LANGSMITH_TRACING=false`); `agent_run` still records tokens, cost and status per run. LangSmith or Langfuse can be switched on later by configuration.
 - PDF parsing: Docling only.
 - Deployment: Docker Compose on a laptop, as in the master spec section 5.3.
 
