@@ -8,7 +8,7 @@ Ask the project lead for:
 
 - Access to the GitHub repository `transorg-engineering/private-credit-underwriting`.
 - Editor access to the [live tracker](https://claude.ai/artifact/TDZE7perELDzhUTURCaKrY), so you can log your work.
-- Your own OpenAI and LangSmith API keys, and a Snowflake user. Keys are personal: never share them or commit them.
+- Your own OpenAI API key and a Snowflake user. (LangSmith tracing is off for now, so no key is needed.) Keys are personal: never share them or commit them.
 
 ## 2. Set up your machine
 
