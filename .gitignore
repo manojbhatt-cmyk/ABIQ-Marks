@@ -33,3 +33,6 @@ Thumbs.db
 
 # Office lock files (an open Excel or PowerPoint file)
 ~$*
+
+# Python packaging
+*.egg-info/
