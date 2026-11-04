@@ -1,0 +1,20 @@
+# Build decisions and deviations from the specs
+
+Recorded on 4 November 2026 with the first full build (branch `p0/0.0-full-poc-build`). Each line says what the specs ask for, what was built, and why. Copy these into the live tracker's Decisions tab.
+
+| # | Spec says | Built | Why | Follow-up |
+| --- | --- | --- | --- | --- |
+| D1 | Phase by phase, one branch and pull request per part (CLAUDE.md) | The whole POC on one branch in one pass | Explicit request from the project owner on 4 Nov to build the project in one go | Split review by folder if needed |
+| D2 | Docling for PDF parsing | `pipeline/parse.py` on pypdf and openpyxl with the same output contract (pages, tables, page evidence) | Docling needs PyTorch; PyMuPDF's DLL is blocked by the laptop's Application Control policy | Add a Docling backend behind `parse_pdf` |
+| D3 | LangGraph graphs with a Postgres checkpointer | Agents A0 to A11 as deterministic engines (`packages/agents`), each run recorded in `agent_run` with a step trajectory; prose components can ask the configured OpenAI model to rewrite their draft when `LLM_ENABLED=true` | Runs without a model, is testable, and costs nothing on the synthetic set; agents still only propose | Wrap A1, A5 and A9 in LangGraph when model calls are switched on |
+| D4 | MinIO buckets for Box, SharePoint, OneDrive, uploads | `connectors/object_store.py` LocalObjectStore with the same bucket layout (Data Spec 3.1) | No MinIO build from source tonight; the interface is the same | Add an S3 implementation selected by configuration |
+| D5 | pgvector hybrid retrieval | pgvector extension enabled; chunks stored in `document_chunk`; Ask TIQ uses keyword retrieval with facility filters | No embedding calls without the model switch | Embed chunks with `text-embedding-3-small` |
+| D6 | Migrations from the first table (Alembic) | `synth migrate` creates the schema from the SQLAlchemy models; enumerations stored as strings | Speed of the first build | Generate the Alembic baseline from these models |
+| D7 | Risk rating 1 to 5 (Data Spec) | 1 to 6 with the client's labels ("(1) - Performing / On-Track") | The client's Master Agenda uses ratings 1 to 6 | Confirm the scale (DQ open) |
+| D8 | Portfolio totals equal the three-loan totals (Data Spec 7.2) | Every screen shows the full 24-loan portfolio and, separately, the story-loan subtotal ($117.80M to $114.625M). The other 21 loans net to zero at every checkpoint, so the portfolio change is exactly -3.95, -3.05 and -3.175 | The spec's two statements cannot both hold with 21 more loans holding value | Agree which total the demo narrates |
+| D9 | Only Team Grey uses "approve at a different mark" | Team Violet's Atlas also approves at 98.2 inside Lincoln's range, offsetting Granite's -0.60 | Needed for the "nets to zero after G1" checkpoint | None |
+| D10 | Snowflake holds the synthetic schemas | Loaded into DuckDB (same DDL, `infra/snowflake/ddl.sql`); Snowflake loads with `synth load --target snowflake` | The private key file named in `.env` is not on this machine | Put the key in place and run the command |
+| D11 | Schemas from the Data Spec | Extended with the client files' fields: Master Agenda (sector, SCT review category, AM, CDL, SCT, originator, PMT, agenda, FYE, financials due dates and days), CMR Delivery Deadlines (SCT sessions), CMR (ratings information, asset and mark summary, holdings by fund), Lincoln report (five schedules) | The 3 Nov client files define the field names (tracker "Team and Notes") | Confirm with the client |
+| D12 | TanStack Query and Table, Recharts | A small fetch hook and plain tables | Fewer dependencies; no charts needed beyond the timeline | Add if screens need them |
+| D13 | Server-sent events for agent progress | Synchronous calls with a running strip; the synthetic-data job is polled | Agent runs finish in under a second on the rules engines | Add SSE with model calls |
+| D14 | Violet accent, navy rail (UI UX Spec) | Navy `#183850`, blue `#3860A8`, canvas `#F4F6F8` and washes taken from the TransOrg marks-process deck; one violet accent `#6B4FD8` | The spec names tokens without hex values | Designer review |

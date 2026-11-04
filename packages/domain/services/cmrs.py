@@ -72,7 +72,7 @@ def _note_facts(session: Session, cl: CycleLoan) -> dict:
                  "collateral", lambda m: f"Collateral: {m.group(1)} trucks with an appraised value of about "
                                          f"${m.group(2)}M.")
             if d.doc_type == "sponsor_letter":
-                grab(r"(\w[\w ]+?) hereby confirms its commitment to contribute \$([\d.]+) million",
+                grab(r"([A-Z][\w]*(?: [A-Z][\w]*){0,3}) hereby confirms its commitment to contribute \$([\d.]+) million",
                      "sponsor", lambda m: f"{m.group(1).strip()} has committed ${m.group(2)}M of new equity "
                                           f"(letter dated 6 October 2026; funds due 30 October).")
             if d.doc_type == "waiver_request":

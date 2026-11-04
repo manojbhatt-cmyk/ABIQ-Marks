@@ -45,7 +45,7 @@ def sponsor_equity(session: Session, cl: CycleLoan) -> dict | None:
         if d.doc_type != "sponsor_letter":
             continue
         text = " ".join(" ".join(p.text.split()) for p in session.query(DocumentPage).filter_by(document_id=d.id))
-        m = re.search(r"(\w[\w ]+?) hereby confirms its commitment to contribute \$([\d.]+) million", text)
+        m = re.search(r"([A-Z][\w]*(?: [A-Z][\w]*){0,3}) hereby confirms its commitment to contribute \$([\d.]+) million", text)
         if m:
             date_m = re.search(r"(\d{1,2} \w+ 2026)", text)
             return {"sponsor": m.group(1).strip(), "amount": float(m.group(2)),

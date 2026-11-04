@@ -112,7 +112,7 @@ def play(until: str = "Q22", log=print) -> None:
         return
     with session_scope() as s:
         c = _cycle(s)
-        clock(s, 28)
+        clock(s, 27)  # loaded the same day so the Deal Team's send-back note is dated 27 Oct (Data Spec 3.4)
         lincoln.load_to_everest(s, pm(s), c.id)
         lincoln.copy_to_sharepoint(s, pm(s), c.id)
         log("Q12/Q13 loaded to Everest and copied to SharePoint")

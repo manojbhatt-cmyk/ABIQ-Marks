@@ -48,3 +48,12 @@ Kept in the tracker's Decisions tab. The ones that shape code:
 Run from the repository root. The virtual environment is `.venv` (Python 3.12, created with `py -3.12 -m venv .venv`); call its interpreter directly, e.g. `.venv/Scripts/python.exe -m pip ...` on Windows.
 
 Each part adds the commands it introduces here.
+
+- Postgres: `docker compose -f infra/docker-compose.yml up -d postgres` (volume `tiq_marks_pg`, user and password `tiq`)
+- Install: `.venv/Scripts/python.exe -m pip install -e ".[dev]"`
+- Reset and play the demo: `.venv/Scripts/python.exe -m synth.cli reset --until Q22` (steps Q0 to Q22, M1 to M6)
+- API: `.venv/Scripts/python.exe -m uvicorn api.main:app --port 8000`
+- Web: `cd apps/web && npm install && npm run dev` (proxies `/api` to :8000)
+- Tests: `.venv/Scripts/python.exe -m pytest -q` (uses database `tiq_test` and a temporary DuckDB; never Snowflake)
+- Snowflake load: `.venv/Scripts/python.exe -m synth.cli load --target snowflake`
+- Deviations from the specs are recorded in `docs/decisions.md`.

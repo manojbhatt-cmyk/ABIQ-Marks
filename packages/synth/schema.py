@@ -32,7 +32,7 @@ TABLES: dict[str, list[tuple[str, str]]] = {
         ("SECTOR", S), ("SW_SUBSECTOR", S), ("EQUITY_ONLY", B), ("SCT_REVIEW_CATEGORY", S), ("AM", S),
         ("CDL", S), ("SCT", S), ("SECTOR_LEAD", S), ("ORIGINATOR", S), ("PMT", S), ("AGENDA", S), ("FYE", S),
         ("PMT_COMMENTS", S), ("STRATEGY", S), ("PA_INDUSTRY", S), ("VCOC", B), ("REFI_RISK", S),
-        ("ADMIN_AGENT", S), ("DEAL_STRUCTURE", S)],
+        ("ADMIN_AGENT", S), ("DEAL_STRUCTURE", S), ("VALUATION_METHOD", S)],
     # Master Agenda financials-due schedule (client file): Q1..Q4 and Annual dates and days after period end.
     "DEALCLOUD.FINANCIALS_SCHEDULE": [
         ("DEAL_ID", S), ("Q1_DATE", D), ("Q2_DATE", D), ("Q3_DATE", D), ("Q4_DATE", D), ("ANNUAL_DATE", D),

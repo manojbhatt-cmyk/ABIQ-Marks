@@ -76,7 +76,8 @@ def build_rows() -> dict[str, list[tuple]]:
             user_names[e["ac_manager"]], user_names[e["lead"]], "Catherine Doyle", "NA", user_names[e["lead"]],
             "Priya Menon", br.agenda, br.fye, None, "Core", br.sector.split(" ")[0], True,
             "Low" if br.rating <= 2 else "Medium", "AB Private Credit Investors",
-            f"AB-PCI holds the senior secured facilities of {br.legal}; sponsor-backed {closed.year} LBO."))
+            f"AB-PCI holds the senior secured facilities of {br.legal}; sponsor-backed {closed.year} LBO.",
+            "Lincoln"))
         pe = date(2026, 3, 31), date(2026, 6, 30), date(2026, 9, 30), date(2026, 12, 31)
         d = br.q_days
         rows["DEALCLOUD.FINANCIALS_SCHEDULE"].append(a(

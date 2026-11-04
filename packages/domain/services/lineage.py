@@ -126,13 +126,19 @@ def ask(session: Session, actor: Actor, cycle_id: str, question: str) -> dict:
             hist = ", then ".join(f"v{v.version} {v.point_estimate:.2f} ({v.valuation_date:%d %b})" for v in lvs)
             parts.append(f"Lincoln's draft marks: {hist}.")
             citations += [{"type": "lincoln_valuation", "id": v.id, "label": f"Lincoln v{v.version} report"} for v in lvs]
+        cyc = session.get(ValuationCycle, cycle_id)
+        from domain.services.core import cycle_date
+
+        def when(d):
+            return f"{cycle_date(cyc, d.decided_day):%d %b}" if d.decided_day is not None else f"{d.decided_at:%d %b}"
+
         for d in decs:
             if d.outcome == "sent_back":
                 parts.append(f"The Deal Team sent v{session.get(LincolnValuation, d.lincoln_valuation_id).version} back on "
-                             f"{d.decided_at:%d %b} ({d.decided_by}): {d.note}")
+                             f"{when(d)} ({d.decided_by}): {d.note}")
             else:
                 parts.append(f"G1: {d.outcome.replace('_', ' ')} at {d.approved_mark:.2f} by {d.decided_by} on "
-                             f"{d.decided_at:%d %b}{(': ' + d.rationale) if d.rationale else ''}.")
+                             f"{when(d)}{(': ' + d.rationale) if d.rationale else ''}.")
             citations.append({"type": "valuation_decision", "id": d.id, "label": f"G1 decision {d.decided_at:%d %b}"})
         for c in cds:
             parts.append(f"Committee: {c.outcome} at {c.decided_mark if c.decided_mark is not None else 'n/a'}"
