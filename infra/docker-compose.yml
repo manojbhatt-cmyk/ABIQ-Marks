@@ -1,0 +1,56 @@
+name: tiq-marks
+
+# One command to run the POC: `docker compose -f infra/docker-compose.yml up`.
+# Postgres (with pgvector) is the app database. The API and web app can run in
+# containers (profile "app") or on the host for development; both read the same
+# environment variables from ../.env.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: tiq
+      POSTGRES_PASSWORD: tiq
+      POSTGRES_DB: tiq
+    ports:
+      - "5432:5432"
+    volumes:
+      - tiq_marks_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tiq -d tiq"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    profiles: ["app"]
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://tiq:tiq@postgres:5432/tiq
+      OBJECT_STORE_ROOT: /data/objects
+      WAREHOUSE_DUCKDB_PATH: /data/warehouse.duckdb
+    volumes:
+      - ../local-data:/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    profiles: ["app"]
+    build:
+      context: ../apps/web
+      dockerfile: ../../infra/web.Dockerfile
+    environment:
+      VITE_API_PROXY: http://api:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  tiq_marks_pg:
