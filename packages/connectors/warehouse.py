@@ -168,7 +168,9 @@ def get_warehouse(kind: str | None = None) -> Warehouse:
     global _instance
     kind = kind or settings.warehouse
     if kind == "snowflake":
-        return SnowflakeWarehouse()
+        if not isinstance(_instance, SnowflakeWarehouse):
+            _instance = SnowflakeWarehouse()  # one reused connection per process
+        return _instance
     if _instance is None or not isinstance(_instance, DuckDBWarehouse):
         _instance = DuckDBWarehouse()
     return _instance

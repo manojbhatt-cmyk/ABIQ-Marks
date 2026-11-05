@@ -30,7 +30,7 @@ Play the story to any step from Admin, Synthetic data, or from the command line:
 .venv/Scripts/python.exe -m synth.cli play --until Q22    # continue forward
 ```
 
-Load Snowflake instead of DuckDB (the trial account; never from tests):
+Snowflake (live since 5 Nov, database `TIQ_POC`). The service key lives in `.secrets/snowflake/` (git-ignored); one-time admin setup is `infra/snowflake/admin_setup.sql`. Reload the source tables (never from tests):
 
 ```bash
 .venv/Scripts/python.exe -m synth.cli load --target snowflake [--reset-account]

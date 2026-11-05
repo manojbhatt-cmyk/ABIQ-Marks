@@ -49,11 +49,22 @@ def _prepare_snowflake(reset_account: bool, log) -> SnowflakeWarehouse:
             for name in names:
                 if name.upper() in ("SNOWFLAKE", "SNOWFLAKE_SAMPLE_DATA") or name.upper().startswith("USER$"):
                     continue
+                if name.upper() == sf.database.upper():
+                    continue
                 log(f"dropping database {name}")
-                cur.execute(f'drop database if exists "{name}"')
-        cur.execute(f"create warehouse if not exists {settings.snowflake_warehouse} warehouse_size = 'XSMALL' "
-                    "auto_suspend = 60 auto_resume = true initially_suspended = true")
-        cur.execute(f"create database if not exists {sf.database}")
+                try:
+                    cur.execute(f'drop database if exists "{name}"')
+                except Exception as exc:  # the loader role may not own it
+                    log(f"could not drop {name}: {str(exc)[:120]}")
+        # Create only what is missing: a loader role may use objects it is not allowed to create
+        # (infra/snowflake/admin_setup.sql creates them as ACCOUNTADMIN).
+        cur.execute(f"show warehouses like '{settings.snowflake_warehouse}'")
+        if not cur.fetchall():
+            cur.execute(f"create warehouse {settings.snowflake_warehouse} warehouse_size = 'XSMALL' "
+                        "auto_suspend = 60 auto_resume = true initially_suspended = true")
+        cur.execute(f"show databases like '{sf.database}'")
+        if not cur.fetchall():
+            cur.execute(f"create database {sf.database}")
         cur.execute(f"use database {sf.database}")
     finally:
         cur.close()
