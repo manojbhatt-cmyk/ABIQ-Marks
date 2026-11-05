@@ -21,6 +21,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refreshCycles();
   }, []);
   useEffect(() => { if (user) refreshCycles(); }, [user]);
+  // Keep the cycle list current (a reset or another user's action changes it): on focus and every 20 seconds.
+  useEffect(() => {
+    const onFocus = () => refreshCycles();
+    window.addEventListener("focus", onFocus);
+    const t = setInterval(refreshCycles, 20000);
+    return () => { window.removeEventListener("focus", onFocus); clearInterval(t); };
+  }, []);
   const quarterly = cycles.filter((c) => c.cycle_type === "quarterly");
   const cycle = quarterly.find((c) => c.id === cycleId) || quarterly[0] || null;
   return (

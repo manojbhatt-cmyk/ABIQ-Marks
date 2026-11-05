@@ -3,7 +3,8 @@ import {
   ListChecks, LogOut, MessageSquareText, MessagesSquare, Repeat, Scale, Send, Settings, ShieldCheck, Table2,
 } from "lucide-react";
 import { ReactNode, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { api, fmt, ROLE_LABEL, useApi } from "../api";
 import { useApp } from "../context";
 import AskPanel from "./AskPanel";
@@ -44,8 +45,10 @@ export function homeFor(_role: string) {
 const PHASES = [[1, 9, "Kickoff and intake"], [10, 26, "Modelling and CMR"], [27, 31, "Deal Team approval"], [32, 43, "Valuation Committee"], [44, 45, "Finalise"]] as const;
 
 export default function Shell({ children }: { children: ReactNode }) {
-  const { user, cycle, cycles, setCycleId, setUser } = useApp();
+  const { user, cycle, cycles, setCycleId, setUser, refreshCycles } = useApp();
   const nav = useNavigate();
+  const loc = useLocation();
+  useEffect(() => { refreshCycles(); }, [loc.pathname]);
   const [ask, setAsk] = useState(false);
   const [bell, setBell] = useState(false);
   const notes = useApi<any[]>(user ? "/notifications" : null, [user?.email, cycle?.day]);
