@@ -698,7 +698,12 @@ def inbox(a: Actor = A, s: Session = S):
     elif a.role in ("deal_analyst", "deal_lead"):
         mine = {l.borrower_id for l in s.query(CycleLoan).filter_by(deal_team_id=a.deal_team_id)}
         q = [m for m in q if m.matched_borrower_id in mine]
-    return [_email(m) | {"direction": m.direction} for m in q]
+    docs: dict[str, list] = {}
+    for d in s.query(Document).filter(Document.email_message_id.in_([m.id for m in q])):
+        docs.setdefault(d.email_message_id, []).append({"name": d.file_name, "url": f"/api/files/{d.store}/{d.path}",
+                                                        "doc_type": d.doc_type})
+    return [_email(m) | {"direction": m.direction, "documents": docs.get(m.id, []),
+                         "eml": f"/api/files/mail/{m.eml_path}" if m.eml_path else None} for m in q]
 
 
 # ---------------- monthly (S17 to S19) ----------------
