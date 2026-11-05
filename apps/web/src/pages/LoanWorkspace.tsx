@@ -1,6 +1,6 @@
-import { FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { fmt, openFile, useApi } from "../api";
+import { downloadFile, fmt, openFile, useApi } from "../api";
 import { Card, Chip, ErrorState, Loading, Loops, PageHeader, StatusChip, Tabs } from "../components/ui";
 import CmrEditor from "./CmrEditor";
 import LineageView from "./LineageView";
@@ -42,7 +42,7 @@ export default function LoanWorkspace() {
       )}
       {tab === "documents" && (
         <Card title="Documents">
-          {data.documents.map((d: any) => <div key={d.id} className="flex items-center justify-between border-b border-canvas-100 py-2 text-sm"><button className="flex items-center gap-1 text-info-600 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`)}><FileText size={13} />{d.file_name}</button><span className="flex gap-2"><Chip tone="blue">{fmt.label(d.doc_type)}</Chip><StatusChip status={d.status === "indexed" ? "done" : d.status} /></span></div>)}
+          {data.documents.map((d: any) => <div key={d.id} className="flex items-center justify-between border-b border-canvas-100 py-2 text-sm"><span className="flex items-center gap-2"><button className="flex items-center gap-1 text-info-600 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><FileText size={13} />{d.file_name}</button><button title="Download" className="text-slate-400 hover:text-brand-600" onClick={() => downloadFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><Download size={13} /></button></span><span className="flex gap-2"><Chip tone="blue">{fmt.label(d.doc_type)}</Chip><StatusChip status={d.status === "indexed" ? "done" : d.status} /></span></div>)}
         </Card>
       )}
       {tab === "spread" && <Spread loanId={id!} onChange={reload} />}

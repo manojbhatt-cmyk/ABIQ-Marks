@@ -1,7 +1,7 @@
-import { FileText, Upload } from "lucide-react";
+import { Download, FileText, Upload } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, fmt, openFile, useApi } from "../api";
+import { api, downloadFile, fmt, openFile, useApi } from "../api";
 import { AiCard, AssumedChip, Card, Chip, ConfidenceRing, Empty, ErrorState, Loading, PageHeader, StatusChip, useAction } from "../components/ui";
 import { useApp } from "../context";
 
@@ -49,7 +49,7 @@ export default function Intake() {
             {loan.documents.length ? (
               <table className="w-full"><thead><tr>{["File", "Type", "Conf.", "Period", "Pages", "Status"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
                 <tbody>{loan.documents.map((d: any) => (
-                  <tr key={d.id}><td className="td"><button className="flex items-center gap-1 text-info-600 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`)}><FileText size={13} />{d.file_name}</button></td>
+                  <tr key={d.id}><td className="td"><div className="flex items-center gap-2"><button className="flex items-center gap-1 text-info-600 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><FileText size={13} />{d.file_name}</button><button title="Download" className="text-slate-400 hover:text-brand-600" onClick={() => downloadFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><Download size={13} /></button></div></td>
                     <td className="td"><select className="rounded border border-canvas-200 bg-white px-1 py-0.5 text-xs" value={d.doc_type || "other"} onChange={(e) => act.run(async () => { await api(`/documents/${d.id}/classify`, { body: { doc_type: e.target.value } }); reload(); })}>{TYPES.map((t) => <option key={t} value={t}>{fmt.label(t)}</option>)}</select>
                       {d.confirmed_by && <div className="text-[10px] text-slate-400">confirmed by {d.confirmed_by.split("@")[0]}</div>}</td>
                     <td className="td"><ConfidenceRing value={d.confidence} /></td><td className="td text-xs">{d.period}</td><td className="tdn">{d.pages}</td><td className="td"><StatusChip status={d.status === "indexed" ? "done" : d.status} /></td></tr>))}</tbody></table>

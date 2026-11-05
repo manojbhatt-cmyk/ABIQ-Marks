@@ -71,10 +71,39 @@ export function useApi<T = any>(path: string | null, deps: any[] = []) {
   return { data, error, loading, reload: load, setData };
 }
 
-export async function openFile(url: string) {
+/** Open a stored document in a new tab. The tab is opened during the click (so pop-up blockers allow it) and
+ * filled when the file arrives; if the browser still refuses, the file is downloaded instead. */
+export async function openFile(url: string, name?: string) {
+  const tab = window.open("", "_blank");
+  if (tab) tab.document.write("<p style='font-family:sans-serif;color:#506880'>Opening document...</p>");
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token()}` } });
-  const blob = await res.blob();
-  window.open(URL.createObjectURL(blob), "_blank");
+  if (!res.ok) {
+    if (tab) tab.document.body.innerHTML = `<p style='font-family:sans-serif;color:#B42318'>Could not open the file (${res.status}).</p>`;
+    return;
+  }
+  const href = URL.createObjectURL(await res.blob());
+  const fileName = name || decodeURIComponent(url.split("/").pop() || "document");
+  if (tab) {
+    tab.location.href = href;
+  } else {
+    downloadHref(href, fileName);
+  }
+}
+
+/** Save a stored document to the Downloads folder. */
+export async function downloadFile(url: string, name?: string) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token()}` } });
+  if (!res.ok) return;
+  downloadHref(URL.createObjectURL(await res.blob()), name || decodeURIComponent(url.split("/").pop() || "document"));
+}
+
+function downloadHref(href: string, name: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 export const fmt = {
