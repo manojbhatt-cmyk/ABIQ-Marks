@@ -13,7 +13,8 @@ from dataclasses import dataclass
 
 from pipeline.parse import ParsedDoc
 
-INPUT_LINES = ["REVENUE", "COGS", "OPEX", "REPORTED_EBITDA", "CASH", "TOTAL_DEBT", "INTEREST_EXPENSE_LTM"]
+INPUT_LINES = ["REVENUE", "COGS", "OPEX", "REPORTED_EBITDA", "CASH", "TOTAL_DEBT", "INTEREST_EXPENSE_LTM", "CAPEX",
+               "CASH_TAXES"]
 SYNONYMS = {
     "REVENUE": ["total revenue", "revenue", "net sales", "freight revenue plus fuel surcharge income", "sales"],
     "COGS": ["cost of revenue", "cost of sales", "cost of goods sold", "direct costs", "fleet operating costs"],
@@ -22,6 +23,8 @@ SYNONYMS = {
     "CASH": ["cash and cash equivalents", "cash at bank", "cash"],
     "TOTAL_DEBT": ["total debt", "borrowings (total)", "total borrowings"],
     "INTEREST_EXPENSE_LTM": ["interest expense (last twelve months)", "interest paid ltm", "ltm interest expense"],
+    "CAPEX": ["capital expenditures", "purchase of property and equipment", "capex"],
+    "CASH_TAXES": ["cash taxes paid", "income taxes paid", "taxes paid"],
 }
 PERIOD_COLS = {"same_quarter_last_year": 0, "q_minus_3": 1, "q_minus_2": 2, "prior_quarter": 3, "quarter": 4}
 ADDBACK_PATTERNS = [

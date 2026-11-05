@@ -92,7 +92,10 @@ def recompute_metrics(session: Session, sp: FinancialSpread) -> dict:
     pending = sum(a.amount for a in session.query(Adjustment).filter_by(spread_id=sp.id, accepted=None)
                   if a.allowed)
     # Proposed allow-listed add-backs count in the preview until a person rejects them.
-    res = M.compute(_values(session, sp), {"quarter": accepted + pending})
+    undrawn = sum(r["U"] or 0 for r in get_warehouse().query(
+        "select sum(p.UNFUNDED_AMOUNT) U from SENTRY.POSITION p join DEALCLOUD.FACILITY f on f.FACILITY_ID = p.FACILITY_ID "
+        "where f.DEAL_ID = ? and f.FACILITY_TYPE = 'revolver' and p.AS_OF_DATE = cast('2026-09-30' as date)", [cl.deal_id]))
+    res = M.compute(_values(session, sp), {"quarter": accepted + pending}, revolver_undrawn=undrawn)
     session.query(Metric).filter_by(spread_id=sp.id).delete()
     session.query(CovenantTest).filter_by(spread_id=sp.id).delete()
     for code, m in res.items():
@@ -101,6 +104,11 @@ def recompute_metrics(session: Session, sp: FinancialSpread) -> dict:
     for cov in get_warehouse().query("select * from DEALCLOUD.COVENANT where FACILITY_ID = ?", [cl.facility_id]):
         t = M.covenant_test(res, cov)
         session.add(CovenantTest(spread_id=sp.id, covenant_id=cov["COVENANT_ID"], covenant_type=cov["COVENANT_TYPE"], **t))
+        if cov["COVENANT_TYPE"] == "max_leverage":
+            res["COVENANT_CUSHION"] = {"value": t["headroom"], "formula": M.FORMULAS["COVENANT_CUSHION"],
+                                       "inputs": {"threshold": t["threshold"], "actual": t["actual"]}}
+            session.add(Metric(spread_id=sp.id, line_code="COVENANT_CUSHION", value=t["headroom"],
+                               formula_text=M.FORMULAS["COVENANT_CUSHION"], inputs_json=res["COVENANT_CUSHION"]["inputs"]))
     session.flush()
     return res
 

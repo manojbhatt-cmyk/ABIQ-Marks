@@ -51,7 +51,7 @@ export default function Lincoln() {
               return (
                 <tr key={l.cycle_loan_id}>
                   <td className="td"><div className="font-medium">{l.borrower}</div><div className="text-[11px] text-slate-400">{l.facility_id}</div></td>
-                  <td className="td">{p ? <Chip tone="green">shared v{p.version} day {p.day}</Chip> : <StatusChip status={l.package_status} />}</td>
+                  <td className="td">{l.valuation_method !== "Lincoln" ? <Chip tone="violet">{l.valuation_method}</Chip> : p ? <Chip tone="green">shared v{p.version} day {p.day}</Chip> : <StatusChip status={l.package_status} />}</td>
                   <td className="td">{v ? <button className="flex items-center gap-1 text-info-600 hover:underline" onClick={() => v.report_document_id && api(`/documents/${v.report_document_id}`).then((d) => openFile(d.url))}><FileText size={12} />v{v.version} {v.valuation_date}</button> : <span className="text-slate-400">waiting</span>}
                     {l.valuations.length > 1 && <div className="text-[10px] text-brand-700">revised after send-back</div>}</td>
                   <td className="tdn">{fmt.mark(v?.point)}</td><td className="tdn">{v ? `${fmt.mark(v.low)} to ${fmt.mark(v.high)}` : "-"}</td><td className="tdn">{fmt.pct(v?.yield)}</td>
@@ -59,7 +59,7 @@ export default function Lincoln() {
                   <td className="td">{v ? (v.loaded_to_everest ? <Chip tone="green">yes</Chip> : <Chip>no</Chip>) : "-"}</td>
                   <td className="td">{v ? (v.sharepoint ? <Chip tone="green">yes</Chip> : <Chip>no</Chip>) : "-"}</td>
                   <td className="tdn">{l.send_backs.length || ""}</td>
-                  <td className="td">{!p && l.package_status === "complete" && <button className="btn-primary" onClick={() => confirm.ask(`Share ${l.borrower}'s package with Lincoln through Box? The manifest lists every classified document.`, async () => { await api(`/loans/${l.cycle_loan_id}/share`, { body: {} }); reload(); })}>Share</button>}</td>
+                  <td className="td">{!p && l.valuation_method === "Lincoln" && l.package_status === "complete" && <button className="btn-primary" onClick={() => confirm.ask(`Share ${l.borrower}'s package with Lincoln through Box? The manifest lists every classified document.`, async () => { await api(`/loans/${l.cycle_loan_id}/share`, { body: {} }); reload(); })}>Share</button>}</td>
                 </tr>
               );
             })}</tbody>

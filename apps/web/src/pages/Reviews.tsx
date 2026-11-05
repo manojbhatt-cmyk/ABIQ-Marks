@@ -69,6 +69,7 @@ export default function Reviews() {
               <div className="mt-4 flex gap-2">
                 <button className="btn-primary" onClick={() => confirm.ask(`Pass ${item.borrower} at the ${fmt.label(review.stage)} stage?`, async () => { await api(`/reviews/${review.id}/decide`, { body: { outcome: "passed" } }); refresh(); })}>Pass</button>
                 <button className="btn-danger" onClick={() => confirm.ask(`Send ${item.borrower} back to the analyst with your comments (loop QB)?`, async () => { await api(`/reviews/${review.id}/decide`, { body: { outcome: "sent_back" } }); refresh(); }, true)}>Send back</button>
+                {review.stage === "sct" && <button className="btn-accent" onClick={() => confirm.ask(`Defer ${item.borrower} to the follow-up SCT session? Add a comment first saying why.`, async () => { await api(`/reviews/${review.id}/decide`, { body: { outcome: "deferred" } }); refresh(); })}>Defer to follow-up</button>}
               </div>
               <div className="mt-2 text-[11px] text-slate-400">A failed checklist item needs a comment before Pass. Send back requires at least one comment.</div>
             </Card>)}

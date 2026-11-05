@@ -170,6 +170,8 @@ def check_completeness(session: Session, cl: CycleLoan, day: int | None = None) 
     cl.package_status, cl.package_missing = status, missing
     if status == "complete":
         complete_tasks(session, cl.id, "Q2", SYSTEM)
+        if (cl.valuation_method or "Lincoln") != "Lincoln" and cl.lincoln_step in ("Q1", "Q2", "Q3", None):
+            cl.lincoln_step, cl.lincoln_track_status = "Q10", "awaiting_valuation"
         if cl.dt_step in ("Q1", "Q2"):
             cl.dt_step, cl.status = "Q3", "in_progress"
             refresh_step(cl)

@@ -156,6 +156,7 @@ class CycleLoan(Entity):
     dt_step = Column(String(10), default="Q1")  # furthest step on the Deal Team track (Q4 to Q9)
     lincoln_step = Column(String(10), default="Q1")  # furthest step on the Lincoln track (Q10 to Q13)
     on_agenda = Column(Boolean, default=False)
+    valuation_method = Column(String(30), default="Lincoln")  # Lincoln, AB proposal, Sponsor value, Cost
     loop_counts_json = Column(JSON, default=dict)
     late_addition = Column(Boolean, default=False)
     package_status = Column(String(30), default="not_received")  # not_received, incomplete, complete, late
@@ -472,6 +473,8 @@ class LincolnValuation(Entity):
     discrepancy_note = Column(Text)
     received_at = Column(DateTime(timezone=True))
     received_day = Column(Integer)
+    source = Column(String(30), default="lincoln")  # lincoln, ab_proposal, sponsor_value, cost
+    proposed_by = Column(String(120))
 
 
 class ValuationCrosscheck(Entity):

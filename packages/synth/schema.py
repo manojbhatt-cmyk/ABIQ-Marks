@@ -100,6 +100,11 @@ TABLES: dict[str, list[tuple[str, str]]] = {
     "FINANCE.PACING_FILE": [("FACILITY_ID", S), ("AS_OF_MONTH", S), ("FUNDED_AMOUNT", N),
                             ("EXPECTED_INTEREST", N), ("INTEREST_RECEIVED", N), ("PACING_STATUS", S),
                             ("NOTES", S), ("SOURCE_FILE_NAME", S)],
+    # Reunderwriting Guidance Q3 2026 (client file "August 31 Snapshot", page 3): market spread and maximum
+    # leverage by security type and EBITDA band, May 2026 vs current. Band thresholds are redacted: assumed.
+    "FINANCE.REUNDERWRITING_GRID": [("AS_OF_MONTH", S), ("SOURCE_DOC", S), ("SECURITY", S), ("EBITDA_BAND", I),
+                                    ("BAND_LOW", N), ("BAND_HIGH", N), ("SPREAD_BPS", I), ("FIXED_YIELD", M),
+                                    ("MAX_LEVERAGE", M)],
     "FINANCE.WATCHLIST_CALL_NOTE": [("NOTE_ID", S), ("FACILITY_ID", S), ("CALL_DATE", D), ("ATTENDEES", S),
                                     ("NOTE_TEXT", S), ("UPLOADED_BY", S)],
 }

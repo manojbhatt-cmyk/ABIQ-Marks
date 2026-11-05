@@ -222,8 +222,22 @@ def a5_challenge(facts: dict) -> dict:
     if cover and "interest" in assumptions and cover > 2.0:
         diffs.append({"assumption_quote": facts.get("lincoln_assumptions"),
                       "finding": f"Interest cover remains {cover:.1f}x.", "math": "", "evidence": [], "materiality": "low"})
+    g = facts.get("grid")
+    if g and g.get("max_leverage") and m.get("LEVERAGE"):
+        lev = m["LEVERAGE"]
+        net_eq = (m["TOTAL_DEBT"] - eq["amount"]) / m["LTM_ADJ_EBITDA"] if eq and m.get("LTM_ADJ_EBITDA") else None
+        above = (net_eq or lev) > g["max_leverage"]
+        diffs.append({
+            "assumption_quote": f"Reunderwriting Guidance Q3 2026: {g['security']}, EBITDA band {g['band']}",
+            "finding": (f"Market maximum leverage is {g['max_leverage']:.2f}x (May {g['may_max_leverage']:.2f}x), spread "
+                        f"S+{g['spread_bps']}. The loan is at {lev:.2f}x" + (f", {net_eq:.2f}x net of the sponsor equity" if net_eq else "")
+                        + (": above the market maximum, which supports Lincoln's discount; weigh it against the "
+                           "evidence above." if above else ": within the market maximum.")),
+            "math": f"Indicative market yield SOFR 4.30% + {g['spread_bps'] / 100:.2f}% = {4.30 + g['spread_bps'] / 100:.2f}%",
+            "evidence": [{"file": "August_31_Snapshot (Reunderwriting Guidance)", "page": 3}],
+            "materiality": "medium" if above else "low", "kind": "market_context"})
     note = None
-    if diffs:
+    if eq and diffs and diffs[0].get("kind") != "market_context":
         d = diffs[0]
         note = (f"Lincoln's valuation does not fully reflect the {money(eq['amount'])} sponsor equity committed by "
                 f"{eq['sponsor']} (letter dated {eq['date']}, attached). Debt net of the equity is "

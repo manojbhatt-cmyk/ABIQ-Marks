@@ -27,7 +27,7 @@ export default function Universe() {
   return (
     <>
       <PageHeader title="Loan Universe" subtitle={`${rows.length} facilities from ${borrowers.size} borrowers, ${inScope.length} in scope`}
-        actions={<><button className="btn-secondary" onClick={() => { u.reload(); loans.reload(); }}>Refresh from Snowflake</button><button className="btn-secondary" onClick={csv}>Export</button></>} />
+        actions={<><button className="btn-secondary" onClick={() => act.run(async () => { if (cycle) { const r = await api(`/cycles/${cycle.id}/refresh`, { body: {} }); alert(`Refreshed from ${u.data.freshness.source}: ${r.changes.length} change(s), ${r.late_additions.length} late addition(s)`); } u.reload(); loans.reload(); })}>Refresh from Snowflake</button><button className="btn-secondary" onClick={csv}>Export</button></>} />
       {act.node}
       <div className="mb-4 flex flex-wrap gap-2">
         {([["sector", "Sector", opts("sector")], ["team", "Deal team", opts("team_name")], ["rating", "Rating", opts("previous_rating").map(String)],
@@ -39,7 +39,7 @@ export default function Universe() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         <div className="card overflow-x-auto xl:col-span-3">
           <table className="w-full">
-            <thead><tr>{["Facility", "Borrower", "Sector", "Sponsor", "Deal team", "Type", "Commitment", "Funded", "Coupon", "Maturity", "Prev mark", "Prev rating", "Watchlist", "CMR type", "In scope"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
+            <thead><tr>{["Facility", "Borrower", "Sector", "Sponsor", "Deal team", "Type", "Commitment", "Funded", "Coupon", "Maturity", "Prev mark", "Prev rating", "Watchlist", "CMR type", "Valuation method", "In scope"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
             <tbody>
               {rows.map((r: any) => {
                 const cl = scopeById[r.facility_id];
@@ -51,6 +51,10 @@ export default function Universe() {
                     <td className="tdn">{fmt.num(r.commitment_amount)}</td><td className="tdn">{fmt.num(r.funded_amount)}</td><td className="tdn">{fmt.pct(r.coupon_rate, 2)}</td>
                     <td className="td num">{r.maturity_date}</td><td className="tdn">{fmt.mark(r.previous_final_mark)}</td><td className="tdn">{r.previous_rating}</td>
                     <td className="td">{r.previous_watchlist ? <Chip tone="amber">yes</Chip> : "no"}</td><td className="td">{r.cmr_type}</td>
+                    <td className="td">{cl ? <select className="rounded border border-canvas-200 bg-white px-1 py-0.5 text-xs" value={cl.valuation_method} onChange={(e) => act.run(async () => {
+                      const reason = prompt(`Reason to value ${r.borrower} by ${e.target.value}`); if (!reason) return;
+                      await api(`/loans/${cl.id}/valuation-method`, { body: { method: e.target.value, reason } }); loans.reload();
+                    })}>{["Lincoln", "AB proposal", "Sponsor value", "Cost"].map((m) => <option key={m}>{m}</option>)}</select> : r.valuation_method}</td>
                     <td className="td">{cl ? <input type="checkbox" checked={scope} onChange={() => act.run(async () => {
                       const reason = prompt(`Reason to mark ${r.borrower} ${scope ? "out of" : "in"} scope`);
                       if (!reason) return;

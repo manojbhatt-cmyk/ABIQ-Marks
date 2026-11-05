@@ -84,6 +84,7 @@ def create_quarterly_cycle(session: Session, actor: Actor, period: str, day0: da
                        previous_mark=r["PREVIOUS_FINAL_MARK"], previous_rating=r["PREVIOUS_RATING"],
                        previous_watchlist=bool(r["PREVIOUS_WATCHLIST"]), funded_amount=r["FUNDED_AMOUNT"],
                        unfunded_amount=r["UNFUNDED_AMOUNT"], sct_session=r["SCT_SESSION"], in_scope=r["IN_SCOPE"],
+                       valuation_method=r.get("VALUATION_METHOD") or "Lincoln",
                        current_step="Q1", status="not_started", loop_counts_json={}, created_by=actor.email)
         session.add(cl)
         if cl.in_scope:
@@ -218,6 +219,71 @@ def refresh_step(cl: CycleLoan) -> None:
         cl.current_step = STEP_ORDER[min(step_index(cl.dt_step), step_index(cl.lincoln_step))]
     else:
         cl.current_step = cl.dt_step
+
+
+METHODS = ["Lincoln", "AB proposal", "Sponsor value", "Cost"]
+
+
+def set_valuation_method(session: Session, actor: Actor, cycle_loan_id: str, method: str, reason: str) -> CycleLoan:
+    """M7.3.1: each deal is valued by Lincoln, by an AB proposal, at sponsor value or at cost; each has its own route."""
+    require(actor, "cycle.manage")
+    from domain.models import LincolnPackage, LincolnValuation
+
+    if method not in METHODS:
+        raise BusinessRuleError(f"Method must be one of {', '.join(METHODS)}")
+    if not reason:
+        raise BusinessRuleError("A reason is required to change the valuation method")
+    cl = session.get(CycleLoan, cycle_loan_id)
+    if session.query(LincolnValuation).filter_by(cycle_loan_id=cl.id).first() or \
+            session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
+        raise BusinessRuleError("The loan already has a package with Lincoln or a valuation; the method can no longer change")
+    before = {"valuation_method": cl.valuation_method}
+    cl.valuation_method = method
+    if method != "Lincoln" and cl.package_status == "complete" and step_index(cl.lincoln_step) < step_index("Q10"):
+        cl.lincoln_step, cl.lincoln_track_status = "Q10", "awaiting_valuation"
+    audit(session, actor, "cycle_loan.valuation_method_set", "cycle_loan", cl.id, cycle_id=cl.cycle_id,
+          cycle_loan_id=cl.id, before=before, after={"valuation_method": method, "reason": reason})
+    return cl
+
+
+def refresh_universe(session: Session, actor: Actor, cycle_id: str) -> dict:
+    """M1.1.2: re-read DealCloud, Everest and Sentry from Snowflake; update owners and amounts; add late facilities."""
+    if actor.role != "system":
+        require(actor, "cycle.manage")
+    cyc = session.get(ValuationCycle, cycle_id)
+    rows = {r["FACILITY_ID"]: r for r in read_universe(session, cyc.day0_date, cyc.period)}
+    changes, added = [], []
+    for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id):
+        r = rows.pop(cl.facility_id, None)
+        if not r:
+            continue
+        for attr, col in (("funded_amount", "FUNDED_AMOUNT"), ("unfunded_amount", "UNFUNDED_AMOUNT"),
+                          ("deal_team_id", "DEAL_TEAM_ID"), ("team_name", "TEAM_NAME"), ("analyst_email", "ANALYST_USER_EMAIL"),
+                          ("lead_email", "LEAD_USER_EMAIL"), ("ac_manager_email", "AC_MANAGER_USER_EMAIL"),
+                          ("commitment_amount", "COMMITMENT_AMOUNT")):
+            if r.get(col) is not None and getattr(cl, attr) != r[col]:
+                changes.append({"facility_id": cl.facility_id, "field": attr, "from": getattr(cl, attr), "to": r[col]})
+                setattr(cl, attr, r[col])
+    for fid, r in rows.items():
+        if r["IN_SCOPE"] and cyc.status != "draft":
+            cl = CycleLoan(cycle_id=cycle_id, facility_id=fid, deal_id=r["DEAL_ID"], borrower_id=r["BORROWER_ID"],
+                           borrower=r["BORROWER"], deal_name=r["DEAL_NAME"], sector=r["SECTOR"], sponsor=r["SPONSOR"],
+                           facility_type=r["FACILITY_TYPE"], deal_team_id=r["DEAL_TEAM_ID"], team_name=r["TEAM_NAME"],
+                           analyst_email=r["ANALYST_USER_EMAIL"], lead_email=r["LEAD_USER_EMAIL"],
+                           ac_manager_email=r["AC_MANAGER_USER_EMAIL"], email_domain=r["EMAIL_DOMAIN"], cmr_type=r["CMR_TYPE"],
+                           commitment_amount=r["COMMITMENT_AMOUNT"], coupon_rate=r["COUPON_RATE"],
+                           maturity_date=r["MATURITY_DATE"], previous_mark=r["PREVIOUS_FINAL_MARK"],
+                           previous_rating=r["PREVIOUS_RATING"], previous_watchlist=bool(r["PREVIOUS_WATCHLIST"]),
+                           funded_amount=r["FUNDED_AMOUNT"], unfunded_amount=r["UNFUNDED_AMOUNT"],
+                           sct_session=r["SCT_SESSION"], in_scope=True, late_addition=True, current_step="Q2",
+                           dt_step="Q2", status="waiting_on_borrower", loop_counts_json={},
+                           valuation_method=r.get("VALUATION_METHOD") or "Lincoln")
+            session.add(cl)
+            added.append(fid)
+    session.flush()
+    audit(session, actor, "universe.refreshed", "valuation_cycle", cycle_id, cycle_id=cycle_id,
+          after={"changes": changes[:50], "late_additions": added})
+    return {"changes": changes, "late_additions": added, "at": now().isoformat()}
 
 
 def set_scope(session: Session, actor: Actor, cycle_loan_id: str, in_scope: bool, reason: str) -> CycleLoan:

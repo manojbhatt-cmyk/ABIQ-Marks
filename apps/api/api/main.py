@@ -102,9 +102,53 @@ def cycle_loans(cycle_id: str, a: Actor = A, s: Session = S):
     if a.role in ("deal_analyst", "deal_lead"):
         loans = [l for l in loans if l.deal_team_id == a.deal_team_id]
     return [cyc_svc.loan_card(l) | {"commitment": l.commitment_amount, "coupon": l.coupon_rate, "in_scope": l.in_scope,
+                                    "valuation_method": l.valuation_method or "Lincoln", "late_addition": l.late_addition,
                                     "maturity": l.maturity_date.isoformat() if l.maturity_date else None,
                                     "sponsor": l.sponsor, "previous_rating": l.previous_rating,
                                     "previous_watchlist": l.previous_watchlist} for l in loans]
+
+
+@app.post("/api/loans/{cycle_loan_id}/valuation-method")
+def set_method(cycle_loan_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
+    cl = cyc_svc.set_valuation_method(s, a, cycle_loan_id, body["method"], body.get("reason", ""))
+    return {"id": cl.id, "valuation_method": cl.valuation_method}
+
+
+@app.post("/api/loans/{cycle_loan_id}/internal-valuation")
+def internal_valuation(cycle_loan_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
+    lv = valuation.record_internal_valuation(s, a, cycle_loan_id, body.get("point"), body.get("rationale", ""),
+                                             body.get("document_id"))
+    return lincoln.valuation_dict(lv)
+
+
+@app.post("/api/cycles/{cycle_id}/refresh")
+def refresh_universe(cycle_id: str, a: Actor = A, s: Session = S):
+    return cyc_svc.refresh_universe(s, a, cycle_id)
+
+
+@app.on_event("startup")
+def nightly_refresh():
+    """M1.1.2: refresh every open cycle's loan universe from Snowflake at 02:00 local time."""
+    def loop():
+        from datetime import datetime
+
+        from domain.db import session_scope
+        from domain.services.core import SYSTEM
+
+        last = None
+        while True:
+            t = datetime.now()
+            if t.hour == 2 and last != t.date():
+                try:
+                    with session_scope() as ss:
+                        for c in ss.query(ValuationCycle).filter_by(status="open"):
+                            cyc_svc.refresh_universe(ss, SYSTEM, c.id)
+                    last = t.date()
+                except Exception:
+                    pass
+            time.sleep(300)
+
+    threading.Thread(target=loop, daemon=True).start()
 
 
 @app.post("/api/loans/{cycle_loan_id}/scope")
@@ -265,6 +309,7 @@ def lincoln_view(cycle_id: str, a: Actor = A, s: Session = S):
         vals = s.query(LincolnValuation).filter_by(cycle_loan_id=cl.id).order_by(LincolnValuation.version).all()
         notes = s.query(ValuationDecision).filter_by(cycle_loan_id=cl.id, outcome="sent_back").all()
         out.append({"cycle_loan_id": cl.id, "facility_id": cl.facility_id, "borrower": cl.borrower,
+                    "valuation_method": cl.valuation_method or "Lincoln",
                     "package_status": cl.package_status, "lincoln_status": cl.lincoln_track_status,
                     "packages": [{"version": p.version, "day": p.shared_day, "manifest": p.manifest_path,
                                   "files": len(p.document_ids or [])} for p in pkgs],

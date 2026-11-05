@@ -16,7 +16,7 @@ from domain.models import (AgentSuggestion, CommitteeDecision, CycleLoan, Docume
                            LincolnValuation, ValuationCrosscheck, ValuationCycle, ValuationDecision)
 from domain.services.cmrs import attach_mark, latest_cmr
 from domain.services.core import (Actor, BusinessRuleError, audit, bump_loop, notify, now, require, rule, rule_meta)
-from domain.services.cycle import complete_tasks
+from domain.services.cycle import complete_tasks, refresh_step
 from domain.services.intake import loan_documents
 from domain.services.lincoln import latest_valuation, slug, valuation_dict
 from domain.services.spreads import covenant_result, current_spread, metric_values
@@ -73,6 +73,7 @@ def pricing_view(session: Session, cycle_loan_id: str) -> dict:
         CommitteeDecision.recorded_at.desc()).first()
     return {
         "loan": {"id": cl.id, "borrower": cl.borrower, "facility_id": cl.facility_id, "previous_mark": cl.previous_mark,
+                 "valuation_method": cl.valuation_method or "Lincoln",
                  "team": cl.team_name, "deal_team_id": cl.deal_team_id, "status": cl.status,
                  "loops": cl.loop_counts_json or {}, "funded": cl.funded_amount},
         "versions": [valuation_dict(v) for v in lvs],
@@ -96,8 +97,15 @@ def pricing_view(session: Session, cycle_loan_id: str) -> dict:
                   "co_decision": rule_meta(session, "g1.co_decision_required"),
                   "max_loops": rule(session, "g1.max_send_back_loops", 3)},
         "ready": bool(lv and lv.loaded_to_everest and cmr and cmr.status in ("filed", "agreed")),
+        "reunderwriting": _grid(cl, mets),
         "period": cyc.period,
     }
+
+
+def _grid(cl: CycleLoan, mets: dict) -> dict | None:
+    from domain.services.reunderwriting import lookup
+
+    return lookup(cl.facility_type, mets.get("LTM_ADJ_EBITDA"))
 
 
 def run_challenge(session: Session, actor: Actor, cycle_loan_id: str) -> AgentSuggestion:
@@ -114,8 +122,12 @@ def run_challenge(session: Session, actor: Actor, cycle_loan_id: str) -> AgentSu
         eq = sponsor_equity(session, cl)
         step(run, "search_package", {"sponsor_equity": bool(eq)})
         step(run, "read_spread", {k: mets.get(k) for k in ("TOTAL_DEBT", "LTM_ADJ_EBITDA", "LEVERAGE")})
+        from domain.services.reunderwriting import lookup
+
+        grid = lookup(cl.facility_type, mets.get("LTM_ADJ_EBITDA"))
+        step(run, "read_reunderwriting_guidance", grid)
         res = a5_challenge({"lincoln_assumptions": lv.key_assumptions, "sponsor_equity": eq, "metrics": mets,
-                            "covenant_threshold": cov.get("threshold", 0)})
+                            "covenant_threshold": cov.get("threshold", 0), "grid": grid})
         if res["draft_note"]:
             res["draft_note"] = rewrite(run, res["draft_note"], "Keep it a short note to Lincoln.", heavy=True)
         sp = current_spread(session, cl.id)
@@ -129,6 +141,49 @@ def run_challenge(session: Session, actor: Actor, cycle_loan_id: str) -> AgentSu
     return s
 
 
+SOURCE_FOR = {"AB proposal": "ab_proposal", "Sponsor value": "sponsor_value", "Cost": "cost"}
+
+
+def record_internal_valuation(session: Session, actor: Actor, cycle_loan_id: str, point: float | None,
+                              rationale: str, evidence_document_id: str | None = None) -> LincolnValuation:
+    """Routes other than Lincoln (M7.3.1): AB proposal by the Deal Team, sponsor value or cost by the PM Team.
+    The result is the draft valuation the Deal Team approves at G1, so the rest of the process is unchanged."""
+    cl = session.get(CycleLoan, cycle_loan_id)
+    method = cl.valuation_method or "Lincoln"
+    if method == "Lincoln":
+        raise BusinessRuleError("This loan is valued by Lincoln")
+    if method == "AB proposal":
+        require(actor, "g1.decide", team=cl.deal_team_id)
+    else:
+        require(actor, "lincoln.exchange")
+    if method == "Cost":
+        from connectors.warehouse import get_warehouse
+
+        cyc = session.get(ValuationCycle, cl.cycle_id)
+        r = get_warehouse().query("select sum(COST_BASIS) C, sum(PAR_AMOUNT) P, sum(FUNDED_AMOUNT) F from SENTRY.POSITION "
+                                  "where FACILITY_ID = ? and AS_OF_DATE = ?", [cl.facility_id, cyc.day0_date])[0]
+        point = round((r["C"] or 0) / (r["F"] or 1) * 100, 4)
+        rationale = rationale or f"Held at cost: Sentry cost basis {r['C']:.3f} on funded {r['F']:.3f}"
+    if point is None or not rationale:
+        raise BusinessRuleError("A mark and a rationale are required")
+    if latest_valuation(session, cl.id):
+        raise BusinessRuleError("A valuation already exists for this loan")
+    cyc = session.get(ValuationCycle, cl.cycle_id)
+    lv = LincolnValuation(cycle_loan_id=cl.id, facility_id=cl.facility_id, version=1, valuation_date=cyc.day0_date,
+                          point_estimate=float(point), range_low=float(point), range_high=float(point),
+                          required_yield=None, methodology=method, key_assumptions=rationale,
+                          report_document_id=evidence_document_id, received_at=now(), received_day=cyc.current_day,
+                          source=SOURCE_FOR[method], proposed_by=actor.email, extraction_confidence=1.0)
+    session.add(lv)
+    session.flush()
+    cl.lincoln_track_status, cl.lincoln_step = "marks_received", "Q11"
+    refresh_step(cl)
+    audit(session, actor, "valuation.internal_recorded", "lincoln_valuation", lv.id, cycle_id=cl.cycle_id,
+          cycle_loan_id=cl.id, after={"method": method, "point": point, "rationale": rationale})
+    recompute(session, cl.cycle_id, "valuation")
+    return lv
+
+
 def decide_g1(session: Session, actor: Actor, cycle_loan_id: str, outcome: str, *, mark: float | None = None,
               rationale: str = "", reason_category: str | None = None, note: str = "",
               evidence: list | None = None, used_tiq_draft: bool = False, co_decided_by: str | None = None) -> ValuationDecision:
@@ -138,7 +193,7 @@ def decide_g1(session: Session, actor: Actor, cycle_loan_id: str, outcome: str, 
     lv = latest_valuation(session, cl.id)
     cmr = latest_cmr(session, cl.id)
     if not lv or not lv.loaded_to_everest:
-        raise BusinessRuleError("Lincoln's draft mark must be loaded to Everest (Q12) before G1")
+        raise BusinessRuleError("The draft valuation must be loaded to Everest (Q12) before G1")
     if not cmr or cmr.status not in ("filed", "agreed"):
         raise BusinessRuleError("The CMR must be filed (Q8) before G1")
     if rule(session, "g1.co_decision_required", False) and not co_decided_by:

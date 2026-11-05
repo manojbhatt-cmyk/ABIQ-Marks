@@ -32,10 +32,7 @@ def plan(session: Session, cycle_id: str) -> list[dict]:
     loans = session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).order_by(CycleLoan.facility_id).all()
     out = []
     for s in sessions:
-        if "Follow Up" in (s.session_name or ""):
-            members = []
-        else:
-            members = [l for l in loans if (l.sct_session or "") == _base(s.session_name)]
+        members = [l for l in loans if (l.sct_session or "") == s.session_name]
         dis = (s.session_name or "").startswith("DIS")
         t = datetime(2026, 1, 1, 9, 0)
         slots = []
@@ -56,6 +53,21 @@ def plan(session: Session, cycle_id: str) -> list[dict]:
                     "ready": sum(1 for x in slots if x.get("cmr_status") in ("filed", "agreed", "final")),
                     "total": sum(1 for x in slots if x.get("facility_id"))})
     return out
+
+
+def defer_to_follow_up(session: Session, cl: CycleLoan) -> str:
+    """SCT defers a deal: it moves to the session's follow-up (created if the calendar has none)."""
+    base = _base(cl.sct_session or "Services")
+    target = f"{base} Follow Up"
+    if not session.query(SctSession).filter_by(cycle_id=cl.cycle_id, session_name=target).first():
+        src = session.query(SctSession).filter_by(cycle_id=cl.cycle_id, session_name=base).first()
+        session.add(SctSession(cycle_id=cl.cycle_id, session_name=target,
+                               session_date=(src.session_date + timedelta(days=5)) if src and src.session_date else None,
+                               reviewer=src.reviewer if src else None, requested_review_time="1BD",
+                               deadline="2 business days before", delivery_to_sct="1 business day before",
+                               minutes_per_deal=src.minutes_per_deal if src else None))
+    cl.sct_session = target
+    return target
 
 
 def build_session_pack(session: Session, actor: Actor, cycle_id: str, session_id: str) -> str:

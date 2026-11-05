@@ -56,7 +56,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
         {decided && <span className="text-sm text-slate-500">passed: {fmt.label(decided.outcome)} {fmt.mark(decided.mark)} by {decided.decided_by} {fmt.date(decided.decided_at)}</span>}
         <span className="ml-auto flex gap-1">{data.versions.map((x: any) => <Chip key={x.version} tone={x.version === v.version ? "violet" : "neutral"}>Lincoln v{x.version} {x.point.toFixed(2)} ({x.valuation_date})</Chip>)}</span>
       </div>
-      {!v ? <Card title="Pricing panel"><div className="text-sm text-slate-400">No Lincoln valuation yet.</div></Card> : (
+      {!v ? <InternalValuation data={data} loanId={loanId} onDone={refresh} /> : (
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-3 space-y-4">
             {data.versions.slice().reverse().map((x: any) => (
@@ -95,6 +95,15 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
             <Card title="Decisions">{data.decisions.length ? data.decisions.map((d: any) => <div key={d.id} className="border-b border-canvas-100 py-1 text-sm"><Chip tone={d.outcome === "sent_back" ? "red" : "green"}>{fmt.label(d.outcome)}</Chip> v{d.lincoln_version} {d.mark ? fmt.mark(d.mark) : ""} by {d.decided_by} {fmt.date(d.decided_at)}<div className="text-xs text-slate-500">{d.note || d.rationale}</div>{d.box_note && <button className="text-xs text-info-600" onClick={() => openFile(`/api/files/box/${d.box_note}`)}>box/{d.box_note}</button>}</div>) : <div className="text-sm text-slate-400">None yet</div>}</Card>
           </div>
           <div className="col-span-4 space-y-4">
+            {data.reunderwriting && (
+              <Card title="Reunderwriting guidance (1 Sep 2026)">
+                <div className="text-sm">{data.reunderwriting.security}, EBITDA band {data.reunderwriting.band} (${data.reunderwriting.band_range[0]}M to ${data.reunderwriting.band_range[1]}M, assumed)</div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-lg bg-sky-50 p-2"><div className="label">Market spread</div><div className="num font-bold">S+{data.reunderwriting.spread_bps}</div><div className="text-[11px] text-slate-500">May S+{data.reunderwriting.may_spread_bps}</div></div>
+                  <div className="rounded-lg bg-teal-50 p-2"><div className="label">Max leverage</div><div className="num font-bold">{fmt.x(data.reunderwriting.max_leverage)}</div><div className="text-[11px] text-slate-500">May {fmt.x(data.reunderwriting.may_max_leverage)}</div></div>
+                </div>
+                <div className="mt-2 text-xs">Loan leverage <b>{fmt.x(k.metrics.LEVERAGE)}</b>{k.net_leverage_after_equity ? <>, {fmt.x(k.net_leverage_after_equity)} net of equity</> : null}: {(k.net_leverage_after_equity ?? k.metrics.LEVERAGE) > data.reunderwriting.max_leverage ? <Chip tone="amber">above market max</Chip> : <Chip tone="green">within market max</Chip>}</div>
+              </Card>)}
             <Card title="Indicative cross-check">
               <div className="mb-2 rounded bg-warn-100 px-2 py-1 text-[11px] font-semibold text-warn-700">Indicative, not a mark</div>
               {cc && <div className="text-sm">Coupon {fmt.pct(cc.coupon, 2)}, {cc.years} years to maturity</div>}
@@ -123,5 +132,27 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
         </div>
       )}
     </>
+  );
+}
+
+
+function InternalValuation({ data, loanId, onDone }: { data: any; loanId: string; onDone: () => void }) {
+  const method = data.loan.valuation_method;
+  const [point, setPoint] = useState("");
+  const [why, setWhy] = useState("");
+  const act = useAction();
+  if (method === "Lincoln") return <Card title="Pricing panel"><div className="text-sm text-slate-400">No Lincoln valuation yet. It arrives in Box after the package is shared (Q10).</div></Card>;
+  return (
+    <Card title={`Valuation route: ${method}`} actions={<AssumedChip dq="M7.3" what="valuation method per deal" />}>
+      {act.node}
+      <div className="mb-3 text-sm text-slate-600">{method === "AB proposal" ? "The Deal Team proposes the mark with its rationale; it then goes through Gate 1 like a Lincoln draft." :
+        method === "Sponsor value" ? "The PM Team records the sponsor-reported value with the statement as evidence." :
+          "The mark is the Sentry cost basis on funded amount; the PM Team records it."}</div>
+      <div className="grid max-w-xl grid-cols-2 gap-3">
+        {method !== "Cost" && <Field label="Mark"><input className="input num" value={point} onChange={(e) => setPoint(e.target.value)} /></Field>}
+        <div className="col-span-2"><Field label="Rationale"><textarea className="input h-20" value={why} onChange={(e) => setWhy(e.target.value)} placeholder={method === "Cost" ? "Optional for cost" : ""} /></Field></div>
+      </div>
+      <button className="btn-primary mt-3" onClick={() => act.run(async () => { await api(`/loans/${loanId}/internal-valuation`, { body: { point: point ? Number(point) : null, rationale: why } }); onDone(); })}>Record {method.toLowerCase()} mark</button>
+    </Card>
   );
 }

@@ -56,7 +56,8 @@ def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[
 
 def _shared(session: Session, cycle_id: str) -> bool:
     """Lincoln drafts once every in-scope package is in its Box folder."""
-    loans = session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).all()
+    loans = [cl for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True)
+             if (cl.valuation_method or "Lincoln") == "Lincoln"]
     return bool(loans) and all(session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first() for cl in loans)
 
 

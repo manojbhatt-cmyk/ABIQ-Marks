@@ -293,8 +293,21 @@ def decide_review(session: Session, actor: Actor, review_id: str, outcome: str,
     elif outcome == "sent_back":
         if not comments:
             raise BusinessRuleError("Send back requires at least one comment")
+    elif outcome == "deferred":
+        if rv.stage != "sct":
+            raise BusinessRuleError("Only the SCT can defer a deal to a follow-up session")
+        if not comments:
+            raise BusinessRuleError("Say why the deal is deferred (add a comment)")
+        rv.outcome, rv.decided_at, rv.reviewer_user_id = "deferred", now(), actor.email
+        from domain.services.sct import defer_to_follow_up
+
+        target = defer_to_follow_up(session, cl)
+        session.add(CmrReview(cmr_id=cmr.id, stage="sct", started_at=now(), loop_no=rv.loop_no))
+        audit(session, actor, "cmr.review_outcome", "cmr_review", rv.id, cycle_id=cl.cycle_id, cycle_loan_id=cl.id,
+              after={"stage": "sct", "outcome": "deferred", "follow_up_session": target})
+        return rv
     else:
-        raise BusinessRuleError("Outcome must be passed or sent_back")
+        raise BusinessRuleError("Outcome must be passed, sent_back or deferred")
     rv.outcome, rv.decided_at, rv.reviewer_user_id, rv.checklist_results_json = outcome, now(), actor.email, checklist
     if outcome == "sent_back":
         bump_loop(cl, "QB")

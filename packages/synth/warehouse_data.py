@@ -27,7 +27,27 @@ SPREAD_TEMPLATE = [
     ("INTEREST_COVER", "Interest cover", "ratios", True, "LTM_ADJ_EBITDA / INTEREST_EXPENSE_LTM"),
     ("REVENUE_YOY", "Revenue change YoY", "ratios", True, "change versus the same quarter last year"),
     ("EBITDA_YOY", "EBITDA change YoY", "ratios", True, "change versus the same quarter last year"),
+    ("CAPEX", "Capital expenditures", "cash_flow", False, "borrower statements"),
+    ("CASH_TAXES", "Cash taxes", "cash_flow", False, "borrower statements"),
+    ("FCCR", "Fixed charge cover (LTM)", "ratios", True,
+     "(LTM_ADJ_EBITDA - LTM CAPEX - LTM CASH_TAXES) / (INTEREST_EXPENSE_LTM + scheduled amortization)"),
+    ("LIQUIDITY", "Liquidity", "ratios", True, "CASH + undrawn revolver"),
+    ("LIQUIDITY_MONTHS", "Months of liquidity", "ratios", True, "LIQUIDITY / monthly fixed charges and capex"),
+    ("COVENANT_CUSHION", "Covenant cushion", "ratios", True, "(covenant threshold - actual) / threshold"),
 ]
+
+# Page 3 of the client's Reunderwriting Guidance: (May-26, current) per EBITDA band, smallest to largest.
+# Spreads in bps over SOFR (floats are fixed yields in percent); None = NA in the source.
+BANDS = [(0, 10), (10, 25), (25, 50), (50, 1000)]  # USD m LTM EBITDA; redacted in the source, assumed
+REUNDERWRITING = {
+    "Asset Based Senior": [((250, 250), None), ((200, 200), None), ((200, 200), None), ((200, 200), None)],
+    "Cash Flow Senior": [((450, 450), (3.00, 3.00)), ((450, 450), (3.25, 3.00)), ((450, 450), (3.50, 3.25)), ((413, 438), (3.75, 3.50))],
+    "Senior Stretch": [((488, 488), (3.75, 3.50)), ((488, 488), (4.25, 4.00)), ((475, 488), (4.63, 4.38)), ((463, 488), (4.75, 4.63))],
+    "Unitranche": [((513, 513), (4.50, 4.00)), ((513, 513), (5.25, 4.75)), ((513, 513), (5.63, 5.38)), ((513, 513), (5.75, 5.50))],
+    "2nd Lien Loans": [(None, None), ((775, 775), (5.50, 5.00)), ((763, 763), (5.88, 5.50)), ((750, 750), (6.00, 5.75))],
+    "Sub Debt": [((12.8, 12.8), (5.00, 4.50)), ((12.3, 12.3), (5.50, 5.00)), ((12.3, 12.3), (5.88, 5.50)), ((12.0, 12.0), (6.00, 5.75))],
+    "Preferred": [((18.5, 18.5), None), ((17.5, 17.5), None), ((15.0, 15.0), None), ((14.5, 14.5), None)],
+}
 
 FUND_SPLITS = [("MMDLF1", 0.35), ("MMDLF2", 0.25), ("BDC", 0.20), ("ABLEND", 0.20)]
 FUND_SPLITS_ALT = [("LUX1", 0.30), ("PCIPAC", 0.25), ("MMDLF4", 0.25), ("ABPCI", 0.20)]
@@ -155,6 +175,14 @@ def build_rows() -> dict[str, list[tuple]]:
                 "Replacement contracts ramping; sponsor equity received 30 October; monthly reporting agreed.",
                 e["analyst"]))
 
+    for as_of, idx in (("2026-05", 0), ("2026-08", 1)):
+        for sec, bands in REUNDERWRITING.items():
+            for band, (spread, lev) in enumerate(bands, start=1):
+                sp, lv = spread[idx] if spread else None, lev[idx] if lev else None
+                fixed = sp / 100 if isinstance(sp, float) else None
+                rows["FINANCE.REUNDERWRITING_GRID"].append(a(
+                    as_of, "Reunderwriting Guidance Q3 2026 (1 Sep 2026)", sec, band, BANDS[band - 1][0], BANDS[band - 1][1],
+                    None if fixed is not None or sp is None else int(sp), fixed, lv))
     for k, row in enumerate(SPREAD_TEMPLATE, start=1):
         code, label, group, calc, formula = row
         rows["EVEREST.SPREAD_TEMPLATE"].append(a("STD", "v1", code, label, group, k, calc, formula,

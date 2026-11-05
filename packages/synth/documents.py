@@ -42,6 +42,9 @@ def statements_pdf(br: Borrower) -> bytes:
     for code in ("REVENUE", "COGS", "OPEX", "REPORTED_EBITDA"):
         rows.append([labels[code], *[_fmt(v) for v in f[code]]])
     story.append(grid(rows, [2.6 * inch] + [0.95 * inch] * 5, bold_rows=[4]))
+    story += [Spacer(1, 10), para("Cash flow items", H2),
+              grid([["", *Q_LABELS], ["Capital expenditures", *[_fmt(v) for v in f["CAPEX"]]],
+                    ["Cash taxes paid", *[_fmt(v) for v in f["CASH_TAXES"]]]], [2.6 * inch] + [0.95 * inch] * 5)]
     story += [Spacer(1, 10), para("Condensed balance sheet at 30 September 2026", H2),
               grid([["", "30 Sep 2026"], ["Cash and cash equivalents", _fmt(f["CASH"])],
                     ["Total debt", _fmt(f["TOTAL_DEBT"])],
@@ -80,6 +83,10 @@ def statements_xlsx(br: Borrower) -> bytes:
     bs.append(["Cash at bank", f["CASH"]])
     bs.append(["Borrowings (total)", f["TOTAL_DEBT"]])
     bs.append(["Interest paid LTM", f["INTEREST_EXPENSE_LTM"]])
+    cf = wb.create_sheet("Cash Flow")
+    cf.append(["Line", *Q_LABELS])
+    cf.append(["Purchase of property and equipment", *f["CAPEX"]])
+    cf.append(["Income taxes paid", *f["CASH_TAXES"]])
     notes = wb.create_sheet("Notes")
     notes.append(["Management accounts, unaudited, prepared for lenders."])
     out = io.BytesIO()
@@ -100,7 +107,10 @@ def scanned_pdf(br: Borrower) -> bytes:
              grid([["", "30 Sep 2026"], ["Cash and cash equivalents", _fmt(f["CASH"])],
                    ["Total debt", _fmt(f["TOTAL_DEBT"])],
                    ["Interest expense (last twelve months)", _fmt(f["INTEREST_EXPENSE_LTM"])]],
-                  [3.6 * inch, 1.2 * inch])]
+                  [3.6 * inch, 1.2 * inch]),
+             Spacer(1, 10), para("Cash flow items (typed page)", H2),
+             grid([["", *Q_LABELS], ["Capital expenditures", *[_fmt(v) for v in f["CAPEX"]]],
+                   ["Cash taxes paid", *[_fmt(v) for v in f["CASH_TAXES"]]]], [2.6 * inch] + [0.95 * inch] * 5)]
     return build(story, title=f"{br.name} Q3 2026 pack", footer="Scanned pack")
 
 

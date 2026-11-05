@@ -13,7 +13,7 @@ from domain.config import REPO_ROOT
 from domain.models import (AgendaTestResult, AgentRun, AgentSuggestion, AuditEvent, CmrSection, Cmr, CycleLoan,
                            Document, EvalResult, FinancialSpread, ReconciliationItem, ReconciliationRun, SpreadLineItem)
 
-INPUT_LINES = ["REVENUE", "COGS", "OPEX", "REPORTED_EBITDA", "CASH", "TOTAL_DEBT", "INTEREST_EXPENSE_LTM"]
+INPUT_LINES = ["REVENUE", "COGS", "OPEX", "REPORTED_EBITDA", "CASH", "TOTAL_DEBT", "INTEREST_EXPENSE_LTM", "CAPEX", "CASH_TAXES"]
 DECISION_ACTIONS = ["valuation_decision.approved", "valuation_decision.sent_back", "committee_decision.recorded",
                     "approval.recorded", "governance_signoff.recorded", "spread.approved", "cmr.recommendation_set",
                     "monthly_decision.recorded"]

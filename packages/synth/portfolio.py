@@ -264,6 +264,7 @@ def financials(br: Borrower) -> dict:
             "REPORTED_EBITDA": [7.2, 4.0, 3.9, 3.7, 4.1],
             "SEVERANCE": [0.0, 0.0, 0.0, 0.0, 0.3],
             "CASH": 1.4, "TOTAL_DEBT": 60.0, "INTEREST_EXPENSE_LTM": 6.2,
+            "CAPEX": [1.2, 1.1, 1.0, 0.9, 0.6], "CASH_TAXES": [0.4, 0.3, 0.3, 0.2, 0.1], "REVOLVER_UNDRAWN": 4.0,
         }
     debt = sum(f.funded for f in br.facilities if f.in_scope) + sum(f.funded for f in br.facilities if not f.in_scope)
     target_lev = {"B-0003": 4.1, "B-0009": 5.1, "B-0001": 3.2}.get(br.borrower_id,
@@ -278,9 +279,12 @@ def financials(br: Borrower) -> dict:
     cogs = [round(r * 0.58, 1) for r in rev]
     opex = [round(r - c - e, 1) for r, c, e in zip(rev, cogs, q_ebitda)]
     _ = q3
+    rev_unders = sum(f.commitment - f.funded for f in br.facilities if f.ftype == "revolver")
     return {"REVENUE": rev, "COGS": cogs, "OPEX": opex, "REPORTED_EBITDA": q_ebitda,
             "SEVERANCE": [0.0] * 5, "CASH": round(debt * 0.04, 1), "TOTAL_DEBT": round(debt, 1),
-            "INTEREST_EXPENSE_LTM": round(debt * 0.098, 1)}
+            "INTEREST_EXPENSE_LTM": round(debt * 0.098, 1),
+            "CAPEX": [round(r * 0.03, 1) for r in rev], "CASH_TAXES": [round(e * 0.08, 1) for e in q_ebitda],
+            "REVOLVER_UNDRAWN": round(rev_unders, 1)}
 
 
 def ground_truth_spread(br: Borrower) -> dict:
@@ -297,6 +301,7 @@ def ground_truth_spread(br: Borrower) -> dict:
         "NET_LEVERAGE": round((debt - cash) / ltm, 4), "INTEREST_COVER": round(ltm / interest, 4),
         "REVENUE_YOY": round(f["REVENUE"][4] / f["REVENUE"][0] - 1, 4),
         "EBITDA_YOY": round(f["REPORTED_EBITDA"][4] / f["REPORTED_EBITDA"][0] - 1, 4),
+        "CAPEX": f["CAPEX"][4], "CASH_TAXES": f["CASH_TAXES"][4],
     }
 
 

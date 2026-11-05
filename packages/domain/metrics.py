@@ -14,10 +14,16 @@ FORMULAS = {
     "INTEREST_COVER": "LTM_ADJ_EBITDA / INTEREST_EXPENSE_LTM",
     "REVENUE_YOY": "REVENUE / REVENUE same quarter last year - 1",
     "EBITDA_YOY": "REPORTED_EBITDA / REPORTED_EBITDA same quarter last year - 1",
+    "FCCR": "(LTM_ADJ_EBITDA - LTM CAPEX - LTM CASH_TAXES) / (INTEREST_EXPENSE_LTM + scheduled amortization)",
+    "LIQUIDITY": "CASH + undrawn revolver",
+    "LIQUIDITY_MONTHS": "LIQUIDITY / ((INTEREST_EXPENSE_LTM + amortization + LTM CAPEX + LTM CASH_TAXES) / 12)",
+    "COVENANT_CUSHION": "(covenant threshold - actual) / threshold",
 }
+AMORTIZATION_RATE = 0.01  # scheduled amortization per year as a share of total debt (assumed, typical 1 percent)
 
 
-def compute(values: dict[tuple[str, str], float], addbacks: dict[str, float] | None = None) -> dict[str, dict]:
+def compute(values: dict[tuple[str, str], float], addbacks: dict[str, float] | None = None,
+            revolver_undrawn: float = 0.0) -> dict[str, dict]:
     """values: {(line_code, period_type): value}; addbacks: accepted add-backs per period_type."""
     addbacks = addbacks or {}
 
@@ -47,6 +53,17 @@ def compute(values: dict[tuple[str, str], float], addbacks: dict[str, float] | N
     put("REVENUE_YOY", None if not rev_ly or rev is None else rev / rev_ly - 1, {"REVENUE": rev, "REVENUE_LY": rev_ly})
     e, e_ly = v("REPORTED_EBITDA"), v("REPORTED_EBITDA", "same_quarter_last_year")
     put("EBITDA_YOY", None if not e_ly or e is None else e / e_ly - 1, {"EBITDA": e, "EBITDA_LY": e_ly})
+    capex = None if any(v(("CAPEX"), p) is None for p in LTM_PERIODS) else sum(v("CAPEX", p) for p in LTM_PERIODS)
+    taxes = None if any(v("CASH_TAXES", p) is None for p in LTM_PERIODS) else sum(v("CASH_TAXES", p) for p in LTM_PERIODS)
+    amort = None if debt is None else debt * AMORTIZATION_RATE
+    fixed = None if interest is None or amort is None else interest + amort
+    fccr = None if None in (ltm, capex, taxes, fixed) or not fixed else (ltm - capex - taxes) / fixed
+    put("FCCR", fccr, {"LTM_ADJ_EBITDA": ltm, "CAPEX_LTM": capex, "CASH_TAXES_LTM": taxes, "INTEREST_EXPENSE_LTM": interest,
+                       "AMORTIZATION": amort})
+    liq = None if cash is None else cash + (revolver_undrawn or 0.0)
+    put("LIQUIDITY", liq, {"CASH": cash, "REVOLVER_UNDRAWN": revolver_undrawn})
+    burn = None if None in (fixed, capex, taxes) else (fixed + capex + taxes) / 12
+    put("LIQUIDITY_MONTHS", _div(liq, burn), {"LIQUIDITY": liq, "MONTHLY_FIXED_CHARGES_AND_CAPEX": burn})
     return out
 
 

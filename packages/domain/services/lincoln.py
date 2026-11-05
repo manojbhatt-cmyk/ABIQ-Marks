@@ -26,6 +26,8 @@ def slug(name: str) -> str:
 def share_package(session: Session, actor: Actor, cycle_loan_id: str) -> LincolnPackage:
     require(actor, "lincoln.exchange")
     cl = session.get(CycleLoan, cycle_loan_id)
+    if (cl.valuation_method or "Lincoln") != "Lincoln":
+        raise BusinessRuleError(f"{cl.borrower} is valued by {cl.valuation_method}, not Lincoln")
     cyc = session.get(ValuationCycle, cl.cycle_id)
     docs = [d for d in loan_documents(session, cl) if d.doc_type != "other"]
     if not docs:
@@ -88,6 +90,10 @@ def ingest_lincoln(session: Session, cycle_id: str, actor: Actor = SYSTEM) -> li
             if cl is None:
                 audit(session, SYSTEM, "lincoln_valuation.unmatched", "document", marks_doc.id, cycle_id=cycle_id,
                       after={"facility_id": fid})
+                continue
+            if (cl.valuation_method or "Lincoln") != "Lincoln":
+                audit(session, SYSTEM, "lincoln_valuation.skipped", "document", marks_doc.id, cycle_id=cycle_id,
+                      cycle_loan_id=cl.id, after={"facility_id": fid, "valuation_method": cl.valuation_method})
                 continue
             version = int(r.get("version") or 1)
             if session.query(LincolnValuation).filter_by(cycle_loan_id=cl.id, version=version).first():
@@ -168,7 +174,7 @@ def load_to_everest(session: Session, actor: Actor, cycle_id: str) -> int:
                          tiq_entity_version=lv.version)
         lv.loaded_to_everest = True
         if cl.lincoln_step in ("Q10", "Q11", "Q12"):
-            cl.lincoln_step = "Q13" if lv.sharepoint_copy_path else "Q12"
+            cl.lincoln_step = "Q13" if (lv.sharepoint_copy_path or (lv.source or "lincoln") != "lincoln") else "Q12"
         cl.lincoln_track_status = "loaded"
         refresh_step(cl)
         audit(session, actor, "everest.pricing_panel_written", "lincoln_valuation", lv.id, cycle_id=cycle_id,

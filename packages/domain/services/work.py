@@ -65,7 +65,13 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             items.append(_item("Q2", f"Confirm {low} document classification(s)", "Below the confidence threshold, a "
                                "person confirms the type.", "/intake"))
         for cl in loans:
-            if cl.package_status == "complete" and not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
+            if (cl.valuation_method or "Lincoln") in ("Sponsor value", "Cost") and cl.package_status == "complete" \
+                    and not lv_of(cl):
+                items.append(_item("Q10", f"Record the {cl.valuation_method.lower()} mark: {cl.borrower}",
+                                   f"This deal is valued at {cl.valuation_method.lower()}, not by Lincoln.",
+                                   f"/loans/{cl.id}/pricing", loan=cl.borrower))
+            if (cl.valuation_method or "Lincoln") == "Lincoln" and cl.package_status == "complete" and \
+                    not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
                 items.append(_item("Q3", f"Share with Lincoln: {cl.borrower}", "The package is complete; "
                                    "share it to Lincoln's Box folder with a manifest.", "/lincoln", loan=cl.borrower))
         unloaded = [lv for cl in loans for lv in [lv_of(cl)] if lv and not lv.loaded_to_everest]
@@ -143,6 +149,10 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             elif c.status == "filed" and c.current_stage is None:
                 items.append(_item("Q9", f"Resolve SCT comments on {cl.borrower}", "Resolve them so the PM Team can re-file.",
                                    f"/loans/{cl.id}/cmr", loan=cl.borrower))
+            if cl.valuation_method == "AB proposal" and not lv and sp and sp.status == "approved":
+                items.append(_item("Q10", f"Propose the AB mark: {cl.borrower}", "This deal is valued by AB proposal, "
+                                   "not Lincoln. Enter the mark and rationale.", f"/loans/{cl.id}/pricing", loan=cl.borrower,
+                                   priority=1))
             if lv and lv.loaded_to_everest and c and c.status in ("filed", "agreed") and cl.status not in (
                     "approved", "on_agenda", "decided", "reconciled", "final", "waiting_on_lincoln"):
                 items.append(_item("Q14", f"Gate 1 for {cl.borrower}: Lincoln {lv.point_estimate:.2f}",
