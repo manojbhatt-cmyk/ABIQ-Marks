@@ -94,3 +94,14 @@ def test_monthly_closed(played):
     with session_scope() as s:
         m = s.query(ValuationCycle).filter_by(cycle_type="monthly").one()
         assert m.status == "closed"
+
+
+def test_internal_communication_stays_in_platform(played):
+    """Email only for third parties (borrowers, Lincoln); everything internal is an in-platform message."""
+    from domain.models import EmailMessage, Message
+
+    with session_scope() as s:
+        out = {m.template_code for m in s.query(EmailMessage).filter_by(direction="out")}
+        assert out <= {"chase_borrower", "send_back"}
+        kinds = {m.kind for m in s.query(Message)}
+        assert {"kickoff", "impact_note", "committee_pack", "approval_request", "distribution"} <= kinds

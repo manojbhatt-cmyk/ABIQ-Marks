@@ -132,7 +132,7 @@ def kickoff_preview(cycle_id: str, a: Actor = A, s: Session = S):
 
 @app.post("/api/cycles/{cycle_id}/kickoff")
 def kickoff_send(cycle_id: str, body: dict = Body(default={}), a: Actor = A, s: Session = S):
-    return [{"id": m.id, "to": m.to_addrs, "subject": m.subject} for m in cyc_svc.send_kickoff(s, a, cycle_id, body.get("edits"))]
+    return [{"id": m.id, "to": m.recipients, "subject": m.subject} for m in cyc_svc.send_kickoff(s, a, cycle_id, body.get("edits"))]
 
 
 @app.post("/api/cycles/{cycle_id}/clock")
@@ -645,10 +645,14 @@ def distribute(cycle_id: str, a: Actor = A, s: Session = S):
 
 @app.get("/api/inbox")
 def inbox(a: Actor = A, s: Session = S):
-    """Recipient view (S16) and the simulated Outlook inbox for any user."""
-    msgs = [m for m in s.query(EmailMessage).filter_by(direction="out").order_by(EmailMessage.created_at.desc()).limit(400)
-            if a.email in (m.to_addrs or []) or a.email in (m.cc_addrs or [])]
-    return [_email(m) for m in msgs]
+    """External (third-party) mail: borrower packages and chases, Lincoln send-backs."""
+    q = s.query(EmailMessage).order_by(EmailMessage.created_at.desc()).limit(600).all()
+    if a.role == "lincoln":
+        q = [m for m in q if "analyst@lincoln.example" in (m.to_addrs or []) or (m.from_addr or "").endswith("lincoln.example")]
+    elif a.role in ("deal_analyst", "deal_lead"):
+        mine = {l.borrower_id for l in s.query(CycleLoan).filter_by(deal_team_id=a.deal_team_id)}
+        q = [m for m in q if m.matched_borrower_id in mine]
+    return [_email(m) | {"direction": m.direction} for m in q]
 
 
 # ---------------- monthly (S17 to S19) ----------------
@@ -738,8 +742,77 @@ def decide_suggestion(suggestion_id: str, body: dict = Body(...), a: Actor = A, 
 @app.get("/api/notifications")
 def notifications(a: Actor = A, s: Session = S):
     return [{"id": n.id, "kind": n.kind, "title": n.title, "body": n.body, "at": n.created_at.isoformat(),
-             "read": bool(n.read_at)} for n in s.query(Notification).filter_by(user_email=a.email).order_by(
+             "read": bool(n.read_at), "link": n.link} for n in s.query(Notification).filter_by(user_email=a.email).order_by(
         Notification.created_at.desc()).limit(50)]
+
+
+@app.post("/api/notifications/read")
+def notifications_read(a: Actor = A, s: Session = S):
+    for n in s.query(Notification).filter_by(user_email=a.email, read_at=None):
+        n.read_at = now()
+    return {"ok": True}
+
+
+# ---------------- in-platform work and messages ----------------
+@app.get("/api/work")
+def work(cycle_id: str | None = None, a: Actor = A, s: Session = S):
+    from domain.services import work as work_svc
+
+    c = s.get(ValuationCycle, cycle_id) if cycle_id else s.query(ValuationCycle).filter_by(
+        cycle_type="quarterly").order_by(ValuationCycle.day0_date.desc()).first()
+    out = work_svc.my_work(s, a, c.id if c else None)
+    out["process"] = work_svc.process_map(s, c.id) if c else []
+    return out
+
+
+@app.get("/api/messages")
+def messages(a: Actor = A, s: Session = S):
+    from domain.services import messaging
+
+    return messaging.inbox(s, a.email)
+
+
+@app.post("/api/messages")
+def send_message(body: dict = Body(...), a: Actor = A, s: Session = S):
+    from domain.services import messaging
+
+    if not body.get("to") or not body.get("body"):
+        raise HTTPException(422, "Recipients and a message are required")
+    c = quarterly_cycle(s, body.get("cycle_id")) if s.query(ValuationCycle).first() else None
+    m = messaging.post(s, a, body["to"], body.get("subject") or "Message", body["body"], kind="note",
+                       link=body.get("link"), cycle_id=c.id if c else None)
+    return messaging.message_dict(m, a.email)
+
+
+@app.post("/api/messages/{message_id}/read")
+def read_message(message_id: str, a: Actor = A, s: Session = S):
+    from domain.services import messaging
+
+    messaging.mark_read(s, message_id, a.email)
+    return {"ok": True}
+
+
+@app.get("/api/directory")
+def directory(a: Actor = A, s: Session = S):
+    from synth.portfolio import TEAMS
+
+    return {"users": [_user(u) for u in s.query(AppUser).filter(AppUser.role != "lincoln").order_by(AppUser.role)],
+            "teams": [{"id": t, "name": n} for t, n in TEAMS]}
+
+
+@app.post("/api/cycles/{cycle_id}/advance")
+def advance(cycle_id: str, body: dict = Body(default={}), a: Actor = A, s: Session = S):
+    """Demo clock: move forward; borrowers and Lincoln act on the days they would."""
+    require(a, "cycle.manage")
+    from synth import world
+
+    c = s.get(ValuationCycle, cycle_id)
+    to_day = int(body.get("to_day") or (c.current_day + int(body.get("days", 1))))
+    try:
+        log = world.advance(s, a, cycle_id, to_day)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+    return {"day": s.get(ValuationCycle, cycle_id).current_day, "log": log}
 
 
 # ---------------- admin (S22) ----------------

@@ -23,7 +23,7 @@ export default function Login() {
   };
   return (
     <div className="flex min-h-full">
-      <div className="hidden w-[42%] flex-col justify-between bg-navy-900 p-12 text-white lg:flex">
+      <div className="hidden w-[42%] flex-col justify-between bg-hero p-12 text-white lg:flex">
         <div>
           <div className="text-3xl font-bold">TIQ Marks</div>
           <div className="mt-1 text-slate-400">AllianceBernstein Private Credit</div>

@@ -152,12 +152,10 @@ def send_impact(session: Session, actor: Actor, impact_id: str, body: str | None
     edited = body is not None and body != imp.body_text
     imp.body_text = body or imp.body_text
     subject = f"{cyc.period} marks: early value impact (v{imp.version})"
-    msg_id, path = mailbox.send(actor.email, to, subject, imp.body_text)
-    m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email, to_addrs=to,
-                     subject=subject, body_text=imp.body_text, sent_at=now(), template_code="impact_summary",
-                     cycle_id=cyc.id, cycle_day=cyc.current_day, eml_path=path, status="sent")
-    session.add(m)
-    session.flush()
+    from domain.services.messaging import post
+
+    m = post(session, actor, to, subject, imp.body_text, kind="impact_note", link="/tracker", cycle_id=cyc.id,
+             entity_type="impact_summary", entity_id=imp.id)
     imp.sent_to, imp.sent_at, imp.email_message_id = to, now(), m.id
     sug = session.query(AgentSuggestion).filter_by(target_entity_type="impact_summary", target_entity_id=imp.id).first()
     if sug:

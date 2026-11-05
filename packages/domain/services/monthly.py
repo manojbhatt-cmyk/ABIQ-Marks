@@ -118,18 +118,16 @@ def email_teams(session: Session, actor: Actor, cycle_id: str) -> list[EmailMess
                 + "\n".join(f"- {r.borrower} ({r.facility_id}): current mark {r.current_mark:.2f}"
                             f"{'' if r.completeness_status == 'complete' else ' (' + r.completeness_status + ')'}" for r in rs)
                 + "\n\nDue 5 November 2026.\n\nPM Team")
-        msg_id, eml = mailbox.send(actor.email, [e["lead"], e["analyst"]], f"{cyc.period} monthly marks: proposals due 5 Nov", body)
-        m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email,
-                         to_addrs=[e["lead"], e["analyst"]], subject=f"{cyc.period} monthly marks: proposals due 5 Nov",
-                         body_text=body, sent_at=now(), template_code="monthly_request", cycle_id=cycle_id,
-                         eml_path=eml, status="sent")
-        session.add(m)
+        from domain.services.messaging import post
+
+        m = post(session, actor, [e["lead"], e["analyst"]], f"{cyc.period} monthly marks: proposals due 5 Nov", body,
+                 kind="monthly_request", link="/monthly", cycle_id=cycle_id)
         out.append(m)
         for r in rs:
             r.status = "requested"
     session.flush()
-    audit(session, actor, "email.sent", "valuation_cycle", cycle_id, cycle_id=cycle_id,
-          after={"template": "monthly_request", "teams": len(out)})
+    audit(session, actor, "monthly_request.sent", "valuation_cycle", cycle_id, cycle_id=cycle_id,
+          after={"teams": len(out)})
     return out
 
 
@@ -232,12 +230,10 @@ def request_monthly_approval(session: Session, actor: Actor, cycle_id: str) -> A
     to = [u.email for r in ("committee_member", "committee_chair") for u in users_by_role(session, r)]
     body = "Dear Committee,\n\nConsolidated monthly marks:\n" + "\n".join(
         f"- {x['borrower']}: {x['current_mark']:.2f} to {x['proposed_mark']:.2f}" for x in f.rows_json) + "\n\nPM Team"
-    msg_id, eml = mailbox.send(actor.email, to, f"{cyc.period} monthly marks for approval", body)
-    m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email, to_addrs=to,
-                     subject=f"{cyc.period} monthly marks for approval", body_text=body, sent_at=now(),
-                     template_code="monthly_approval_request", cycle_id=cycle_id, eml_path=eml, status="sent")
-    session.add(m)
-    session.flush()
+    from domain.services.messaging import post
+
+    m = post(session, actor, to, f"{cyc.period} monthly marks for approval", body, kind="approval_request",
+             link="/monthly", cycle_id=cycle_id)
     req = ApprovalRequest(cycle_id=cycle_id, kind="monthly_marks", schedule_json=f.rows_json, changes_json=[],
                           sent_email_message_id=m.id, requested_by=actor.email, requested_at=now(), status="pending")
     session.add(req)

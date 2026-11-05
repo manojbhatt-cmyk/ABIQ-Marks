@@ -136,11 +136,11 @@ def set_rule(session: Session, actor: Actor, key: str, value: Any, reason: str) 
 
 
 def notify(session: Session, emails: Iterable[str], kind: str, title: str, body: str = "", *, entity_type: str = "",
-           entity_id: str = "", cycle_id: str | None = None) -> None:
+           entity_id: str = "", cycle_id: str | None = None, link: str | None = None) -> None:
     for e in set(emails):
         if e:
             session.add(Notification(user_email=e, kind=kind, title=title, body=body, entity_type=entity_type,
-                                     entity_id=str(entity_id), cycle_id=cycle_id))
+                                     entity_id=str(entity_id), cycle_id=cycle_id, link=link))
 
 
 def bump_loop(cl: CycleLoan, code: str) -> int:

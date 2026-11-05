@@ -157,7 +157,7 @@ def kickoff_preview(session: Session, cycle_id: str) -> list[dict]:
     return out
 
 
-def send_kickoff(session: Session, actor: Actor, cycle_id: str, edits: dict[str, dict] | None = None) -> list[EmailMessage]:
+def send_kickoff(session: Session, actor: Actor, cycle_id: str, edits: dict[str, dict] | None = None) -> list:
     require(actor, "cycle.manage")
     cyc = session.get(ValuationCycle, cycle_id)
     if cyc.status != "draft":
@@ -166,15 +166,11 @@ def send_kickoff(session: Session, actor: Actor, cycle_id: str, edits: dict[str,
     for p in kickoff_preview(session, cycle_id):
         e = (edits or {}).get(p["deal_team_id"], {})
         subject, body = e.get("subject", p["subject"]), e.get("body", p["body"])
-        msg_id, path = mailbox.send(actor.email, p["to"], subject, body, cc=p["cc"])
-        m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email, to_addrs=p["to"],
-                         cc_addrs=p["cc"], subject=subject, body_text=body, sent_at=now(), template_code="kickoff",
-                         cycle_id=cycle_id, cycle_day=cyc.current_day, eml_path=path, status="sent")
-        session.add(m)
-        session.flush()
+        from domain.services.messaging import post
+
+        m = post(session, actor, [f"team:{p['deal_team_id']}"] + p["to"], subject, body, kind="kickoff",
+                 link="/work", cycle_id=cycle_id, entity_type="valuation_cycle", entity_id=cycle_id)
         sent.append(m)
-        audit(session, actor, "email.sent", "email_message", m.id, cycle_id=cycle_id,
-              after={"template": "kickoff", "to": p["to"], "subject": subject})
     dl = deadlines(session, cycle_id)
     for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True):
         for step, title, role, owner in (("Q2", "Borrower package due", "deal_analyst", cl.analyst_email),
@@ -188,6 +184,7 @@ def send_kickoff(session: Session, actor: Actor, cycle_id: str, edits: dict[str,
         cl.dt_step = "Q2"
         cl.package_status = "not_received"
     cyc.status = "open"
+    cyc.current_day = max(cyc.current_day or 0, 1)
     session.flush()
     audit(session, actor, "task.created", "valuation_cycle", cycle_id, cycle_id=cycle_id,
           after={"tasks": session.query(Task).filter_by(cycle_id=cycle_id).count()})

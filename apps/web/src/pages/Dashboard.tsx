@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, fmt, useApi } from "../api";
 import { Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, Loops, PageHeader, StatusChip, useAction } from "../components/ui";
 import { useApp } from "../context";
+import { PHASE_STYLE, ProcessStrip } from "./Work";
 
 const DT_COLS = [["Intake", ["Q1", "Q2", "Q3"]], ["Spread", ["Q4"]], ["CMR", ["Q5"]], ["Review", ["Q6", "Q7", "Q8", "Q9"]], ["Agreed", ["Q10", "Q11", "Q12", "Q13", "Q14", "Q15", "Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22"]]] as const;
 const LN_COLS = [["Not shared", ["Q1", "Q2", "Q3"]], ["Package shared", ["Q10"]], ["Marks received", ["Q11"]], ["Loaded", ["Q12", "Q13"]]] as const;
@@ -12,7 +13,7 @@ function LoanCard({ l }: { l: any }) {
   const nav = useNavigate();
   const mark = l.final_mark ?? l.committee_mark ?? l.deal_team_mark ?? l.lincoln_mark;
   return (
-    <button onClick={() => nav(`/loans/${l.id}`)} className="mb-2 w-full rounded-lg border border-canvas-200 bg-white p-2.5 text-left shadow-sm hover:border-brand-500">
+    <button onClick={() => nav(`/loans/${l.id}`)} className="mb-2 w-full rounded-xl border-l-4 border-sky-500 bg-white p-2.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-center justify-between gap-1"><span className="truncate text-[13px] font-semibold">{l.borrower}</span><span className="text-[10px] text-slate-400">{l.facility_id}</span></div>
       <div className="mt-0.5 text-[11px] text-slate-500">{l.team}</div>
       <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -33,8 +34,8 @@ function Lane({ title, cols, loans, stepKey }: { title: string; cols: readonly (
         {cols.map(([name, steps]) => {
           const ls = loans.filter((l) => steps.includes(l[stepKey]));
           return (
-            <div key={name} className="rounded-lg bg-canvas-100 p-2">
-              <div className="mb-2 flex justify-between px-1 text-[11px] font-semibold text-slate-600"><span>{name}</span><span>{ls.length}</span></div>
+            <div key={name} className="rounded-xl border border-brand-100 bg-gradient-to-b from-brand-50 to-white p-2">
+              <div className="mb-2 flex justify-between px-1 text-[11px] font-semibold text-brand-700"><span>{name}</span><span className="rounded-full bg-brand-600 px-1.5 text-white">{ls.length}</span></div>
               <div className="max-h-[420px] overflow-y-auto">{ls.map((l) => <LoanCard key={l.id} l={l} />)}</div>
             </div>
           );
@@ -46,7 +47,8 @@ function Lane({ title, cols, loans, stepKey }: { title: string; cols: readonly (
 
 export default function Dashboard() {
   const { cycle, refreshCycles } = useApp();
-  const { data, error, loading, reload } = useApi<any>(cycle ? `/dashboard?cycle_id=${cycle.id}` : "/dashboard", [cycle?.id]);
+  const { data, error, loading, reload } = useApi<any>(cycle ? `/dashboard?cycle_id=${cycle.id}` : "/dashboard", [cycle?.id, cycle?.day]);
+  const work = useApi<any>(cycle ? `/work?cycle_id=${cycle.id}` : null, [cycle?.id, cycle?.day]);
   const [team, setTeam] = useState("");
   const act = useAction();
   if (loading && !data) return <Loading />;
@@ -62,7 +64,7 @@ export default function Dashboard() {
       <PageHeader title="Cycle Dashboard" subtitle={`${d.cycle.period} quarterly cycle, day 0 ${d.cycle.day0}, deadline ${d.cycle.deadline}`}
         actions={<>
           <select className="input w-40" value={team} onChange={(e) => setTeam(e.target.value)}><option value="">All deal teams</option>{teams.map((t) => <option key={t}>{t}</option>)}</select>
-          <button className="btn-secondary" title="Demo only" onClick={() => act.run(async () => { const day = prompt("Move the demo clock to day", String(k.day + 1)); if (day) { await api(`/cycles/${d.cycle.id}/clock`, { body: { day: Number(day) } }); await reload(); await refreshCycles(); } })}>Move clock</button>
+          <button className="btn-secondary" title="Demo clock: borrowers and Lincoln act on their days" disabled={d.cycle.status === "draft"} onClick={() => act.run(async () => { await api(`/cycles/${d.cycle.id}/advance`, { body: { days: 1 } }); await reload(); await refreshCycles(); })}>Next day</button>
           <button className="btn-secondary" onClick={() => window.print()}>Export PDF</button>
         </>} />
       {act.node}
@@ -73,15 +75,16 @@ export default function Dashboard() {
         <Kpi label="Portfolio value so far" value={fmt.m(k.portfolio_current)} sub={<><Delta v={k.delta} /> vs {fmt.m(k.portfolio_previous)}; story loans {fmt.m(k.story_current)}</>} tone={k.delta < 0 ? "red" : undefined} />
         <Kpi label="Open tasks overdue" value={k.overdue} tone={k.overdue ? "red" : "green"} />
       </div>
+      <ProcessStrip process={work.data?.process || []} />
       <Card title="45-day timeline" className="mb-6">
         <div className="relative h-16">
           {d.phases.map((p: any) => (
-            <div key={p.phase} className="absolute top-0 h-7 rounded bg-info-100 px-2 text-[11px] leading-7 text-info-700" style={{ left: `${(p.start / 45) * 100}%`, width: `${((p.end - p.start + 1) / 45) * 100}%`, top: p.phase === 3 ? 30 : 0 }} title={`${p.name}, days ${p.start} to ${p.end}${p.assumed ? " (assumed)" : ""}`}>
+            <div key={p.phase} className={`absolute top-0 h-7 rounded-lg px-2 text-[11px] font-semibold leading-7 text-white shadow-sm ${PHASE_STYLE[p.phase - 1]?.bg || "bg-brand-600"} ${p.phase === 5 ? "!text-navy-900" : ""}`} style={{ left: `${(p.start / 45) * 100}%`, width: `${((p.end - p.start + 1) / 45) * 100}%`, top: p.phase === 3 ? 30 : 0 }} title={`${p.name}, days ${p.start} to ${p.end}${p.assumed ? " (assumed)" : ""}`}>
               <span className="truncate">{p.phase} {p.name}</span>
             </div>
           ))}
           {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}${x.assumed ? " (assumed)" : ""}`} className={`absolute bottom-0 h-3 w-0.5 ${x.day < k.day ? "bg-slate-300" : "bg-slate-500"}`} style={{ left: `${(x.day / 45) * 100}%` }} />)}
-          <div className="absolute -top-1 bottom-0 w-0.5 bg-brand-600" style={{ left: `${(k.day / 45) * 100}%` }} title={`Today: day ${k.day}`} />
+          <div className="absolute -top-1 bottom-0 w-1 rounded bg-danger-600" style={{ left: `${(k.day / 45) * 100}%` }} title={`Today: day ${k.day}`} />
         </div>
       </Card>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">

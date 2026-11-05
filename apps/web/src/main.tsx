@@ -19,6 +19,8 @@ import Lineage from "./pages/Lineage";
 import Loans from "./pages/Loans";
 import LoanWorkspace from "./pages/LoanWorkspace";
 import Login from "./pages/Login";
+import Messages from "./pages/Messages";
+import Work from "./pages/Work";
 import Monthly from "./pages/Monthly";
 import PricingList from "./pages/PricingList";
 import Reconciliation from "./pages/Reconciliation";
@@ -34,6 +36,8 @@ function Protected() {
     <Shell>
       <Routes>
         <Route path="/" element={<Navigate to={homeFor(user.role)} replace />} />
+        <Route path="/work" element={<Work />} />
+        <Route path="/messages" element={<Messages />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/universe" element={<Universe />} />
         <Route path="/kickoff" element={<Kickoff />} />

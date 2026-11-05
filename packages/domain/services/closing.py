@@ -181,13 +181,10 @@ def request_approval(session: Session, actor: Actor, cycle_id: str) -> ApprovalR
             f"loans, total value ${sch['total']:,.3f}M (change ${sch['delta']:+,.3f}M).\n\nChanges since the committee:\n"
             + ("\n".join(f"- {c['borrower']}: {c['from']:.2f} to {c['to']:.2f}" for c in changes) or "- none")
             + "\n\nPM Team")
-    msg_id, eml = mailbox.send(actor.email, [chair.email], f"{cyc.period} final marks: request for written approval", body)
-    m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email, to_addrs=[chair.email],
-                     subject=f"{cyc.period} final marks: request for written approval", body_text=body, sent_at=now(),
-                     template_code="final_marks_approval_request", cycle_id=cycle_id, cycle_day=cyc.current_day,
-                     eml_path=eml, status="sent")
-    session.add(m)
-    session.flush()
+    from domain.services.messaging import post
+
+    m = post(session, actor, [chair.email], f"{cyc.period} final marks: request for written approval", body,
+             kind="approval_request", link="/approvals", cycle_id=cycle_id)
     req = ApprovalRequest(cycle_id=cycle_id, kind="final_marks", schedule_json=sch, changes_json=changes,
                           sent_email_message_id=m.id, requested_by=actor.email, requested_at=now(), status="pending")
     session.add(req)
@@ -298,13 +295,11 @@ def distribute(session: Session, actor: Actor, cycle_id: str) -> list[Distributi
     for group, to in {**GROUPS, "deal_teams": teams}.items():
         body = (f"Hello {group.replace('_', ' ').title()},\n\nThe {cyc.period} marks are final. Portfolio value "
                 f"${sch['total']:,.3f}M (change ${sch['delta']:+,.3f}M). {len(files)} final CMRs are in SharePoint.\n\nPM Team")
-        msg_id, eml = mailbox.send(actor.email, to, f"{cyc.period} final CMRs and marks", body)
-        m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email, to_addrs=to,
-                         subject=f"{cyc.period} final CMRs and marks", body_text=body, sent_at=now(),
-                         template_code="distribution", cycle_id=cycle_id, cycle_day=cyc.current_day, eml_path=eml,
-                         status="sent")
-        session.add(m)
-        session.flush()
+        from domain.services.messaging import post
+
+        m = post(session, actor, to, f"{cyc.period} final CMRs and marks", body, kind="distribution",
+                 link="/distribution", cycle_id=cycle_id,
+                 attachments=[{"store": "sharepoint", "path": f.pdf_path, "name": f.pdf_path.split("/")[-1]} for f in files])
         d = Distribution(cycle_id=cycle_id, recipient_group=group, recipients_json=to,
                          document_ids=[f.pdf_path for f in files], sent_at=now(), email_message_id=m.id)
         session.add(d)

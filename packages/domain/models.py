@@ -859,6 +859,7 @@ class WritebackChange(Entity):
 class Notification(Entity):
     __tablename__ = "notification"
     user_email = Column(String(200), index=True)
+    link = Column(String(300))
     kind = Column(String(40))
     entity_type = Column(String(60))
     entity_id = Column(String(60))
@@ -866,6 +867,25 @@ class Notification(Entity):
     title = Column(String(300))
     body = Column(Text)
     read_at = Column(DateTime(timezone=True))
+
+
+class Message(Entity):
+    """In-platform message between internal users (kickoff, impact note, pack, approvals, distribution).
+    Email is used only for third parties (borrowers, Lincoln)."""
+    __tablename__ = "message"
+    cycle_id = Column(String(36), index=True)
+    cycle_day = Column(Integer)
+    sender_email = Column(String(200))
+    sender_role = Column(String(40))
+    recipients = Column(JSON, default=list)
+    subject = Column(Text)
+    body = Column(Text)
+    kind = Column(String(40))  # kickoff, impact_note, committee_pack, approval_request, distribution, monthly_request, ...
+    link = Column(String(300))  # screen where the recipient acts
+    entity_type = Column(String(60))
+    entity_id = Column(String(60))
+    attachments = Column(JSON, default=list)  # [{store, path, name}]
+    read_by = Column(JSON, default=list)
 
 
 class Job(Entity):

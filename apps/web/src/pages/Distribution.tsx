@@ -5,11 +5,11 @@ import { useApp } from "../context";
 export default function Distribution() {
   const { cycle, user, refreshCycles } = useApp();
   const { data, error, loading, reload } = useApi<any>(cycle && user?.role !== "finance_ir" ? `/cycles/${cycle.id}/approvals` : null, [cycle?.id]);
-  const inbox = useApi<any[]>("/inbox", []);
+  const inbox = useApi<any[]>("/messages", []);
   const confirm = useConfirm();
   if (!cycle) return <Empty text="No cycle yet" />;
   if (user?.role === "finance_ir") {
-    const bundles = (inbox.data || []).filter((m) => m.template === "distribution" || m.template === "impact_summary");
+    const bundles = (inbox.data || []).filter((m) => m.kind === "distribution" || m.kind === "impact_note");
     return (
       <>
         <PageHeader title="Distribution inbox" subtitle="Final CMRs, marks and impact notes sent to you" />

@@ -4,12 +4,12 @@ import { ApiError, fmt } from "../api";
 
 type Tone = "green" | "amber" | "red" | "blue" | "neutral" | "violet";
 const TONES: Record<Tone, string> = {
-  green: "bg-success-100 text-success-700",
+  green: "bg-leaf-50 text-leaf-700",
   amber: "bg-warn-100 text-warn-700",
   red: "bg-danger-100 text-danger-700",
-  blue: "bg-info-100 text-info-600",
+  blue: "bg-sky-50 text-sky-700",
   neutral: "bg-canvas-100 text-slate-500",
-  violet: "bg-brand-50 text-brand-700",
+  violet: "bg-brand-100 text-brand-700",
 };
 
 export function Chip({ tone = "neutral", children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
@@ -46,7 +46,7 @@ export function ConfirmedChip() {
 
 export function LoopBadge({ code, n }: { code: string; n: number }) {
   if (!n) return null;
-  return <span title={`Rework loop ${code}`} className="inline-flex items-center rounded-full bg-navy-900 px-1.5 py-0.5 text-[10px] font-bold text-white">{code} x{n}</span>;
+  return <span title={`Rework loop ${code}`} className="inline-flex items-center rounded-full bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{code} x{n}</span>;
 }
 
 export function Loops({ loops }: { loops?: Record<string, number> }) {
@@ -67,10 +67,13 @@ export function Card({ title, children, actions, className = "", ai }: { title?:
   );
 }
 
-export function Kpi({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "red" | "green" }) {
+const ACCENTS = ["border-t-brand-600", "border-t-sky-500", "border-t-teal-400", "border-t-leaf-400", "border-t-lime-400"];
+let kpiCount = 0;
+export function Kpi({ label, value, sub, tone, accent }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "red" | "green"; accent?: number }) {
+  const a = ACCENTS[(accent ?? kpiCount++) % ACCENTS.length];
   return (
-    <div className="card px-5 py-4">
-      <div className="text-xs font-medium text-slate-500">{label}</div>
+    <div className={`card border-t-4 ${a} px-5 py-4`}>
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-1 text-2xl font-bold num ${tone === "red" ? "text-danger-700" : tone === "green" ? "text-success-700" : "text-slate-900"}`}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-slate-500 num">{sub}</div>}
     </div>
@@ -79,12 +82,16 @@ export function Kpi({ label, value, sub, tone }: { label: string; value: ReactNo
 
 export function PageHeader({ title, subtitle, ai, actions }: { title: string; subtitle?: ReactNode; ai?: boolean; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">{title}{ai && <Sparkles size={18} className="text-brand-600" aria-label="AI-assisted screen" />}</h1>
-        {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+    <div className="relative mb-6 overflow-hidden rounded-2xl bg-hero px-6 py-5 text-white shadow-card">
+      <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-teal-400/20" />
+      <div className="pointer-events-none absolute right-24 -bottom-20 h-40 w-40 rounded-full bg-leaf-400/20" />
+      <div className="relative flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold">{title}{ai && <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold"><Sparkles size={12} /> AI assisted</span>}</h1>
+          {subtitle && <p className="mt-1 text-sm text-brand-100">{subtitle}</p>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 [&_.btn-secondary]:border-white/30 [&_.btn-secondary]:bg-white/10 [&_.btn-secondary]:text-white [&_.btn-secondary:hover]:bg-white/20 [&_.input]:border-white/30 [&_.btn-primary]:bg-white [&_.btn-primary]:text-brand-700 [&_.btn-primary:hover]:bg-brand-50">{actions}</div>
       </div>
-      <div className="flex items-center gap-2">{actions}</div>
     </div>
   );
 }

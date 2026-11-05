@@ -39,6 +39,16 @@ Load Snowflake instead of DuckDB (the trial account; never from tests):
 
 `--reset-account` drops every other user database in the account first.
 
+## Walk the whole process yourself
+
+1. Reset to a blank start: Admin, Synthetic data, play to `Q0`, Reset and play (or `synth.cli reset --until Q0`).
+2. Sign in as `pm.analyst@ab-poc.local`. My Work says "Start the 2026-Q3 cycle". Open Kickoff: create the cycle from Snowflake, check the calendar, preview the per-team messages and send the kickoff **inside TIQ** (no email).
+3. Use the demo clock on My Work (Next day, or jump to day 8 or 20). Borrowers email their packages to the deal teams; TIQ classifies them and drafts chases. Everything else is a person acting in TIQ.
+4. Switch users to play each role. Every person's My Work lists their next actions with a Go button: Deal Team analysts spread and draft the CMR, the A/C Manager, PM Team and SCT review, Deal Team leads decide Gate 1, the committee decides, the chair approves, governance signs, the PM Team distributes.
+5. Internal communication is in Messages (kickoff, impact notes, committee pack, approval request, distribution). External mail shows only borrower and Lincoln email.
+
+To jump straight to any point of the story instead, use `--until Q14` (or any step) and continue by hand from there.
+
 ## Tests and evaluation
 
 ```bash

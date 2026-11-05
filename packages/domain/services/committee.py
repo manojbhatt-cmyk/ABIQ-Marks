@@ -211,18 +211,16 @@ def send_pack(session: Session, actor: Actor, pack_id: str) -> CommitteePack:
     subject = f"{cyc.period} Valuation Committee pack"
     body = (f"Dear Committee members,\n\nPlease find the pack for the meeting on {ag.meeting_date:%d %b %Y}. "
             f"Loans on the agenda:\n{lines}\n\nPack: sharepoint/{pack.pdf_path}\n\nPM Team")
-    pdf = get_store().get("sharepoint", pack.pdf_path)
-    msg_id, eml = mailbox.send(actor.email, to, subject, body, attachments=[(f"pack-v{pack.version}.pdf", pdf, "application/pdf")])
-    m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email, to_addrs=to,
-                     subject=subject, body_text=body, sent_at=now(), template_code="committee_pack", cycle_id=cyc.id,
-                     cycle_day=cyc.current_day, eml_path=eml, status="sent")
-    session.add(m)
-    session.flush()
+    from domain.services.messaging import post
+
+    m = post(session, actor, to, subject, body, kind="committee_pack", link="/committee/meeting", cycle_id=cyc.id,
+             entity_type="committee_pack", entity_id=pack.id,
+             attachments=[{"store": "sharepoint", "path": pack.pdf_path, "name": f"pack-v{pack.version}.pdf"}])
     pack.sent_email_message_id = m.id
     for i in items:
         session.get(CycleLoan, i.cycle_loan_id).current_step = "Q18"
-    audit(session, actor, "email.sent", "email_message", m.id, cycle_id=cyc.id,
-          after={"template": "committee_pack", "to": to, "pack_version": pack.version})
+    audit(session, actor, "committee_pack.sent", "committee_pack", pack.id, cycle_id=cyc.id,
+          after={"to": to, "pack_version": pack.version})
     return pack
 
 

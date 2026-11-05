@@ -114,3 +114,24 @@ def _expected_type(name: str) -> str:
     if "waiver" in name:
         return "waiver_request"
     return "financial_statements"
+
+
+def deliver_revision(facility_id: str, version: int, valuation_date: str = "2026-10-29") -> str:
+    """Lincoln answers a send-back on a loan other than Harbor: reviewed, point unchanged unless the note had new facts."""
+    store = get_store()
+    from domain.services.lincoln import slug
+
+    for br in borrowers():
+        for fac in br.facilities:
+            if fac.facility_id != facility_id:
+                continue
+            row = D.lincoln_row(br, fac, 1)
+            row.update({"version": version, "valuation_date": valuation_date,
+                        "comments": "Reviewed after the Deal Team's send-back; conclusion unchanged"})
+            folder = f"{PERIOD}/lincoln-out/{valuation_date}-{facility_id}"
+            store.put("box", f"{folder}/{slug(br.name)}-{facility_id}-v{version}.pdf",
+                      D.lincoln_report_pdf(br, fac, row, fac.prev_mark, _sponsor(br)))
+            key = f"{folder}/lincoln-marks-{PERIOD}-{facility_id}-v{version}.xlsx"
+            store.put("box", key, D.lincoln_marks_xlsx([row]))
+            return key
+    raise ValueError(facility_id)
