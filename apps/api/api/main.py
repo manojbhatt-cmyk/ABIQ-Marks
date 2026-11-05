@@ -224,7 +224,8 @@ def intake_view(cycle_id: str, a: Actor = A, s: Session = S):
 
 
 def _email(e: EmailMessage) -> dict:
-    return {"id": e.id, "direction": e.direction, "from": e.from_addr, "to": e.to_addrs, "subject": e.subject,
+    return {"id": e.id, "direction": e.direction, "from": e.from_addr, "to": e.to_addrs, "cc": e.cc_addrs or [],
+            "subject": e.subject,
             "body": e.body_text, "day": e.cycle_day, "attachments": e.attachments, "template": e.template_code,
             "match": e.match_method, "at": (e.sent_at or e.received_at or e.created_at).isoformat()}
 

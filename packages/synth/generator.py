@@ -59,8 +59,14 @@ def deliver_borrower_mail(day: int) -> int:
     n = 0
     for bid, files in mail_schedule().get(day, []):
         br = bs[bid]
-        subject = f"{br.name} Q3 2026 reporting package" if len(files) > 1 else f"{br.name}: covenant certificate Q3 2026"
-        _, raw = build_eml(f"finance@{br.domain}", ["team.inbox@ab-poc.local"], subject, D.cover_letter(br),
+        from synth.portfolio import team_emails
+
+        team = team_emails(br.team)
+        if len(files) > 1:
+            subject = f"{br.name} Q3 2026 reporting package"
+        else:
+            subject = f"{br.name} Q3 2026: {_expected_type(files[0][0]).replace('_', ' ')}"
+        _, raw = build_eml(f"finance@{br.domain}", [team["lead"], team["analyst"]], subject, D.cover_letter(br),
                            cc=["pm.analyst@ab-poc.local"], attachments=files,
                            date=datetime(2026, 10, day, 9, 30, tzinfo=timezone.utc) if day <= 31 else None)
         mailbox.deliver_inbound(raw, day)
