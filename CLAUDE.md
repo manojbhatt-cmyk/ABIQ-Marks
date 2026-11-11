@@ -49,7 +49,7 @@ Run from the repository root. The virtual environment is `.venv` (Python 3.12, c
 
 Each part adds the commands it introduces here.
 
-- Postgres: `docker compose -f infra/docker-compose.yml up -d postgres` (volume `tiq_marks_pg`, user and password `tiq`)
+- Postgres and the API: `docker compose -f infra/docker-compose.yml up -d` (API on :8000 inside Linux; on this laptop Windows Application Control blocks the compiled parts of SQLAlchemy, psycopg and the Snowflake connector, so Python runs in the container). Run Python commands with `docker compose -f infra/docker-compose.yml exec api python -m ...` (for example `synth.cli reset --until Q0`, `pytest -q`).
 - Install: `.venv/Scripts/python.exe -m pip install -e ".[dev]"`
 - Reset and play the demo: `.venv/Scripts/python.exe -m synth.cli reset --until Q22` (steps Q0 to Q22, M1 to M6)
 - API: `.venv/Scripts/python.exe -m uvicorn api.main:app --port 8000`

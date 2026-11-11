@@ -22,18 +22,19 @@ services:
       timeout: 3s
       retries: 20
 
+  # The API runs in Linux even on a Windows laptop: Windows Application Control blocks the compiled
+  # parts of SQLAlchemy, psycopg and the Snowflake connector. The repo is mounted at /app, so code
+  # changes, local-data and .env are shared with the host; config.py reads /app/.env itself.
   api:
-    profiles: ["app"]
     build:
       context: ..
       dockerfile: infra/api.Dockerfile
-    env_file: ../.env
     environment:
       DATABASE_URL: postgresql+psycopg://tiq:tiq@postgres:5432/tiq
-      OBJECT_STORE_ROOT: /data/objects
-      WAREHOUSE_DUCKDB_PATH: /data/warehouse.duckdb
+      TEST_DATABASE_URL: postgresql+psycopg://tiq:tiq@postgres:5432/tiq_test
+      SNOWFLAKE_PRIVATE_KEY_FILE: /app/.secrets/snowflake/tiq_service_key.p8
     volumes:
-      - ../local-data:/data
+      - ..:/app
     ports:
       - "8000:8000"
     depends_on:

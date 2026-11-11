@@ -14,10 +14,8 @@ Prerequisites: Docker Desktop, Python 3.12, Node.js 20+.
 
 ```bash
 cp .env.example .env                                  # fill in values; WAREHOUSE=duckdb works offline
-docker compose -f infra/docker-compose.yml up -d postgres
-py -3.12 -m venv .venv && .venv/Scripts/python.exe -m pip install -e ".[dev]"
-.venv/Scripts/python.exe -m synth.cli reset --until Q0        # load the warehouse, seed users and rules
-.venv/Scripts/python.exe -m uvicorn api.main:app --port 8000  # API on :8000
+docker compose -f infra/docker-compose.yml up -d             # Postgres and the API on :8000 (Linux container)
+docker compose -f infra/docker-compose.yml exec api python -m synth.cli reset --until Q0   # load data, seed users and rules
 cd apps/web && npm install && npm run dev                     # web on :5173
 ```
 
