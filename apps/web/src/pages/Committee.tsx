@@ -11,7 +11,7 @@ export default function Committee() {
   const nav = useNavigate();
   const { data, error, loading, reload } = useApi<any>(cycle ? `/cycles/${cycle.id}/committee` : null, [cycle?.id]);
   if (!cycle) return <Empty text="No cycle yet" />;
-  if (loading && !data) return <Loading />;
+  if (!data && !error) return <Loading />;
   if (error) return <ErrorState error={error} retry={reload} />;
   return (
     <>

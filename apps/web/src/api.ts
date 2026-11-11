@@ -49,9 +49,13 @@ export function useApi<T = any>(path: string | null, deps: any[] = []) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(true);
+  // The path the current data belongs to. Until the first load for a new path finishes, the hook reports
+  // loading, so a screen never sees "loaded, but empty" in the render before its fetch starts.
+  const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
   const load = useCallback(async () => {
     if (!path) {
       setLoading(false);
+      setLoadedFor(path);
       return;
     }
     setLoading(true);
@@ -62,13 +66,15 @@ export function useApi<T = any>(path: string | null, deps: any[] = []) {
       setError(e);
     } finally {
       setLoading(false);
+      setLoadedFor(path);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, ...deps]);
   useEffect(() => {
     load();
   }, [load]);
-  return { data, error, loading, reload: load, setData };
+  const pending = loadedFor !== path;
+  return { data: pending && !data ? null : data, error: pending ? null : error, loading: loading || pending, reload: load, setData };
 }
 
 /** Open a stored document in a new tab. The tab is opened during the click (so pop-up blockers allow it) and

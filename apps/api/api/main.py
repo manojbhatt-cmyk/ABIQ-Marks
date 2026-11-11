@@ -964,7 +964,8 @@ SYNTH = {"running": False, "log": [], "error": None}
 
 @app.post("/api/admin/synth/{action}")
 def synth_action(action: str, body: dict = Body(default={}), a: Actor = A):
-    require(a, "admin")
+    if a.role not in ("admin", "pm_team"):
+        raise HTTPException(403, "Only the PM Team or Admin can reset the demo")
     if SYNTH["running"]:
         raise HTTPException(409, "A synthetic data job is already running")
     until = body.get("until", "Q0")

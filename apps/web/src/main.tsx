@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { token } from "./api";
 import Shell, { homeFor } from "./components/Shell";
 import { AppProvider, useApp } from "./context";
@@ -30,10 +31,12 @@ import Universe from "./pages/Universe";
 
 function Protected() {
   const { user } = useApp();
+  const loc = useLocation();
   if (!token()) return <Navigate to="/login" replace />;
   if (!user) return <div className="p-10 text-sm text-slate-400">Loading...</div>;
   return (
     <Shell>
+      <ErrorBoundary resetKey={loc.pathname}>
       <Routes>
         <Route path="/" element={<Navigate to={homeFor(user.role)} replace />} />
         <Route path="/work" element={<Work />} />
@@ -62,6 +65,7 @@ function Protected() {
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </ErrorBoundary>
     </Shell>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, fmt, useApi } from "../api";
 import { Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, Loops, PageHeader, StatusChip, useAction } from "../components/ui";
+import DemoControls from "../components/DemoControls";
 import { useApp } from "../context";
 import { PHASE_STYLE, ProcessStrip } from "./Work";
 
@@ -75,6 +76,7 @@ export default function Dashboard() {
         <Kpi label="Portfolio value so far" value={fmt.m(k.portfolio_current)} sub={<><Delta v={k.delta} /> vs {fmt.m(k.portfolio_previous)}; story loans {fmt.m(k.story_current)}</>} tone={k.delta < 0 ? "red" : undefined} />
         <Kpi label="Open tasks overdue" value={k.overdue} tone={k.overdue ? "red" : "green"} />
       </div>
+      <DemoControls />
       <ProcessStrip process={work.data?.process || []} />
       <Card title="45-day timeline" className="mb-6">
         <div className="relative h-16">

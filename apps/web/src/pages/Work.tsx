@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, fmt, ROLE_LABEL, useApi } from "../api";
 import { Card, Empty, ErrorState, Loading, PageHeader } from "../components/ui";
+import DemoControls from "../components/DemoControls";
 import { useApp } from "../context";
 
 export const PHASE_STYLE = [
@@ -102,6 +103,7 @@ export default function Work() {
     <>
       <PageHeader title={`Good ${hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"}, ${user!.name.split(" ")[0]}`}
         subtitle={`${ROLE_LABEL[user!.role]}${data.cycle ? ` · ${data.cycle.period} · day ${data.cycle.day} of 45` : " · no cycle yet"} · ${actions.length} thing${actions.length === 1 ? "" : "s"} need you`} />
+      <DemoControls />
       <ProcessStrip process={data.process} />
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-2">
