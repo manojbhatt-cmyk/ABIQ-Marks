@@ -86,6 +86,8 @@ function Meeting({ data, reload, canDecide }: any) {
   const act = useAction();
   const confirm = useConfirm();
   const [f, setF] = useState<any>({ outcome: "", members_present: data.members.map((m: any) => m.email) });
+  const [revising, setRevising] = useState(false);
+  const [why, setWhy] = useState("");
   if (!items.length) return <Empty text="No agenda yet" />;
   const v = tr.data?.versions?.[tr.data.versions.length - 1];
   const proposed = tr.data?.decisions?.filter((d: any) => d.outcome !== "sent_back").pop()?.mark ?? v?.point;
@@ -110,7 +112,11 @@ function Meeting({ data, reload, canDecide }: any) {
       </div>
       <div className="col-span-4">
         <Card title="Gate G2 decision" actions={<AssumedChip dq="DQ18" what="committee outcome set" />}>
-          {item.status !== "pending" || !canDecide ? <div className="text-sm text-slate-500">{item.status !== "pending" ? "Decision recorded." : "Only committee members record decisions."}</div> : (
+          {(item.history || []).length > 0 && <div className="mb-3 space-y-1">{item.history.map((h: any, k: number) => (
+            <div key={k} className={`rounded-lg px-3 py-1.5 text-xs ${k === item.history.length - 1 ? "bg-leaf-50 text-leaf-700" : "bg-canvas-100 text-slate-400 line-through"}`}>
+              {k === item.history.length - 1 ? "Current" : "Superseded"}: {OUTCOME_LABEL[h.outcome] || h.outcome}{h.decided_mark != null ? ` at ${Number(h.decided_mark).toFixed(2)}` : ""} by {h.recorded_by.split("@")[0]}</div>))}</div>}
+          {item.status !== "pending" && canDecide && !revising && <button className="btn-secondary w-full justify-center" onClick={() => { setRevising(true); setF({ outcome: "", members_present: f.members_present }); setWhy(""); }}>Revise decision</button>}
+          {(item.status !== "pending" && !revising) || !canDecide ? <div className="mt-2 text-sm text-slate-500">{item.status !== "pending" ? "Decision recorded." : "Only committee members record decisions."}</div> : (
             <div className="space-y-3 text-sm">
               <div className="text-xs text-slate-500">Proposed mark {fmt.mark(proposed)}; Lincoln {v ? `${v.low.toFixed(2)} to ${v.high.toFixed(2)}` : "-"}</div>
               {data.outcomes.map((o: string) => <label key={o} className={`flex items-center gap-2 rounded-lg px-2 py-1 ${f.outcome === o ? "bg-brand-50 font-semibold text-brand-700" : ""}`}><input type="radio" checked={f.outcome === o} onChange={() => { const rec = tr.data?.knows?.recommendation; setF({ ...f, outcome: o, decided_mark: o === "approve" ? proposed : o === "change" ? "" : f.decided_mark,
@@ -146,7 +152,14 @@ function Meeting({ data, reload, canDecide }: any) {
               {f.waiver_decision?.startsWith("approved") && <Field label="Conditions"><input className="input" value={f.conditions ?? ""} onChange={(e) => setF({ ...f, conditions: e.target.value })} /></Field>}
               <Field label={`Rationale${needR ? " (mandatory)" : ""}`}><textarea className="input h-20" value={f.rationale ?? ""} onChange={(e) => setF({ ...f, rationale: e.target.value })} /></Field>
               <Field label="Members present"><div className="space-y-1">{data.members.map((m: any) => <label key={m.email} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={f.members_present.includes(m.email)} onChange={() => setF({ ...f, members_present: f.members_present.includes(m.email) ? f.members_present.filter((x: string) => x !== m.email) : [...f.members_present, m.email] })} />{m.name}</label>)}</div></Field>
-              <button className="btn-primary w-full justify-center" disabled={!f.outcome || (needR && !f.rationale)} onClick={() => confirm.ask(words, async () => { await api(`/agenda-items/${item.id}/decision`, { body: { ...f, decided_mark: f.decided_mark ? Number(f.decided_mark) : null } }); reload(); })}>Record decision</button>
+              {revising && <Field label="Reason for revising (required)"><textarea className="input h-16 border-warn-300" value={why} onChange={(e) => setWhy(e.target.value)} placeholder="e.g. Committee reconsidered Sunrise after the discussion of pricing pressure" /></Field>}
+              <button className="btn-primary w-full justify-center" disabled={!f.outcome || (needR && !f.rationale) || (revising && !why)} onClick={() => confirm.ask(revising ? <>{words} This revises the earlier decision, which stays in the record. Reason: {why}</> : words, async () => {
+                const body = { ...f, decided_mark: f.decided_mark ? Number(f.decided_mark) : null };
+                if (revising) await api(`/agenda-items/${item.id}/revise`, { body: { ...body, reason: why } });
+                else await api(`/agenda-items/${item.id}/decision`, { body });
+                setRevising(false); reload();
+              })}>{revising ? "Record revised decision" : "Record decision"}</button>
+              {revising && <button className="btn-ghost w-full justify-center" onClick={() => setRevising(false)}>Cancel</button>}
               {needR && !f.rationale && <div className="text-xs text-danger-700">A rationale is required for {fmt.label(f.outcome)}.</div>}
             </div>)}
         </Card>

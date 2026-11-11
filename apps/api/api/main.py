@@ -653,6 +653,16 @@ def meeting_organise(cycle_id: str, body: dict = Body(default={}), a: Actor = A,
     return meeting.meeting_dict(m, s)
 
 
+@app.post("/api/agenda-items/{item_id}/revise")
+def revise(item_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
+    d = committee.revise_decision(s, a, item_id, body.get("reason", ""), outcome=body["outcome"],
+                                  decided_mark=body.get("decided_mark"), rating=body.get("rating"),
+                                  watchlist_action=body.get("watchlist_action"), waiver_decision=body.get("waiver_decision"),
+                                  conditions=body.get("conditions", ""), rationale=body.get("rationale", ""),
+                                  members_present=body.get("members_present"), send_back_to=body.get("send_back_to"))
+    return {"id": d.id, "outcome": d.outcome, "decided_mark": d.decided_mark}
+
+
 @app.post("/api/agenda-items/{item_id}/decision")
 def decision(item_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
     d = committee.record_decision(s, a, item_id, body["outcome"], decided_mark=body.get("decided_mark"),

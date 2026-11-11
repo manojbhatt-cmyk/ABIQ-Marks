@@ -290,6 +290,32 @@ def record_decision(session: Session, actor: Actor, item_id: str, outcome: str, 
     return d
 
 
+def revise_decision(session: Session, actor: Actor, item_id: str, reason: str, **decision) -> CommitteeDecision:
+    """The committee revises a recorded decision. The earlier decision stays in the record; the new one supersedes
+    it and is what the tracker, the CMR mark block and reconciliation use."""
+    require(actor, "committee.decide")
+    if not reason:
+        raise BusinessRuleError("A reason is required to revise a committee decision")
+    it = session.get(CommitteeAgendaItem, item_id)
+    prev = session.query(CommitteeDecision).filter_by(agenda_item_id=it.id).order_by(CommitteeDecision.recorded_at.desc()).first()
+    if not prev:
+        raise BusinessRuleError("There is no decision to revise yet; record one first")
+    cyc_id = session.get(CycleLoan, it.cycle_loan_id).cycle_id
+    if session.get(ValuationCycle, cyc_id).status == "closed":
+        raise BusinessRuleError("The cycle is closed")
+    from domain.models import ApprovalRequest
+
+    if session.query(ApprovalRequest).filter_by(cycle_id=cyc_id, kind="final_marks", status="approved").first():
+        raise BusinessRuleError("Written approval (Gate 2) is already recorded; reopen it before revising decisions")
+    rationale = decision.pop("rationale", "") or ""
+    new = record_decision(session, actor, item_id, rationale=f"{rationale} (revised: {reason})".strip(), **decision)
+    audit(session, actor, "committee_decision.revised", "committee_decision", new.id, cycle_id=cyc_id,
+          cycle_loan_id=it.cycle_loan_id,
+          before={"outcome": prev.outcome, "mark": prev.decided_mark, "decision_id": prev.id, "recorded_by": prev.recorded_by},
+          after={"outcome": new.outcome, "mark": new.decided_mark, "reason": reason})
+    return new
+
+
 def agenda_view(session: Session, cycle_id: str) -> dict:
     ag = latest_agenda(session, cycle_id)
     loans = session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).order_by(CycleLoan.facility_id).all()
@@ -316,7 +342,11 @@ def agenda_view(session: Session, cycle_id: str) -> dict:
                           "decision": {"outcome": dec.outcome, "decided_mark": dec.decided_mark, "rationale": dec.rationale,
                                        "recorded_by": dec.recorded_by, "rating": dec.rating,
                                        "watchlist_action": dec.watchlist_action, "waiver": dec.waiver_decision,
-                                       "conditions": dec.conditions} if dec else None})
+                                       "conditions": dec.conditions} if dec else None,
+                          "history": [{"outcome": h.outcome, "decided_mark": h.decided_mark, "recorded_by": h.recorded_by,
+                                       "recorded_at": h.recorded_at.isoformat(), "rationale": h.rationale}
+                                      for h in session.query(CommitteeDecision).filter_by(agenda_item_id=i.id).order_by(
+                                          CommitteeDecision.recorded_at)]})
         for p in session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version):
             packs.append({"id": p.id, "version": p.version, "cover_note": p.cover_note, "pdf_path": p.pdf_path,
                           "stale": p.stale, "sent": bool(p.sent_email_message_id),

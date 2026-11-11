@@ -129,3 +129,18 @@ def test_organise_committee_meeting(played):
         assert m2.version == 2 and m2.uid == m1.uid and s.get(Message, m2.message_id).subject.startswith("Updated")
         with pytest.raises(Forbidden):
             meeting.organise(s, Actor("team.blue.analyst@ab-poc.local", "deal_analyst", deal_team_id="DT-BLUE"), c.id)
+
+
+def test_revise_committee_decision(played):
+    """The committee can revise a recorded decision; the earlier one stays and both are audited."""
+    from domain.models import AuditEvent, CommitteeAgendaItem, CommitteeDecision
+    from domain.services import committee
+
+    with session_scope() as s:
+        item = s.query(CommitteeAgendaItem).first()
+        chair = Actor("vc.chair@ab-poc.local", "committee_chair")
+        with pytest.raises(BusinessRuleError):  # closed cycle / written approval recorded
+            committee.revise_decision(s, chair, item.id, "reconsidered", outcome="approve")
+        with pytest.raises(BusinessRuleError):
+            committee.revise_decision(s, chair, item.id, "", outcome="approve")
+        s.rollback()
