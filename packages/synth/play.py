@@ -339,12 +339,15 @@ def _finish_reviews(s, c, log):
     log("Q9 SCT reviews done; Harbor re-filed as v2")
 
 
+POST_G1 = ("approved", "final", "on_agenda", "decided", "reconciled", "deferred", "distributed", "closed")
+
+
 def _gate1(log):
     with session_scope() as s:
         c = _cycle(s)
         clock(s, 27)
         for cl in _loans(s, c):
-            if cl.status in ("approved",) or cl.facility_id == "F-0002":
+            if cl.status in POST_G1 or cl.facility_id == "F-0002":
                 continue
             lead = actor(s, cl.lead_email)
             b, f = FACS[cl.facility_id]
@@ -374,7 +377,7 @@ def _gate1(log):
         c = _cycle(s)
         clock(s, 30)
         harbor = _loan(s, c, "F-0002")
-        if harbor.status != "approved":
+        if harbor.status not in POST_G1:
             valuation.decide_g1(s, actor(s, harbor.lead_email), harbor.id, "approved")
             imp = tracker.draft_impact(s, pm(s), c.id)
             tracker.send_impact(s, pm(s), imp.id)
