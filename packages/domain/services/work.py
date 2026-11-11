@@ -70,10 +70,14 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
                 items.append(_item("Q10", f"Record the {cl.valuation_method.lower()} mark: {cl.borrower}",
                                    f"This deal is valued at {cl.valuation_method.lower()}, not by Lincoln.",
                                    f"/loans/{cl.id}/pricing", loan=cl.borrower))
-            if (cl.valuation_method or "Lincoln") == "Lincoln" and cl.package_status == "complete" and \
-                    not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
-                items.append(_item("Q3", f"Share with Lincoln: {cl.borrower}", "The package is complete; "
-                                   "share it to Lincoln's Box folder with a manifest.", "/lincoln", loan=cl.borrower))
+        to_share = [cl.borrower for cl in loans if (cl.valuation_method or "Lincoln") == "Lincoln"
+                    and cl.package_status == "complete"
+                    and not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first()]
+        if to_share:
+            items.append(_item("Q3", f"Share {len(to_share)} complete package{'s' if len(to_share) > 1 else ''} with Lincoln",
+                               ", ".join(to_share[:4]) + (f" and {len(to_share) - 4} more" if len(to_share) > 4 else "")
+                               + ". One click on Lincoln Exchange shares them all to Box with manifests.", "/lincoln",
+                               priority=1))
         unloaded = [lv for cl in loans for lv in [lv_of(cl)] if lv and not lv.loaded_to_everest]
         if unloaded:
             items.append(_item("Q12", f"Load {len(unloaded)} Lincoln draft(s) to Everest",

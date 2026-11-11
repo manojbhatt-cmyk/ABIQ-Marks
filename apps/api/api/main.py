@@ -326,6 +326,11 @@ def lincoln_view(cycle_id: str, a: Actor = A, s: Session = S):
     return {"loans": out, "exceptions": exceptions, "box": get_store().list("box", quarterly_cycle(s, cycle_id).period)}
 
 
+@app.post("/api/cycles/{cycle_id}/lincoln/share-all")
+def share_all(cycle_id: str, a: Actor = A, s: Session = S):
+    return {"shared": len(lincoln.share_all_complete(s, a, cycle_id))}
+
+
 @app.post("/api/loans/{cycle_loan_id}/share")
 def share(cycle_loan_id: str, a: Actor = A, s: Session = S):
     p = lincoln.share_package(s, a, cycle_loan_id)

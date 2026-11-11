@@ -36,6 +36,8 @@ export default function Lincoln() {
     <>
       <PageHeader title="Lincoln Exchange" ai subtitle="Q3 share packages, Q10 drafts in, Q12 load to Everest, Q13 copy to SharePoint"
         actions={<>
+          {(() => { const n = data.loans.filter((l: any) => l.valuation_method === "Lincoln" && l.package_status === "complete" && !l.packages.length).length;
+            return n > 0 && <button className="btn-primary" onClick={() => confirm.ask(`Share ${n} complete package${n === 1 ? "" : "s"} with Lincoln through Box? Each gets a manifest listing its classified documents.`, async () => { await api(`/cycles/${cycle.id}/lincoln/share-all`, { body: {} }); reload(); })}>Share all complete packages ({n})</button>; })()}
           <button className="btn-secondary" onClick={() => act.run(async () => { const r = await api(`/cycles/${cycle.id}/lincoln/ingest`, { body: {} }); alert(`${r.received} valuations received`); reload(); })}>Check Box for Lincoln files</button>
           <button className="btn-secondary" onClick={() => confirm.ask("Load the latest Lincoln draft marks for every loan to the Everest pricing panel through the write-back adapter?", async () => { await api(`/cycles/${cycle.id}/lincoln/load-everest`, { body: {} }); reload(); })}>Bulk load to Everest</button>
           <button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/lincoln/copy-sharepoint`, { body: {} }); reload(); })}>Bulk copy to SharePoint</button>

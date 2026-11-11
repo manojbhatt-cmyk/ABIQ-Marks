@@ -169,6 +169,11 @@ def check_completeness(session: Session, cl: CycleLoan, day: int | None = None) 
         status = "complete"
     cl.package_status, cl.package_missing = status, missing
     if status == "complete":
+        for r in session.query(Reminder).filter_by(cycle_loan_id=cl.id, status="draft"):
+            r.status = "discarded"
+            sug = session.query(AgentSuggestion).filter_by(target_entity_type="reminder", target_entity_id=r.id).first()
+            if sug and sug.status == "proposed":
+                sug.status, sug.decided_by, sug.decided_at = "rejected", "auto (package complete)", now()
         complete_tasks(session, cl.id, "Q2", SYSTEM)
         if (cl.valuation_method or "Lincoln") != "Lincoln" and cl.lincoln_step in ("Q1", "Q2", "Q3", None):
             cl.lincoln_step, cl.lincoln_track_status = "Q10", "awaiting_valuation"

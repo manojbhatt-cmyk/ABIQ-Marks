@@ -61,6 +61,17 @@ def share_package(session: Session, actor: Actor, cycle_loan_id: str) -> Lincoln
     return pkg
 
 
+def share_all_complete(session: Session, actor: Actor, cycle_id: str) -> list[LincolnPackage]:
+    """Share every complete, Lincoln-valued package that is not yet in Box (one confirmation for the PM Team)."""
+    require(actor, "lincoln.exchange")
+    out = []
+    for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).order_by(CycleLoan.facility_id):
+        if cl.package_status == "complete" and (cl.valuation_method or "Lincoln") == "Lincoln" and \
+                not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
+            out.append(share_package(session, actor, cl.id))
+    return out
+
+
 def lincoln_drops(cycle: ValuationCycle) -> list[str]:
     return [k for k in get_store().list("box", f"{cycle.period}/lincoln-out/") if k.endswith(".xlsx")]
 
