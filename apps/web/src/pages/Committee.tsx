@@ -113,7 +113,9 @@ function Meeting({ data, reload, canDecide }: any) {
           {item.status !== "pending" || !canDecide ? <div className="text-sm text-slate-500">{item.status !== "pending" ? "Decision recorded." : "Only committee members record decisions."}</div> : (
             <div className="space-y-3 text-sm">
               <div className="text-xs text-slate-500">Proposed mark {fmt.mark(proposed)}; Lincoln {v ? `${v.low.toFixed(2)} to ${v.high.toFixed(2)}` : "-"}</div>
-              {data.outcomes.map((o: string) => <label key={o} className={`flex items-center gap-2 rounded-lg px-2 py-1 ${f.outcome === o ? "bg-brand-50 font-semibold text-brand-700" : ""}`}><input type="radio" checked={f.outcome === o} onChange={() => setF({ ...f, outcome: o, decided_mark: o === "approve" ? proposed : o === "change" ? "" : f.decided_mark })} />{OUTCOME_LABEL[o] || fmt.label(o)}</label>)}
+              {data.outcomes.map((o: string) => <label key={o} className={`flex items-center gap-2 rounded-lg px-2 py-1 ${f.outcome === o ? "bg-brand-50 font-semibold text-brand-700" : ""}`}><input type="radio" checked={f.outcome === o} onChange={() => { const rec = tr.data?.knows?.recommendation; setF({ ...f, outcome: o, decided_mark: o === "approve" ? proposed : o === "change" ? "" : f.decided_mark,
+                rating: f.rating ?? rec?.rating ?? null, watchlist_action: f.watchlist_action || rec?.watchlist || "",
+                waiver_decision: f.waiver_decision || (rec?.waiver ? "approved_with_conditions" : "") }); }} />{OUTCOME_LABEL[o] || fmt.label(o)}</label>)}
               {f.outcome === "approve" && <div className="rounded-lg bg-leaf-50 px-3 py-2 text-xs text-leaf-700">The mark stays at <b className="num">{fmt.mark(proposed)}</b>.</div>}
               {f.outcome === "change" && (() => {
                 const nm = Number(f.decided_mark);
