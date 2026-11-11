@@ -601,6 +601,30 @@ class CommitteePack(Entity):
     stale = Column(Boolean, default=False)
 
 
+class CommitteeMeeting(Entity):
+    """The committee meeting the PM Team organises in TIQ (Q17 to Q18). Each update is a new version."""
+    __tablename__ = "committee_meeting"
+    cycle_id = fk("valuation_cycle", False)
+    agenda_id = fk("committee_agenda", False)
+    version = Column(Integer)
+    uid = Column(String(80))
+    title = Column(String(200))
+    meeting_date = Column(String(10))
+    start_time = Column(String(5))
+    timezone = Column(String(40))
+    duration_minutes = Column(Integer)
+    mode = Column(String(20))  # online, in_person, hybrid
+    join_link = Column(Text)
+    location = Column(Text)
+    attendees_json = Column(JSON)
+    slots_json = Column(JSON)
+    note = Column(Text)
+    organiser = Column(String(120))
+    ics_path = Column(Text)
+    message_id = Column(String(36))
+    status = Column(String(20))  # sent, superseded
+
+
 class CommitteePackSummary(Entity):
     __tablename__ = "committee_pack_summary"
     pack_id = fk("committee_pack", False)

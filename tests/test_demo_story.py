@@ -105,3 +105,27 @@ def test_internal_communication_stays_in_platform(played):
         assert out <= {"chase_borrower", "send_back"}
         kinds = {m.kind for m in s.query(Message)}
         assert {"kickoff", "impact_note", "committee_pack", "approval_request", "distribution"} <= kinds
+
+
+def test_organise_committee_meeting(played):
+    """The PM Team organises the meeting in TIQ: drafted from the agenda, sent as a message with an .ics."""
+    from connectors.object_store import get_store
+    from domain.models import Message
+    from domain.services import meeting
+
+    with session_scope() as s:
+        c = _q(s)
+        d = meeting.draft(s, c.id)
+        titles = [x["title"] for x in d["slots"]]
+        assert "Harbor Logistics" in titles and "Sunrise Foods" in titles
+        emails = {a["email"] for a in d["attendees"]}
+        assert {"vc.chair@ab-poc.local", "team.blue.lead@ab-poc.local"} <= emails
+        m1 = meeting.organise(s, Actor("pm.analyst@ab-poc.local", "pm_team"), c.id, {"start": "14:00"})
+        ics = get_store().get("sharepoint", m1.ics_path).decode()
+        assert "BEGIN:VEVENT" in ics and "T140000" in ics
+        msg = s.get(Message, m1.message_id)
+        assert msg.kind == "meeting_invite" and "vc.chair@ab-poc.local" in msg.recipients
+        m2 = meeting.organise(s, Actor("pm.analyst@ab-poc.local", "pm_team"), c.id, {"date": "2026-11-12"})
+        assert m2.version == 2 and m2.uid == m1.uid and s.get(Message, m2.message_id).subject.startswith("Updated")
+        with pytest.raises(Forbidden):
+            meeting.organise(s, Actor("team.blue.analyst@ab-poc.local", "deal_analyst", deal_team_id="DT-BLUE"), c.id)

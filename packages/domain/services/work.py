@@ -116,6 +116,12 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             if not pack or not pack.sent_email_message_id:
                 items.append(_item("Q17", "Build and send the committee pack", "TIQ drafts the one-pagers; the pack goes "
                                    "to the committee inside TIQ.", "/committee", priority=1))
+            from domain.services import meeting as meeting_svc
+
+            mt = meeting_svc.current(session, cyc.id)
+            if not mt:
+                items.append(_item("Q17", "Organise the committee meeting", "TIQ drafts the date, time, agenda slots and "
+                                   "attendees; you check and send the invitation in TIQ.", "/committee", priority=1))
             pending = session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, removed=False, status="pending").count()
             run = session.query(ReconciliationRun).filter_by(cycle_id=cyc.id).order_by(ReconciliationRun.run_no.desc()).first()
             if pack and pack.sent_email_message_id and not pending and (not run or run.status != "clean"):
@@ -165,6 +171,15 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             if cl.status == "waiting_on_lincoln":
                 items.append(_item("Q10", f"Waiting on Lincoln's revision for {cl.borrower}", "Your send-back is in Box.",
                                    f"/loans/{cl.id}/pricing", kind="waiting", loan=cl.borrower))
+    if role in ("deal_analyst", "deal_lead"):
+        from domain.services import meeting as meeting_svc
+
+        mt = meeting_svc.current(session, cyc.id)
+        if mt and any(a["email"] == actor.email for a in mt.attendees_json or []) and cyc.status != "closed":
+            mine = [s["title"] for s in mt.slots_json or [] if s.get("presenter") == next(
+                (l.team_name for l in loans), None)]
+            items.append(_item("Q18", f"Present at the committee: {mt.meeting_date} {mt.start_time}",
+                               f"Your loans: {', '.join(mine) or 'see agenda'}.", "/committee/meeting", kind="waiting"))
     if role in ("ac_manager", "sct"):
         stage = "ac_manager" if role == "ac_manager" else "sct"
         for cl in session.query(CycleLoan).filter_by(cycle_id=cyc.id, in_scope=True):
@@ -177,6 +192,13 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
 
         ag = latest_agenda(session, cyc.id)
         pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc()).first() if ag else None
+        from domain.services import meeting as meeting_svc
+
+        mt = meeting_svc.current(session, cyc.id) if ag else None
+        if mt and session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, removed=False, status="pending").count():
+            items.append(_item("Q18", f"Committee meeting {mt.meeting_date} at {mt.start_time}",
+                               f"{'Online' if mt.mode == 'online' else mt.location}; {mt.duration_minutes} minutes. Open the "
+                               "meeting screen to follow the agenda and record decisions.", "/committee/meeting", priority=0))
         if pack and pack.sent_email_message_id:
             for it in session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, removed=False, status="pending"):
                 cl = session.get(CycleLoan, it.cycle_loan_id)

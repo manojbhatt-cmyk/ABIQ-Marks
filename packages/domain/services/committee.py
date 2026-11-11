@@ -244,7 +244,9 @@ def record_decision(session: Session, actor: Actor, item_id: str, outcome: str, 
     if outcome == "approve":
         decided_mark = proposed
     elif outcome == "change" and decided_mark is None:
-        raise BusinessRuleError("Enter the decided mark")
+        raise BusinessRuleError("Enter the new mark")
+    elif outcome == "change" and proposed is not None and abs(float(decided_mark) - proposed) < 1e-9:
+        raise BusinessRuleError("The new mark is the same as the proposed mark; record Approve instead")
     d = CommitteeDecision(agenda_item_id=it.id, cycle_loan_id=cl.id, outcome=outcome, proposed_mark=proposed,
                           decided_mark=decided_mark if outcome in ("approve", "change") else None, rating=rating,
                           watchlist_action=watchlist_action, waiver_decision=waiver_decision, conditions=conditions,
@@ -321,7 +323,10 @@ def agenda_view(session: Session, cycle_id: str) -> dict:
                           "summaries": [{"id": s.id, "cycle_loan_id": s.cycle_loan_id, "body": s.body_markdown,
                                          "questions": s.questions_json}
                                         for s in session.query(CommitteePackSummary).filter_by(pack_id=p.id)]})
+    from domain.services import meeting as meeting_svc
+
     return {"agenda": {"id": ag.id, "version": ag.version, "meeting_date": ag.meeting_date.isoformat()} if ag else None,
+            "meeting": meeting_svc.meeting_dict(meeting_svc.current(session, cycle_id), session),
             "tests": [{"code": t, "label": TEST_LABELS.get(t, t), "assumed": True,
                        "tiq_addition": t == "g1_unresolved"} for t in tests],
             "threshold": rule_meta(session, "agenda.mark_move_threshold"), "grid": grid_rows, "items": items,

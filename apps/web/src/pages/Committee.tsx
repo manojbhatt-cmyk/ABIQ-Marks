@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api, fmt, openFile, useApi } from "../api";
 import { AskBody } from "../components/AskPanel";
 import { AiCard, AssumedChip, Banner, Card, Chip, Empty, ErrorState, Field, Loading, PageHeader, StatusChip, Tabs, useAction, useConfirm } from "../components/ui";
+import { MeetingCard, OrganiseMeeting } from "../components/MeetingPanel";
 import { useApp } from "../context";
 
 export default function Committee() {
@@ -42,6 +43,13 @@ function Agenda({ data, reload, pm, cycleId }: any) {
             </tr>))}</tbody></table>
       </Card>
       {data.agenda && (
+        <div className="mb-6">
+          {data.meeting ? <div className="space-y-2"><MeetingCard m={data.meeting} />{pm && <OrganiseMeeting cycleId={cycleId} existing={data.meeting} onDone={reload} />}</div>
+            : <Card title="Committee meeting" actions={pm && <OrganiseMeeting cycleId={cycleId} onDone={reload} />}>
+              <div className="text-sm text-slate-500">Not organised yet. {pm ? "TIQ drafts the date, time, agenda slots and attendees from this agenda; you check and send the invitation in TIQ." : "The PM Team organises it once the agenda is built."}</div>
+            </Card>}
+        </div>)}
+      {data.agenda && (
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-8 space-y-4">
             {pack?.stale && <Banner>A source changed after this pack was built. Rebuild before sending.</Banner>}
@@ -65,6 +73,9 @@ function Agenda({ data, reload, pm, cycleId }: any) {
   );
 }
 
+const OUTCOME_LABEL: Record<string, string> = { approve: "Approve the proposed mark", change: "Change the mark",
+  send_back: "Send back", defer: "Defer to a later meeting", request_information: "Request more information" };
+
 function Meeting({ data, reload, canDecide }: any) {
   const items = (data.items || []).filter((i: any) => !i.removed);
   const [sel, setSel] = useState<string | null>(null);
@@ -80,9 +91,12 @@ function Meeting({ data, reload, canDecide }: any) {
   const proposed = tr.data?.decisions?.filter((d: any) => d.outcome !== "sent_back").pop()?.mark ?? v?.point;
   const needR = data.rationale_required_for.includes(f.outcome);
   const words = f.outcome === "approve" ? `Record APPROVE for ${item.borrower} at the proposed ${proposed?.toFixed(2)}.`
-    : f.outcome === "change" ? `Record CHANGE for ${item.borrower}: decided mark ${Number(f.decided_mark).toFixed(2)} (proposed ${proposed?.toFixed(2)}).`
+    : f.outcome === "change" ? `Record a CHANGE of ${item.borrower}'s mark from ${proposed?.toFixed(2)} to ${Number(f.decided_mark).toFixed(2)}.`
       : `Record ${fmt.label(f.outcome).toUpperCase()} for ${item.borrower}.`;
   return (
+    <>
+    {data.meeting ? <div className="mb-4"><MeetingCard m={data.meeting} compact /></div>
+      : <div className="mb-4 rounded-xl border border-dashed border-warn-300 bg-warn-100 px-4 py-2 text-sm text-warn-700">The meeting has not been organised yet. The PM Team organises it from the Agenda tab.</div>}
     <div className="grid grid-cols-12 gap-6">
       {act.node}{confirm.node}
       <div className="card col-span-2 p-2">{items.map((i: any) => <button key={i.id} onClick={() => { setSel(i.id); setF({ outcome: "", members_present: f.members_present }); }} className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${item.id === i.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}><div className="font-medium">{i.borrower}</div><StatusChip status={i.status} /></button>)}</div>
@@ -99,8 +113,28 @@ function Meeting({ data, reload, canDecide }: any) {
           {item.status !== "pending" || !canDecide ? <div className="text-sm text-slate-500">{item.status !== "pending" ? "Decision recorded." : "Only committee members record decisions."}</div> : (
             <div className="space-y-3 text-sm">
               <div className="text-xs text-slate-500">Proposed mark {fmt.mark(proposed)}; Lincoln {v ? `${v.low.toFixed(2)} to ${v.high.toFixed(2)}` : "-"}</div>
-              {data.outcomes.map((o: string) => <label key={o} className="flex items-center gap-2"><input type="radio" checked={f.outcome === o} onChange={() => setF({ ...f, outcome: o, decided_mark: o === "approve" ? proposed : f.decided_mark })} />{fmt.label(o)}</label>)}
-              {(f.outcome === "approve" || f.outcome === "change") && <Field label="Decided mark"><input className="input num" disabled={f.outcome === "approve"} value={f.decided_mark ?? ""} onChange={(e) => setF({ ...f, decided_mark: e.target.value })} /></Field>}
+              {data.outcomes.map((o: string) => <label key={o} className={`flex items-center gap-2 rounded-lg px-2 py-1 ${f.outcome === o ? "bg-brand-50 font-semibold text-brand-700" : ""}`}><input type="radio" checked={f.outcome === o} onChange={() => setF({ ...f, outcome: o, decided_mark: o === "approve" ? proposed : o === "change" ? "" : f.decided_mark })} />{OUTCOME_LABEL[o] || fmt.label(o)}</label>)}
+              {f.outcome === "approve" && <div className="rounded-lg bg-leaf-50 px-3 py-2 text-xs text-leaf-700">The mark stays at <b className="num">{fmt.mark(proposed)}</b>.</div>}
+              {f.outcome === "change" && (() => {
+                const nm = Number(f.decided_mark);
+                const ok = f.decided_mark !== "" && !Number.isNaN(nm);
+                const funded = tr.data?.loan?.funded || 0;
+                const impact = ok && proposed != null ? funded * (nm - proposed) / 100 : null;
+                const inside = ok && v ? nm >= v.low && nm <= v.high : null;
+                return (
+                  <div className="space-y-2 rounded-xl border border-brand-200 bg-brand-50 p-3">
+                    <div className="flex items-end gap-3">
+                      <div><div className="label">Proposed</div><div className="num text-lg font-bold text-slate-500 line-through decoration-1">{fmt.mark(proposed)}</div></div>
+                      <span className="pb-2 text-slate-400">→</span>
+                      <div className="flex-1"><Field label="New mark"><input autoFocus className="input num text-lg font-bold" placeholder="e.g. 88.5" value={f.decided_mark ?? ""} onChange={(e) => setF({ ...f, decided_mark: e.target.value })} /></Field></div>
+                    </div>
+                    {ok && <div className="space-y-0.5 text-xs">
+                      <div>Value impact on {fmt.num(funded)}M funded: <b className={`num ${impact! < 0 ? "text-danger-700" : "text-leaf-700"}`}>{fmt.delta(impact)}</b></div>
+                      {v && <div>{inside ? <Chip tone="green">inside Lincoln range {v.low.toFixed(2)} to {v.high.toFixed(2)}</Chip> : <Chip tone="amber">outside Lincoln range {v.low.toFixed(2)} to {v.high.toFixed(2)}</Chip>}</div>}
+                      <div className="text-slate-500">The tracker, the CMR mark block and the final schedule use the new mark; reconciliation checks Everest against it.</div>
+                    </div>}
+                  </div>);
+              })()}
               {f.outcome === "send_back" && <Field label="Send back to"><select className="input" value={f.send_back_to || "deal_team"} onChange={(e) => setF({ ...f, send_back_to: e.target.value })}><option value="deal_team">Deal Team</option><option value="lincoln">Lincoln</option></select></Field>}
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Rating"><input className="input num" value={f.rating ?? ""} onChange={(e) => setF({ ...f, rating: e.target.value ? Number(e.target.value) : null })} /></Field>
@@ -116,5 +150,6 @@ function Meeting({ data, reload, canDecide }: any) {
         </Card>
       </div>
     </div>
+    </>
   );
 }

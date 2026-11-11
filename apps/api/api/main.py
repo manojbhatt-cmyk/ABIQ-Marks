@@ -638,6 +638,21 @@ def pack_send(pack_id: str, a: Actor = A, s: Session = S):
     return {"id": p.id, "sent": True}
 
 
+@app.get("/api/cycles/{cycle_id}/meeting/draft")
+def meeting_draft(cycle_id: str, a: Actor = A, s: Session = S):
+    from domain.services import meeting
+
+    return meeting.draft(s, cycle_id)
+
+
+@app.post("/api/cycles/{cycle_id}/meeting")
+def meeting_organise(cycle_id: str, body: dict = Body(default={}), a: Actor = A, s: Session = S):
+    from domain.services import meeting
+
+    m = meeting.organise(s, a, cycle_id, body)
+    return meeting.meeting_dict(m, s)
+
+
 @app.post("/api/agenda-items/{item_id}/decision")
 def decision(item_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
     d = committee.record_decision(s, a, item_id, body["outcome"], decided_mark=body.get("decided_mark"),
