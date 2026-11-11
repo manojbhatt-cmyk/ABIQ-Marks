@@ -167,12 +167,14 @@ def latest_valuation(session: Session, cycle_loan_id: str) -> LincolnValuation |
         LincolnValuation.version.desc()).first()
 
 
-def load_to_everest(session: Session, actor: Actor, cycle_id: str) -> int:
+def load_to_everest(session: Session, actor: Actor, cycle_id: str, only: list[str] | None = None) -> int:
     """Q12: write the latest Lincoln draft per loan to the Everest pricing panel through the adapter."""
     require(actor, "lincoln.exchange")
     cyc = session.get(ValuationCycle, cycle_id)
     n = 0
     for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True):
+        if only is not None and cl.id not in only:
+            continue
         lv = latest_valuation(session, cl.id)
         if not lv or lv.loaded_to_everest:
             continue
@@ -194,14 +196,14 @@ def load_to_everest(session: Session, actor: Actor, cycle_id: str) -> int:
     return n
 
 
-def copy_to_sharepoint(session: Session, actor: Actor, cycle_id: str) -> int:
+def copy_to_sharepoint(session: Session, actor: Actor, cycle_id: str, only: list[str] | None = None) -> int:
     """Q13: copy Lincoln report PDFs to SharePoint as the official copy."""
     require(actor, "lincoln.exchange")
     cyc = session.get(ValuationCycle, cycle_id)
     store, n = get_store(), 0
     for lv in session.query(LincolnValuation).join(CycleLoan, CycleLoan.id == LincolnValuation.cycle_loan_id).filter(
             CycleLoan.cycle_id == cycle_id):
-        if lv.sharepoint_copy_path or not lv.report_document_id:
+        if lv.sharepoint_copy_path or not lv.report_document_id or (only is not None and lv.cycle_loan_id not in only):
             continue
         doc = session.get(Document, lv.report_document_id)
         dest = f"PrivateCredit/Valuation/{cyc.period}/Lincoln/{doc.file_name}"

@@ -856,6 +856,27 @@ def directory(a: Actor = A, s: Session = S):
             "teams": [{"id": t, "name": n} for t, n in TEAMS]}
 
 
+@app.get("/api/cycles/{cycle_id}/autopilot")
+def autopilot_get(cycle_id: str, a: Actor = A, s: Session = S):
+    from synth import autopilot
+
+    return {"except": autopilot.setting(s)}
+
+
+@app.post("/api/cycles/{cycle_id}/autopilot")
+def autopilot_run(cycle_id: str, body: dict = Body(default={}), a: Actor = A, s: Session = S):
+    """Demo only: complete routine steps for every loan except the ones the presenter works by hand."""
+    require(a, "cycle.manage")
+    from synth import autopilot
+
+    if body.get("enabled") is False:
+        autopilot.set_setting(s, None)
+        return {"except": None, "log": ["Autopilot switched off"]}
+    keep = body.get("except") or ["F-0002"]
+    autopilot.set_setting(s, keep)
+    return {"except": keep, "log": autopilot.run(s, cycle_id, keep) or ["Autopilot: nothing to do yet"]}
+
+
 @app.post("/api/cycles/{cycle_id}/advance")
 def advance(cycle_id: str, body: dict = Body(default={}), a: Actor = A, s: Session = S):
     """Demo clock: move forward; borrowers and Lincoln act on the days they would."""

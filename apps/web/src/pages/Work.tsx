@@ -47,6 +47,17 @@ export function ProcessStrip({ process }: { process: any[] }) {
 function DemoClock({ cycle, onDone }: { cycle: any; onDone: () => void }) {
   const [log, setLog] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const auto = useApi<any>(`/cycles/${cycle.id}/autopilot`, [cycle.id]);
+  const autoOn = !!auto.data?.except;
+  const toggleAuto = async () => {
+    setBusy(true);
+    try {
+      const r = await api(`/cycles/${cycle.id}/autopilot`, { body: autoOn ? { enabled: false } : { except: ["F-0002"] } });
+      setLog((l) => [...r.log.reverse(), ...l].slice(0, 40));
+      await auto.reload();
+      onDone();
+    } catch (e: any) { setLog((l) => [e.message, ...l]); } finally { setBusy(false); }
+  };
   const { refreshCycles } = useApp();
   const go = async (body: any) => {
     setBusy(true);
@@ -66,6 +77,10 @@ function DemoClock({ cycle, onDone }: { cycle: any; onDone: () => void }) {
         {marks.slice(0, 3).map((m) => <button key={m.d} className="btn-accent" disabled={busy || cycle.status === "draft"} onClick={() => go({ to_day: m.d })}><FastForward size={13} /> Day {m.d}: {m.l}</button>)}
       </div>
       {cycle.status === "draft" && <div className="mt-2 text-xs text-warn-700">Send the kickoff first; the clock starts on day 1.</div>}
+      <div className={`mt-3 flex items-center justify-between rounded-xl border px-3 py-2 text-xs ${autoOn ? "border-leaf-400 bg-leaf-50" : "border-canvas-200"}`}>
+        <span><b>Autopilot</b>: {autoOn ? "on. Every loan except Harbor Logistics moves on by itself, as its own people, each time the clock moves." : "off. Turn it on to complete the routine steps for every loan except Harbor Logistics."}</span>
+        <button className={autoOn ? "btn-secondary" : "btn-primary"} disabled={busy || cycle.status === "draft"} onClick={toggleAuto}>{autoOn ? "Turn off" : "Turn on and run"}</button>
+      </div>
       <div className="mt-3 max-h-40 space-y-1 overflow-y-auto">{log.map((x, i) => <div key={i} className="rounded-lg bg-teal-50 px-2 py-1 text-xs text-teal-700">{x}</div>)}</div>
     </Card>
   );

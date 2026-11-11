@@ -49,6 +49,11 @@ def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[
                 generator.deliver_revision(cl.facility_id, current + 1)
             lincoln.ingest_lincoln(session, cycle_id)
             log.append(f"Day {day}: Lincoln delivered a revised valuation for {cl.borrower}")
+    from synth import autopilot
+
+    keep = autopilot.setting(session)
+    if keep is not None:
+        log += autopilot.run(session, cycle_id, keep)
     if not log:
         log.append(f"Moved to day {session.get(ValuationCycle, cycle_id).current_day}; nothing arrived from outside")
     return log
