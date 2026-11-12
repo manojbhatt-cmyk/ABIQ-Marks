@@ -28,7 +28,7 @@ function Rules() {
       <table className="w-full"><thead><tr>{["Key", "Value", "Status", "Discovery question", "Version", "Description", ""].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
         <tbody>{current.map((r) => (
           <tr key={r.key}><td className="td font-mono text-xs">{r.key}</td><td className="td font-mono text-xs">{JSON.stringify(r.value)}</td><td className="td">{r.confirmed ? <ConfirmedChip /> : <AssumedChip dq={r.dq} />}</td>
-            <td className="td">{r.dq}</td><td className="tdn">v{r.version}{r.reason && <div className="text-[10px] text-slate-400" title={r.reason}>{r.by}</div>}</td><td className="td text-xs text-slate-500">{r.description}</td>
+            <td className="td">{r.dq}</td><td className="tdn">v{r.version}{r.reason && <div className="text-[11px] text-slate-400" title={r.reason}>{r.by}</div>}</td><td className="td text-xs text-slate-500">{r.description}</td>
             <td className="td"><button className="btn-secondary" onClick={() => act.run(async () => {
               const v = prompt(`New value for ${r.key} (JSON)`, JSON.stringify(r.value)); if (v === null) return;
               const reason = prompt("Reason for the change (required)"); if (!reason) return;
@@ -59,8 +59,8 @@ function Connectors() {
       <div className="grid grid-cols-4 gap-4">{data.connectors.map((c: any, i: number) => <Kpi key={i} label={c.connector} value={<StatusChip status={c.status === "ok" ? "done" : c.status === "configured" ? "in_progress" : "failed"} />} sub={c.root || c.mode || c.account || c.error || ""} />)}</div>
       <Card title={`Write-back adapter: ${data.writeback_mode}`} actions={<span className="text-xs text-slate-500">warehouse {data.warehouse}; last sync {data.last_sync ? `${data.last_sync.dataset} ${fmt.date(data.last_sync.at)}` : "-"}</span>}>
         <table className="w-full"><thead><tr>{["Target", "Key", "Payload", "Before", "Mode", "Status", "By"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
-          <tbody>{data.changes.map((w: any) => <tr key={w.id}><td className="td text-xs">{w.target}</td><td className="td font-mono text-[10px]">{JSON.stringify(w.key)}</td><td className="td max-w-xs truncate font-mono text-[10px]" title={JSON.stringify(w.payload)}>{JSON.stringify(w.payload)}</td>
-            <td className="td max-w-xs truncate font-mono text-[10px]" title={JSON.stringify(w.before)}>{w.before ? JSON.stringify(w.before).slice(0, 60) : "new row"}</td><td className="td text-xs">{w.mode}</td><td className="td"><StatusChip status={w.status === "applied" ? "done" : w.status} /></td><td className="td text-xs">{w.by}</td></tr>)}</tbody></table>
+          <tbody>{data.changes.map((w: any) => <tr key={w.id}><td className="td text-xs">{w.target}</td><td className="td font-mono text-[11px]">{JSON.stringify(w.key)}</td><td className="td max-w-xs truncate font-mono text-[11px]" title={JSON.stringify(w.payload)}>{JSON.stringify(w.payload)}</td>
+            <td className="td max-w-xs truncate font-mono text-[11px]" title={JSON.stringify(w.before)}>{w.before ? JSON.stringify(w.before).slice(0, 60) : "new row"}</td><td className="td text-xs">{w.mode}</td><td className="td"><StatusChip status={w.status === "applied" ? "done" : w.status} /></td><td className="td text-xs">{w.by}</td></tr>)}</tbody></table>
       </Card>
     </div>
   );

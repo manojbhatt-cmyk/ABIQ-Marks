@@ -11,8 +11,8 @@ function RangeBar({ low, high, point, mark, min, max }: { low: number; high: num
       <div className="absolute top-3 h-2 rounded bg-info-600/60" style={{ left: pos(low), width: `calc(${pos(high)} - ${pos(low)})` }} />
       <div className="absolute top-1.5 h-5 w-1 rounded bg-navy-900" style={{ left: pos(point) }} title={`Point ${point}`} />
       {mark !== undefined && mark !== null && <div className="absolute top-1.5 h-5 w-1 rounded bg-brand-600" style={{ left: pos(mark) }} title={`Mark ${mark}`} />}
-      <div className="absolute top-6 text-[10px] text-slate-500" style={{ left: pos(low) }}>{low.toFixed(2)}</div>
-      <div className="absolute top-6 text-[10px] text-slate-500" style={{ left: pos(high) }}>{high.toFixed(2)}</div>
+      <div className="absolute top-6 text-[11px] text-slate-500" style={{ left: pos(low) }}>{low.toFixed(2)}</div>
+      <div className="absolute top-6 text-[11px] text-slate-500" style={{ left: pos(high) }}>{high.toFixed(2)}</div>
     </div>
   );
 }

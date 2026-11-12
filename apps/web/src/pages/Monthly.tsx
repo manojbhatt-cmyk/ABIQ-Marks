@@ -20,15 +20,15 @@ export default function Monthly() {
   const go = (action: string, body: any = {}) => act.run(async () => { await api(`/monthly/${id}/${action}`, { body }); reload(); });
   return (
     <>
-      <PageHeader title="Monthly marks" ai subtitle={`${data.cycle.period}: M1 update file, M2 email teams, M3 proposals, M4 DDTL, M5 consolidate, M6 approval`} />
+      <PageHeader title="Monthly marks" ai subtitle={`${data.cycle.period}: the update file, deal team proposals, DDTL rebalances, consolidation and the committee approval.`} />
       {act.node}{confirm.node}
-      <Tabs active={tab} onChange={setTab} tabs={[{ id: "dashboard", label: "Dashboard (S17)" }, { id: "proposals", label: "Proposals and DDTL (S18)" }, { id: "approval", label: "Approval (S19)" }]} />
+      <Tabs active={tab} onChange={setTab} tabs={[{ id: "dashboard", label: "Dashboard" }, { id: "proposals", label: "Proposals and DDTL" }, { id: "approval", label: "Approval" }]} />
       {tab === "dashboard" && (
         <>
           <div className="mb-6 grid grid-cols-4 gap-4"><Kpi label="Loans" value={k.loans} /><Kpi label="Proposals received" value={k.proposals} /><Kpi label="Outstanding" value={k.outstanding} tone={k.outstanding ? "red" : "green"} /><Kpi label="DDTL rebalances pending" value={k.ddtl_pending} /></div>
           {role === "pm_team" && <div className="mb-4 flex gap-2"><button className="btn-secondary" onClick={() => go("build")}>Build update file</button><button className="btn-secondary" onClick={() => go("email")}>Email deal teams</button><button className="btn-secondary" onClick={() => go("consolidate")}>Consolidate</button><button className="btn-primary" onClick={() => confirm.ask("Send the consolidated monthly marks to the Valuation Committee?", async () => { await api(`/monthly/${id}/request`, { body: {} }); reload(); })}>Send to committee</button></div>}
           <div className="card overflow-x-auto"><table className="w-full"><thead><tr>{["Loan", "Team", "Current mark", "Pacing", "Sigma trend", "Watchlist notes", "Completeness", "Status", "Proposed"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
-            <tbody>{data.rows.map((r: any) => <tr key={r.id}><td className="td font-medium">{r.borrower}<div className="text-[10px] text-slate-400">{r.facility_id}</div></td><td className="td text-xs">{r.team}</td><td className="tdn">{fmt.mark(r.current_mark)}</td>
+            <tbody>{data.rows.map((r: any) => <tr key={r.id}><td className="td font-medium">{r.borrower}<div className="text-[11px] text-slate-400">{r.facility_id}</div></td><td className="td text-xs">{r.team}</td><td className="tdn">{fmt.mark(r.current_mark)}</td>
               <td className="td"><StatusChip status={r.pacing?.PACING_STATUS === "behind" ? "late" : "done"} /> <span className="text-xs">{fmt.label(r.pacing?.PACING_STATUS)}</span></td><td className="td text-xs">{r.sigma?.LEVERAGE_TREND}</td><td className="tdn">{r.notes.length}</td>
               <td className="td text-xs">{r.completeness}{r.facility_type === "ddtl" && !data.ddtl.find((d: any) => d.facility_id === r.facility_id)?.confirmed_by && <div><Chip tone="amber">rebalance pending</Chip></div>}</td><td className="td"><StatusChip status={r.status} /></td><td className="tdn">{fmt.mark(r.proposal?.mark)}</td></tr>)}</tbody></table></div>
         </>)}

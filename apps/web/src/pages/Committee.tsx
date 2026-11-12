@@ -16,8 +16,8 @@ export default function Committee() {
   if (error) return <ErrorState error={error} retry={reload} />;
   return (
     <>
-      <PageHeader title={tab === "meeting" ? "Committee Meeting" : "Committee Agenda and Pack"} ai subtitle={tab === "meeting" ? "Q18: record decisions and rationale (G2 decision)" : "Q16 agenda tests, Q17 pack"} />
-      <Tabs active={tab} onChange={(x) => nav(`/committee/${x}`)} tabs={[{ id: "agenda", label: "Agenda and pack (S12)" }, { id: "meeting", label: "Meeting (S13)" }]} />
+      <PageHeader title={tab === "meeting" ? "Committee meeting" : "Committee agenda and pack"} ai subtitle={tab === "meeting" ? "Gate 2: the chair records each decision and its rationale during the meeting." : "TIQ tests every loan against the agenda rules; the PM Team builds the agenda, the pack and the meeting."} />
+      <Tabs active={tab} onChange={(x) => nav(`/committee/${x}`)} tabs={[{ id: "agenda", label: "Agenda and pack" }, { id: "meeting", label: "Meeting" }]} />
       {tab === "agenda" ? <Agenda data={data} reload={reload} pm={user?.role === "pm_team"} cycleId={cycle.id} /> : <Meeting data={data} reload={reload} canDecide={["committee_member", "committee_chair"].includes(user!.role)} />}
     </>
   );

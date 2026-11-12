@@ -27,7 +27,7 @@ export default function Tracker() {
   const show = (c: string) => cols.includes(c);
   return (
     <>
-      <PageHeader title="Marks Tracker" ai subtitle="Derived from its sources on every change, never hand-edited (Q11, Q14, Q16, Q19)"
+      <PageHeader title="Marks tracker" ai subtitle="Every loan's previous, Lincoln, deal team, committee and final mark. Derived from its sources on every change, never edited by hand."
         actions={<><button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/tracker/recompute`, { body: {} }); reload(); })}>Recompute</button><button className="btn-secondary" onClick={download}>Export to Excel</button></>} />
       {act.node}{confirm.node}
       {user?.role === "finance_ir" && cycle.status !== "closed" && <div className="mb-4 rounded-lg bg-warn-100 px-4 py-2 text-sm text-warn-700">Draft marks: final only after governance sign-off.</div>}
@@ -54,7 +54,7 @@ export default function Tracker() {
                 <tr key={r.id} className="cursor-pointer hover:bg-canvas-50" onClick={() => nav(`/loans/${r.cycle_loan_id}`)}>
                   {show("borrower") && <td className="td font-medium">{r.borrower}</td>}{show("facility") && <td className="td">{r.facility_id}</td>}{show("team") && <td className="td">{r.deal_team}</td>}
                   {show("funded") && <td className="tdn">{fmt.num(r.funded_amount)}</td>}{show("previous") && <td className="tdn">{fmt.mark(r.previous_mark)}</td>}
-                  {show("lincoln") && <td className="tdn">{fmt.mark(r.lincoln_draft_mark)}{r.lincoln_version > 1 && <span className="ml-1 text-[10px] text-brand-700">v{r.lincoln_version}</span>}</td>}
+                  {show("lincoln") && <td className="tdn">{fmt.mark(r.lincoln_draft_mark)}{r.lincoln_version > 1 && <span className="ml-1 text-[11px] text-brand-700">v{r.lincoln_version}</span>}</td>}
                   {show("range") && <td className="tdn text-xs">{r.lincoln_range_low ? `${fmt.mark(r.lincoln_range_low)} to ${fmt.mark(r.lincoln_range_high)}` : "-"}</td>}
                   {show("deal_team") && <td className="tdn">{fmt.mark(r.deal_team_mark)}</td>}{show("committee") && <td className="tdn">{fmt.mark(r.committee_mark)}</td>}{show("final") && <td className="tdn font-semibold">{fmt.mark(r.final_mark)}</td>}
                   {show("prev_value") && <td className="tdn">{fmt.num(r.previous_value, 3)}</td>}{show("cur_value") && <td className="tdn">{fmt.num(r.current_value, 3)}</td>}

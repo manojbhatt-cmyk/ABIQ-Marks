@@ -90,7 +90,7 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
           <Card title="Evidence">
             {(docs.data?.documents || []).map((d: any) => {
               const on = data.evidence.some((e: any) => e.document_id === d.id);
-              return <label key={d.id} className="flex items-center gap-2 py-0.5 text-sm"><input type="checkbox" checked={on} disabled={!editable || on} onChange={() => act.run(async () => { await api(`/cmr/${c.id}/evidence`, { body: { document_id: d.id, supports: d.doc_type === "sponsor_letter" ? "mitigant" : "recommendation" } }); refresh(); })} />{d.file_name}<span className="text-[10px] text-slate-400">{fmt.label(d.doc_type)}</span></label>;
+              return <label key={d.id} className="flex items-center gap-2 py-0.5 text-sm"><input type="checkbox" checked={on} disabled={!editable || on} onChange={() => act.run(async () => { await api(`/cmr/${c.id}/evidence`, { body: { document_id: d.id, supports: d.doc_type === "sponsor_letter" ? "mitigant" : "recommendation" } }); refresh(); })} />{d.file_name}<span className="text-[11px] text-slate-400">{fmt.label(d.doc_type)}</span></label>;
             })}
           </Card>
           <Card title="Review Checker (A3)" ai>

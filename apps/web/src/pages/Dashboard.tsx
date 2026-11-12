@@ -16,7 +16,7 @@ function LoanCard({ l }: { l: any }) {
   const mark = l.final_mark ?? l.committee_mark ?? l.deal_team_mark ?? l.lincoln_mark;
   return (
     <button onClick={() => nav(`/loans/${l.id}`)} className="mb-2 w-full rounded-xl border-l-4 border-sky-500 bg-white p-2.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-center justify-between gap-1"><span className="truncate text-[13px] font-semibold">{l.borrower}</span><span className="text-[10px] text-slate-400">{l.facility_id}</span></div>
+      <div className="flex items-center justify-between gap-1"><span className="truncate text-[13px] font-semibold">{l.borrower}</span><span className="text-[11px] text-slate-400">{l.facility_id}</span></div>
       <div className="mt-0.5 text-[11px] text-slate-500">{l.team}</div>
       <div className="mt-1.5 flex flex-wrap items-center gap-1">
         <StatusChip status={l.package_status === "late" ? "late" : l.status} />
@@ -36,7 +36,7 @@ function Lane({ title, cols, loans, stepKey }: { title: string; cols: readonly (
         {cols.map(([name, steps]) => {
           const ls = loans.filter((l) => steps.includes(l[stepKey]));
           return (
-            <div key={name} className="rounded-xl border border-brand-100 bg-gradient-to-b from-brand-50 to-white p-2">
+            <div key={name} className="rounded-panel border border-line-200 bg-surface-50 p-2">
               <div className="mb-2 flex justify-between px-1 text-[11px] font-semibold text-brand-700"><span>{name}</span><span className="rounded-full bg-brand-600 px-1.5 text-white">{ls.length}</span></div>
               <div className="max-h-[420px] overflow-y-auto">{ls.map((l) => <LoanCard key={l.id} l={l} />)}</div>
             </div>
@@ -54,7 +54,7 @@ export default function Dashboard() {
   const [team, setTeam] = useState("");
   const act = useAction();
   if (loading && !data) return <Loading />;
-  if (error) return <><PageHeader title="Cycle Dashboard" /><ErrorState error={error} retry={reload} />{error.status === 404 && <div className="mt-4"><Link className="btn-primary" to="/kickoff">Open the Kickoff wizard</Link></div>}</>;
+  if (error) return <><PageHeader title="Cycle dashboard" /><ErrorState error={error} retry={reload} />{error.status === 404 && <div className="mt-4"><Link className="btn-primary" to="/kickoff">Open the Kickoff wizard</Link></div>}</>;
   const d = data!;
   const k = d.kpis;
   const loans = d.loans.filter((l: any) => !team || l.team === team);
@@ -78,14 +78,17 @@ export default function Dashboard() {
       </div>
       <DemoControls />
       <ProcessStrip process={work.data?.process || []} />
-      <Card title="Cycle calendar" className="mb-6">
-        <div className="relative h-16">
-          {d.phases.map((p: any) => (
-            <div key={p.phase} className={`absolute top-0 h-7 rounded-lg px-2 text-[11px] font-semibold leading-7 text-white shadow-sm ${PHASE_STYLE[p.phase - 1]?.bg || "bg-brand-600"} ${p.phase === 5 ? "!text-navy-900" : ""}`} style={{ left: `${(p.start / 45) * 100}%`, width: `${((p.end - p.start + 1) / 45) * 100}%`, top: p.phase === 3 ? 30 : 0 }} title={`${p.name}, days ${p.start} to ${p.end}${p.assumed ? " (assumed)" : ""}`}>
-              <span className="truncate">{p.phase} {p.name}</span>
-            </div>
-          ))}
-          {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}${x.assumed ? " (assumed)" : ""}`} className={`absolute bottom-0 h-3 w-0.5 ${x.day < k.day ? "bg-slate-300" : "bg-slate-500"}`} style={{ left: `${(x.day / 45) * 100}%` }} />)}
+      <Card title="Cycle calendar" subtitle="The six phases and the deadline for each step" className="mb-6">
+        <div className="relative h-[84px]">
+          {d.phases.map((p: any, i: number) => {
+            const left = (Math.max(p.start, 0) / 45) * 100;
+            const width = Math.min(((p.end - p.start + 1) / 45) * 100, 100 - left);
+            return (
+              <div key={p.phase} title={`${p.name}${p.assumed ? " (assumed)" : ""}`} style={{ left: `${left}%`, width: `${width}%`, top: (i % 2) * 34 }}
+                className="absolute h-7 overflow-hidden truncate rounded-tile border border-brand-100 bg-brand-50 px-2 text-[11.5px] font-semibold leading-[26px] text-brand-700">{p.phase}. {p.name}</div>
+            );
+          })}
+          {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}${x.assumed ? " (assumed)" : ""}`} className="absolute bottom-0 h-3 w-0.5 rounded-full bg-slate-300" style={{ left: `${Math.min((x.day / 45) * 100, 99.6)}%` }} />)}
         </div>
       </Card>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -97,7 +100,7 @@ export default function Dashboard() {
         </div>
         <div className="space-y-6">
           <Card title="Needs attention">
-            {d.attention.length ? d.attention.map((a: any, i: number) => <Link to={`/loans/${a.cycle_loan_id}`} key={i} className="mb-2 flex items-center justify-between rounded-lg bg-danger-100 px-3 py-2 text-sm text-danger-700"><span>{a.title}</span><span className="text-xs">due {dayDate(a.day)}</span></Link>)
+            {d.attention.length ? d.attention.map((a: any, i: number) => <Link to={`/loans/${a.cycle_loan_id}`} key={i} className="mb-2 flex items-center justify-between rounded-tile bg-danger-100 px-3 py-2 text-[13.5px] text-danger-700"><span>{a.title}</span><span className="text-xs">due {dayDate(a.day)}</span></Link>)
               : <Empty text="Nothing overdue" />}
             {d.loans.filter((l: any) => l.status === "sent_back" || l.status === "waiting_on_lincoln").map((l: any) => <Link to={`/loans/${l.id}`} key={l.id} className="mb-2 flex items-center justify-between rounded-lg bg-warn-100 px-3 py-2 text-sm text-warn-700"><span>{l.borrower}</span><StatusChip status={l.status} /></Link>)}
           </Card>

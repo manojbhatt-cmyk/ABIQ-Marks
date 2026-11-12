@@ -15,7 +15,7 @@ export default function Reconciliation() {
   const sch = data.schedule;
   return (
     <>
-      <PageHeader title="Reconciliation" ai subtitle="Q19: tracker vs Everest marks, Everest vs CMR ratings, tracker vs Sentry funded amounts, CMR vs tracker"
+      <PageHeader title="Reconciliation" ai subtitle="Checks the final marks against Everest, the CMR ratings and Sentry positions. Every break must be resolved before approval."
         actions={<><AssumedChip dq="DQ19" what="reconciliation sources" /><button className="btn-primary" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/reconciliation`, { body: {} }); reload(); })}>Run reconciliation</button></>} />
       {act.node}{confirm.node}
       <div className="mb-6 grid grid-cols-4 gap-4">

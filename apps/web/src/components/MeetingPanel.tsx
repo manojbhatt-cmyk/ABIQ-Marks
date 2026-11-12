@@ -15,10 +15,10 @@ const MODES: Record<string, string> = { online: "Online (Teams)", in_person: "In
 export function MeetingCard({ m, compact }: { m: Meeting; compact?: boolean }) {
   const when = new Date(`${m.date}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   return (
-    <div className="rounded-2xl border border-teal-400/50 bg-gradient-to-br from-teal-50 to-white p-4">
+    <div className="card px-6 py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-teal-700">Committee meeting{m.version && m.version > 1 ? ` (updated v${m.version})` : ""}</div>
+          <div className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-brand-600">Committee meeting{m.version && m.version > 1 ? ` (updated v${m.version})` : ""}</div>
           <div className="mt-0.5 text-lg font-bold text-navy-900">{m.title}</div>
           <div className="mt-1 flex flex-wrap gap-4 text-sm text-slate-600">
             <span className="flex items-center gap-1"><Clock size={14} /> {when}, {m.start} ({m.timezone.split("/").pop()?.replace("_", " ")}), {m.duration_minutes} min</span>
@@ -35,11 +35,11 @@ export function MeetingCard({ m, compact }: { m: Meeting; compact?: boolean }) {
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
             <div className="label">Agenda</div>
-            {m.slots.map((s, i) => <div key={i} className="flex gap-3 border-b border-teal-100 py-1 text-sm"><span className="w-12 num font-semibold text-teal-700">{s.time}</span><span className="flex-1">{s.title}{s.reasons?.length ? <span className="ml-1 text-xs text-slate-400">({s.reasons.map((r) => r.replace(/_/g, " ")).join(", ")})</span> : null}</span><span className="text-xs text-slate-500">{s.minutes} min{s.presenter ? ` · ${s.presenter}` : ""}</span></div>)}
+            {m.slots.map((s, i) => <div key={i} className="flex gap-3 border-b border-line-200 py-1.5 text-[13.5px]"><span className="w-12 num font-semibold text-brand-700">{s.time}</span><span className="flex-1">{s.title}{s.reasons?.length ? <span className="ml-1 text-xs text-slate-400">({s.reasons.map((r) => r.replace(/_/g, " ")).join(", ")})</span> : null}</span><span className="text-xs text-slate-500">{s.minutes} min{s.presenter ? ` · ${s.presenter}` : ""}</span></div>)}
           </div>
           <div>
             <div className="label">Attendees</div>
-            {m.attendees.map((a) => <div key={a.email} className="flex justify-between border-b border-teal-100 py-1 text-sm"><span>{a.name || a.email}</span><span className="text-xs text-slate-500">{a.why}{a.role === "organiser" ? " · organiser" : ""}</span></div>)}
+            {m.attendees.map((a) => <div key={a.email} className="flex justify-between border-b border-line-200 py-1.5 text-[13.5px]"><span>{a.name || a.email}</span><span className="text-xs text-slate-500">{a.why}{a.role === "organiser" ? " · organiser" : ""}</span></div>)}
           </div>
         </div>
       )}

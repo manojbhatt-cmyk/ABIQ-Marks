@@ -27,7 +27,7 @@ export default function Reviews() {
   const canAct = review && review.stage === myStage && !review.outcome;
   return (
     <>
-      <PageHeader title="Review Queue" ai subtitle="Q6 A/C Manager, Q7 PM Team, Q8 file, Q9 SCT. Comments go straight to the analyst (loop QB)." actions={<AssumedChip dq="DQ10" what="reviewer order" />} />
+      <PageHeader title="Review queue" ai subtitle="A/C Manager, PM Team and SCT reviews, then filing. Comments go straight to the analyst." actions={<AssumedChip dq="DQ10" what="reviewer order" />} />
       {act.node}{confirm.node}
       {["pm_team", "sct", "admin"].includes(user!.role) && <SctSessions cycleId={cycle.id} canBuild={user!.role === "pm_team"} />}
       <div className="grid grid-cols-12 gap-6">

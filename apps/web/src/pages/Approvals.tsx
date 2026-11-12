@@ -25,7 +25,7 @@ export default function Approvals() {
   );
   return (
     <>
-      <PageHeader title="Approvals and Governance" subtitle="Q20 written approval (G2), Q21 governance sign-off (G3), M6 monthly approval" />
+      <PageHeader title="Approvals and Governance" subtitle="Written approval of the final marks by the committee chair, then the governance sign-off. Monthly approvals are here too." />
       {act.node}{confirm.node}
       <Tabs active={tab} onChange={setTab} tabs={[{ id: "final", label: "Final marks approval (G2)" }, { id: "governance", label: "Governance (G3)" }, { id: "monthly", label: "Monthly (M6)" }]} />
       {tab === "final" && (

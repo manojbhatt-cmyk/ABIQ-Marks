@@ -12,7 +12,7 @@ export default function PricingList() {
   if (error) return <ErrorState error={error} retry={reload} />;
   return (
     <>
-      <PageHeader title="Pricing Panel" ai subtitle="Gate G1 (Q14): approve or send back Lincoln's mark for your team's loans" />
+      <PageHeader title="Pricing panel" ai subtitle="Gate 1: approve Lincoln's mark for your team's loans, approve a different mark, or send it back." />
       <div className="card">
         <table className="w-full"><thead><tr>{["Borrower", "Facility", "Previous", "Lincoln", "Deal Team", "Status", "Loops", ""].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
           <tbody>{data!.filter((l) => l.in_scope).map((l) => (

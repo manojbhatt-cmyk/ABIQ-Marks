@@ -58,7 +58,7 @@ export default function Spread({ loanId, onChange }: { loanId: string; onChange:
                 const calc = t.IS_CALCULATED;
                 return (
                   <tr key={t.LINE_CODE} className={calc ? "bg-canvas-50" : ""}>
-                    <td className="td"><div className="font-medium">{t.LINE_LABEL}</div><div className="text-[10px] text-slate-400">{t.LINE_CODE}{calc ? `: ${t.FORMULA}` : ""}</div></td>
+                    <td className="td"><div className="font-medium">{t.LINE_LABEL}</div><div className="text-[11px] text-slate-400">{t.LINE_CODE}{calc ? `: ${t.FORMULA}` : ""}</div></td>
                     {COLS.map(([p]) => {
                       if (calc) return <td key={p} className="tdn" title={m[t.LINE_CODE]?.formula}>{p === "quarter" && m[t.LINE_CODE] ? (t.UNIT === "x" ? fmt.x(m[t.LINE_CODE].value) : t.LINE_CODE.includes("YOY") ? fmt.pct(m[t.LINE_CODE].value, 0) : fmt.num(m[t.LINE_CODE].value)) : ""}</td>;
                       const li = cell(t.LINE_CODE, p);

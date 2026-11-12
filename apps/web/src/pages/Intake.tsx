@@ -24,7 +24,7 @@ export default function Intake() {
       l.package_status === "late" ? <Chip tone="red">late, {l.days_late} days</Chip> : <Chip>not received</Chip>;
   return (
     <>
-      <PageHeader title="Intake Inbox and Documents" ai subtitle={`Q2: borrower packages due day ${data.due_day}. Required: financial statements, covenant certificate; plus sponsor letter for watchlist CMRs.`}
+      <PageHeader title="Intake" ai subtitle={`Borrower packages are due day ${data.due_day}. Each needs financial statements and a covenant certificate; watch list loans also need a sponsor letter.`}
         actions={<>
           <AssumedChip dq={data.required.standard.discovery_question} what="required documents" />
           <button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/intake/process`, { body: {} }); reload(); })}>Check inbox</button>
@@ -52,7 +52,7 @@ export default function Intake() {
                 <tbody>{loan.documents.map((d: any) => (
                   <tr key={d.id}><td className="td"><div className="flex items-center gap-2"><button className="flex items-center gap-1 text-info-600 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><FileText size={13} />{d.file_name}</button><button title="Download" className="text-slate-400 hover:text-brand-600" onClick={() => downloadFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><Download size={13} /></button></div></td>
                     <td className="td"><select className="rounded border border-canvas-200 bg-white px-1 py-0.5 text-xs" value={d.doc_type || "other"} onChange={(e) => act.run(async () => { await api(`/documents/${d.id}/classify`, { body: { doc_type: e.target.value } }); reload(); })}>{TYPES.map((t) => <option key={t} value={t}>{fmt.label(t)}</option>)}</select>
-                      {d.confirmed_by && <div className="text-[10px] text-slate-400">confirmed by {d.confirmed_by.split("@")[0]}</div>}</td>
+                      {d.confirmed_by && <div className="text-[11px] text-slate-400">confirmed by {d.confirmed_by.split("@")[0]}</div>}</td>
                     <td className="td"><ConfidenceRing value={d.confidence} /></td><td className="td text-xs">{d.period}</td><td className="tdn">{d.pages}</td><td className="td"><StatusChip status={d.status === "indexed" ? "done" : d.status} /></td></tr>))}</tbody></table>
             ) : <Empty text="No documents received yet" />}
             <div className="mt-4"><div className="section-title">Tasks</div>{loan.tasks.map((t: any, i: number) => <div key={i} className="flex justify-between border-b border-canvas-100 py-1 text-sm"><span>{t.title}</span><span className="flex gap-2"><span className="text-xs text-slate-400">{dayDate(t.due_day)}</span><StatusChip status={t.status} /></span></div>)}</div>

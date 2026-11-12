@@ -23,7 +23,7 @@ export default function Kickoff() {
   const inScope = (loans.data || []).filter((l) => l.in_scope);
   return (
     <>
-      <PageHeader title="Kickoff Wizard" subtitle="Create the cycle and send the kickoff (Q1). Every assumed date is marked." />
+      <PageHeader title="Kickoff" subtitle="Create the cycle, check the calendar and send the kickoff to every deal team in TIQ. Every assumed date is marked." />
       {act.node}{confirm.node}
       <div className="mb-6 flex gap-2">
         {STEPS.map((s, i) => (

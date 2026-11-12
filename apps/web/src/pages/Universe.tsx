@@ -26,7 +26,7 @@ export default function Universe() {
   };
   return (
     <>
-      <PageHeader title="Loan Universe" subtitle={`${rows.length} facilities from ${borrowers.size} borrowers, ${inScope.length} in scope`}
+      <PageHeader title="Loan universe" subtitle={`${rows.length} facilities from ${borrowers.size} borrowers, ${inScope.length} in scope`}
         actions={<><button className="btn-secondary" onClick={() => act.run(async () => { if (cycle) { const r = await api(`/cycles/${cycle.id}/refresh`, { body: {} }); alert(`Refreshed from ${u.data.freshness.source}: ${r.changes.length} change(s), ${r.late_additions.length} late addition(s)`); } u.reload(); loans.reload(); })}>Refresh from Snowflake</button><button className="btn-secondary" onClick={csv}>Export</button></>} />
       {act.node}
       <div className="mb-4 flex flex-wrap gap-2">

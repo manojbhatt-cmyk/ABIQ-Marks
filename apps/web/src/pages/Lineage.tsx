@@ -13,7 +13,7 @@ export default function Lineage() {
   const current = id || sunrise?.id;
   return (
     <>
-      <PageHeader title="Mark Lineage and Audit" subtitle="Any mark traced to its documents, spread, CMR versions, Lincoln versions, decisions and approvers"
+      <PageHeader title="Lineage and audit" subtitle="Any mark traced to its documents, spread, CMR versions, Lincoln versions, decisions and approvers"
         actions={<select className="input w-64" value={current || ""} onChange={(e) => nav(`/lineage/${e.target.value}`)}>{(loans.data || []).filter((l) => l.in_scope).map((l) => <option key={l.id} value={l.id}>{l.borrower} ({l.facility_id})</option>)}</select>} />
       {current ? <LineageView loanId={current} /> : <Empty text="Pick a loan" />}
     </>

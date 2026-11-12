@@ -23,7 +23,7 @@ export default function Distribution() {
   const groups = [["finance", "Finance", ["Wes Turner", "Justin Park"]], ["investor_relations", "Investor Relations", ["Investor Relations"]], ["deal_teams", "Deal Teams", ["leads and analysts of all six teams"]]];
   return (
     <>
-      <PageHeader title="Distribution" subtitle="Q22: send the final CMRs and close the cycle" actions={user?.role === "pm_team" && !data.distribution.length &&
+      <PageHeader title="Distribution" subtitle="Send the final marks, CMRs and impact note to Finance, Investor Relations and the deal teams, then close the cycle." actions={user?.role === "pm_team" && !data.distribution.length &&
         <button className="btn-primary" disabled={!gov} onClick={() => confirm.ask(`Send the ${cycle.period} final CMRs and marks to Finance, Investor Relations and the Deal Teams, and close the cycle?`, async () => { await api(`/cycles/${cycle.id}/distribute`, { body: {} }); reload(); refreshCycles(); })}>Send and close cycle</button>} />
       {confirm.node}
       {!gov && <div className="mb-4 rounded-lg bg-warn-100 px-4 py-2 text-sm text-warn-700">Distribution opens after governance sign-off (G3).</div>}
