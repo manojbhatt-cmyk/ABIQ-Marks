@@ -22,35 +22,49 @@ export const STEP_LINK: Record<string, string> = {
   Q18: "/committee/meeting", Q19: "/reconciliation", Q20: "/approvals", Q21: "/approvals", Q22: "/distribution",
 };
 
-/** The 22 steps as a stepper (Design.md 8.10): done filled blue with a check, current ringed with a halo, to do grey. */
+/** The quarter as six phases. Each card shows its state, a bar with one segment per step, and the step in hand.
+ * Done phases are quiet, the current one is highlighted, later ones are grey. Step names are on hover. */
 export function ProcessStrip({ process }: { process: any[] }) {
   const nav = useNavigate();
   if (!process?.length) return null;
-  const current = process.filter((s) => s.state === "active");
-  const done = process.filter((s) => s.state === "done").length;
+  const doneAll = process.filter((s) => s.state === "done").length;
   return (
-    <section className="card mb-6 px-6 py-5" aria-label="Process">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-[15px] font-semibold">The quarter, step by step</h2>
-        <span className="text-[12.5px] text-slate-500">{done} of 22 steps done{current.length ? ` · now: ${current.slice(0, 2).map((s) => `${s.step.replace("Q", "")} ${s.name}`).join(", ")}` : ""}</span>
+    <section className="mb-6" aria-label="Where the quarter stands">
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-[15px] font-semibold">Where the quarter stands</h2>
+        <span className="text-[12.5px] text-slate-500">{doneAll} of {process.length} steps done</span>
       </div>
-      <div className="grid gap-x-2" style={{ gridTemplateColumns: "3fr 6fr 4fr 2fr 3fr 4fr" }}>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {PHASE_STYLE.map((ph, i) => {
-          const steps = process.filter((s) => ph.steps.includes(s.step));
+          const steps = process.filter((x) => ph.steps.includes(x.step));
+          const done = steps.filter((x) => x.state === "done").length;
+          const active = steps.find((x) => x.state === "active");
+          const state = done === steps.length ? "done" : active || done ? "active" : "todo";
+          const target = active || steps.find((x) => x.state !== "done") || steps[steps.length - 1];
           return (
-            <div key={ph.name} className="min-w-0">
-              <div className="truncate pb-2 text-[11.5px] font-semibold uppercase tracking-[0.03em] text-slate-500" title={ph.name}>{i + 1}. {ph.name}</div>
-              <div className="relative flex justify-between">
-                <span className="absolute left-3 right-3 top-[13px] h-0.5 bg-line-200" aria-hidden="true" />
-                {steps.map((s) => (
-                  <button key={s.step} onClick={() => nav(STEP_LINK[s.step])} aria-label={`Step ${s.step.replace("Q", "")}: ${s.name}, ${s.done} of ${s.total} loans past it`}
-                    title={`${s.step.replace("Q", "")}. ${s.name}: ${s.done} of ${s.total} loans past this step`}
-                    className={`relative z-[1] flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold transition-colors duration-150 ${s.state === "done" ? "bg-brand-600 text-white hover:bg-brand-500" : s.state === "active" ? "border-2 border-brand-600 bg-white text-brand-700 ring-4 ring-brand-100" : "border-2 border-slate-300 bg-white text-slate-400 hover:border-brand-300"}`}>
-                    {s.state === "done" ? <CheckCircle2 size={14} aria-hidden="true" /> : s.step.replace("Q", "")}
-                  </button>
-                ))}
+            <button key={ph.name} onClick={() => target && nav(STEP_LINK[target.step])}
+              className={`flex min-h-[112px] flex-col rounded-card border px-4 py-3.5 text-left transition duration-150 hover:shadow-raised ${state === "active" ? "border-brand-600 bg-white ring-[3px] ring-brand-100" : state === "done" ? "border-line-200 bg-white hover:border-brand-300" : "border-line-200 bg-surface-50 hover:border-brand-300"}`}>
+              <div className="flex items-center gap-2">
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${state === "done" ? "bg-success-100 text-success-700" : state === "active" ? "bg-brand-600 text-white" : "bg-canvas-100 text-slate-400"}`}>
+                  {state === "done" ? <CheckCircle2 size={14} aria-hidden="true" /> : i + 1}
+                </span>
+                <span className={`text-[11px] font-medium uppercase tracking-[0.05em] ${state === "active" ? "text-brand-600" : state === "done" ? "text-success-700" : "text-slate-400"}`}>
+                  {state === "done" ? "Done" : state === "active" ? "In progress" : "Not started"}
+                </span>
               </div>
-            </div>
+              <div className={`mt-2 text-[13.5px] font-medium leading-snug ${state === "todo" ? "text-slate-500" : "text-ink-900"}`}>{ph.name}</div>
+              <div className="mt-auto pt-3">
+                <div className="flex gap-1">
+                  {steps.map((x) => (
+                    <span key={x.step} title={`${x.step.replace("Q", "")}. ${x.name}: ${x.done} of ${x.total} loans past it`}
+                      className={`h-1.5 flex-1 rounded-full ${x.state === "done" ? (state === "done" ? "bg-success-500" : "bg-brand-600") : x.state === "active" ? "bg-brand-300" : "bg-line-200"}`} />
+                  ))}
+                </div>
+                <div className="mt-1.5 truncate text-xs text-slate-500">
+                  {state === "active" && active ? `Now: ${active.name}` : `${done} of ${steps.length} steps`}
+                </div>
+              </div>
+            </button>
           );
         })}
       </div>

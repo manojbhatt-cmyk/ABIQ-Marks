@@ -5,8 +5,9 @@
 /* Design.md: calm enterprise. White surfaces on a cool grey canvas, navy for depth, one blue for action. */
 html, body, #root { height: 100%; }
 html, body { overflow-x: hidden; }
-body { @apply bg-canvas-100 font-sans antialiased; color: #2A4256; font-size: 14px; line-height: 1.5; }
-h1, h2, h3, h4 { color: #132B3F; font-weight: 700; letter-spacing: -0.01em; }
+body { @apply bg-canvas-100 font-sans antialiased; color: #3B5166; font-size: 14px; line-height: 1.6; font-feature-settings: "cv11", "ss01"; text-rendering: optimizeLegibility; }
+b, strong { font-weight: 600; color: #2A4256; }
+h1, h2, h3, h4 { color: #132B3F; font-weight: 600; letter-spacing: -0.015em; }
 a { color: #2568B2; }
 .num { font-variant-numeric: tabular-nums; }
 :focus-visible { outline: 2px solid #2568B2; outline-offset: 2px; }
@@ -18,8 +19,8 @@ a { color: #2568B2; }
   .card-hover { @apply transition duration-150 hover:border-brand-300 hover:shadow-raised; }
 
   /* buttons (8.1): 38px, radius 9, weight 600, one primary per area */
-  .btn { @apply inline-flex h-[38px] items-center justify-center gap-2 whitespace-nowrap rounded-control border border-transparent px-4 text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-55; }
-  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-500 active:bg-brand-700; }
+  .btn { @apply inline-flex h-[38px] items-center justify-center gap-2 whitespace-nowrap rounded-control border border-transparent px-4 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-55; }
+  .btn-primary { @apply btn font-semibold bg-brand-600 text-white hover:bg-brand-500 active:bg-brand-700; }
   .btn-accent { @apply btn bg-brand-600 text-white hover:bg-brand-500 active:bg-brand-700; }
   .btn-secondary { @apply btn border-line-200 bg-white text-ink-700 hover:border-slate-300 hover:bg-surface-50 hover:text-ink-900; }
   .btn-ghost { @apply btn bg-transparent text-brand-600 hover:bg-brand-50; }
@@ -31,11 +32,11 @@ a { color: #2568B2; }
   /* form fields (8.2): 38px, focus = blue border + 3px halo */
   .input { @apply min-h-[38px] w-full rounded-control border border-line-200 bg-white px-3 text-sm text-ink-900 placeholder:text-slate-400 transition duration-150 focus:border-brand-600 focus:outline-none focus:ring-[3px] focus:ring-brand-100 disabled:bg-surface-50 disabled:text-slate-400; }
   textarea.input { @apply py-2.5; }
-  .label { @apply mb-1.5 block text-[13px] font-medium text-slate-500; }
+  .label { @apply mb-1.5 block text-[13px] font-normal text-slate-500; }
 
   /* tables (8.8): 40px rows, uppercase 11.5px header on surface-50 */
-  .th { @apply h-10 whitespace-nowrap border-b border-line-200 bg-surface-50 px-3 text-left align-middle text-[11.5px] font-semibold uppercase tracking-[0.03em] text-slate-500; }
-  .td { @apply h-10 whitespace-nowrap border-b border-line-200 px-3 py-2 align-middle text-[13px] text-ink-700; }
+  .th { @apply h-10 whitespace-nowrap border-b border-line-200 bg-surface-50 px-3 text-left align-middle text-[11px] font-medium uppercase tracking-[0.05em] text-slate-500; }
+  .td { @apply h-11 whitespace-nowrap border-b border-line-200 px-3 py-2 align-middle text-[13px] text-ink-600; }
   .td-wrap { @apply whitespace-normal; }
   .tdn { @apply td whitespace-nowrap text-right num; }
   tbody tr:hover > .td, tbody tr:hover > .tdn { background: #F9FBFC; }
@@ -44,7 +45,7 @@ a { color: #2568B2; }
   .muted { color: #5A6E80; }
 
   /* badges (8.4) */
-  .badge { @apply inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-full px-[9px] text-xs font-semibold; }
+  .badge { @apply inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-full px-[9px] text-xs font-medium; }
 
   /* AI strip (8.14) */
   .ai-strip { @apply rounded-panel border border-brand-100 bg-brand-50 px-4 py-3 text-[13px]; }

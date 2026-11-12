@@ -82,7 +82,7 @@ export function Card({ title, subtitle, children, actions, className = "", ai, f
       {(title || actions) && (
         <div className="flex items-start justify-between gap-3 px-6 pt-5">
           <div className="min-w-0">
-            <h3 className="flex items-center gap-2 text-[15px] font-semibold leading-snug text-ink-900">{ai && <Sparkles size={16} className="text-brand-600" aria-hidden="true" />}{title}</h3>
+            <h3 className="flex items-center gap-2 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-ink-900">{ai && <Sparkles size={16} className="text-brand-600" aria-hidden="true" />}{title}</h3>
             {subtitle && <div className="mt-0.5 text-[12.5px] text-slate-500">{subtitle}</div>}
           </div>
           {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
@@ -105,8 +105,8 @@ export function Kpi({ label, value, sub, tone, icon }: { label: string; value: R
   return (
     <div className="card flex min-h-[148px] flex-col px-5 py-4">
       <span className={`tile ${TILE[t]}`}><Icon size={18} aria-hidden="true" /></span>
-      <div className="mt-3 line-clamp-2 min-h-[39px] text-[13px] font-medium leading-snug text-slate-500">{label}</div>
-      <div className="mt-auto text-[28px] font-bold leading-[1.1] tracking-[-0.02em] text-ink-900 num">{value}</div>
+      <div className="mt-3 line-clamp-2 min-h-[39px] text-[13px] leading-snug text-slate-500">{label}</div>
+      <div className="mt-auto text-[26px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink-900 num">{value}</div>
       {sub && <div className="mt-1 text-[12.5px] text-slate-500 num">{sub}</div>}
     </div>
   );
@@ -118,10 +118,10 @@ export function PageHeader({ title, subtitle, ai, actions, back }: { title: stri
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         {back && <div className="mb-2 text-[13px] text-slate-500">{back}</div>}
-        <h1 className="flex items-center gap-2 text-2xl font-bold leading-tight tracking-[-0.01em] text-ink-900">
+        <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight tracking-[-0.015em] text-ink-900">
           {title}{ai && <span title="AI assisted: agents prepare, people decide" className="inline-flex"><Sparkles size={20} className="text-brand-600" aria-label="AI assisted" /></span>}
         </h1>
-        {subtitle && <p className="mt-1 max-w-[760px] text-sm text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 max-w-[720px] text-[13.5px] leading-relaxed text-slate-500">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -196,17 +196,16 @@ export function AiCard({ title = "TIQ suggests", children, confidence, status, d
   return (
     <div className="ai-strip">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[13.5px] font-semibold text-ink-900"><Sparkles size={16} className="text-brand-600" aria-hidden="true" /> {title}</div>
+        <div className="flex items-center gap-2 text-[13.5px] font-medium text-ink-900"><Sparkles size={16} className="text-brand-600" aria-hidden="true" /> {title}</div>
         <div className="flex items-center gap-2">
-          <Chip tone="brand">AI model</Chip>
+          <Chip tone="brand" title="Agents prepare, people decide. Nothing here is applied until you act.">AI model</Chip>
           {confidence !== undefined && <ConfidenceRing value={confidence} />}
           {status && status !== "proposed" && <Chip tone={status === "rejected" ? "red" : "green"}>{fmt.label(status)}{decidedBy ? ` by ${decidedBy.split("@")[0]}` : ""}</Chip>}
         </div>
       </div>
-      <div className="text-[13.5px] leading-relaxed text-ink-700">{children}</div>
+      <div className="text-[13.5px] leading-relaxed text-ink-600">{children}</div>
       {evidence && <div className="mt-2 text-xs text-slate-500">{evidence}</div>}
       {actions && <div className="mt-3 flex flex-wrap gap-2">{actions}</div>}
-      <div className="mt-2 text-[11.5px] text-slate-500">Agents prepare, people decide. Nothing here is applied until you act.</div>
     </div>
   );
 }
