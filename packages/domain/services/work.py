@@ -244,3 +244,38 @@ def process_map(session: Session, cycle_id: str) -> list[dict]:
     if cyc.status == "draft":
         out[0]["state"] = "active"
     return out
+
+
+def cycle_stage(session: Session, cycle_id: str) -> tuple[int, float]:
+    """Where the cycle is (step number) and how far along (0 to 1), from milestones rather than the calendar."""
+    from domain.models import (ApprovalRequest, CommitteeAgendaItem, CommitteeDecision, CommitteePack,
+                               GovernanceSignoff, ReconciliationRun)
+    from domain.services.committee import latest_agenda
+
+    cyc = session.get(ValuationCycle, cycle_id)
+    if cyc.status == "closed":
+        return 22, 1.0
+    step = None
+    if session.query(GovernanceSignoff).filter_by(cycle_id=cycle_id, status="signed").first():
+        step = 22
+    elif session.query(ApprovalRequest).filter_by(cycle_id=cycle_id, kind="final_marks", status="approved").first():
+        step = 21
+    elif session.query(ApprovalRequest).filter_by(cycle_id=cycle_id, kind="final_marks").first():
+        step = 20
+    else:
+        ag = latest_agenda(session, cycle_id)
+        if ag:
+            items = session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, removed=False).all()
+            decided = items and all(i.status != "pending" for i in items)
+            if decided or session.query(ReconciliationRun).filter_by(cycle_id=cycle_id).first():
+                step = 19
+            elif session.query(CommitteePack).filter_by(agenda_id=ag.id).first():
+                step = 18 if session.query(CommitteeDecision).join(CommitteeAgendaItem).filter(
+                    CommitteeAgendaItem.agenda_id == ag.id).first() else 17
+            else:
+                step = 16
+    if step is None:
+        steps = process_map(session, cycle_id)
+        step = int(next((p["step"] for p in steps if p["state"] != "done"), "Q15")[1:])
+        step = min(step, 15)
+    return step, round((step - 1) / 22, 3)

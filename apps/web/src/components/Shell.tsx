@@ -42,7 +42,6 @@ export function homeFor(_role: string) {
   return "/work";
 }
 
-const PHASES = [[1, 9, "Kickoff and intake"], [10, 26, "Modelling and CMR"], [27, 31, "Deal Team approval"], [32, 43, "Valuation Committee"], [44, 45, "Finalise"]] as const;
 
 export default function Shell({ children }: { children: ReactNode }) {
   const { user, cycle, cycles, setCycleId, setUser, refreshCycles } = useApp();
@@ -54,7 +53,9 @@ export default function Shell({ children }: { children: ReactNode }) {
   const notes = useApi<any[]>(user ? "/notifications" : null, [user?.email, cycle?.day]);
   if (!user) return null;
   const unread = (notes.data || []).filter((n) => !n.read).length;
-  const phase = cycle ? PHASES.find(([a, b]) => cycle.day >= a && cycle.day <= b)?.[2] || (cycle.day === 0 ? "Not started" : "Closing") : "";
+  const STAGES: [number, number, string][] = [[1, 3, "Kickoff and intake"], [4, 9, "Modelling and CMR"], [10, 13, "Lincoln draft marks"], [14, 15, "Deal Team approval"], [16, 18, "Valuation Committee"], [19, 22, "Finalise and distribute"]];
+  const st = cycle?.stage_step ?? 1;
+  const phase = cycle ? STAGES.find(([a, b]) => st >= a && st <= b)?.[2] || "Finalise and distribute" : "";
   const link = (i: Item) => (
     <NavLink key={i.to} to={i.to} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] transition ${isActive ? "bg-gradient-to-r from-brand-600 to-sky-500 font-semibold text-white shadow" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}>
       <i.icon size={15} /> {i.label}
@@ -73,7 +74,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <select className="w-full bg-transparent text-sm font-semibold text-white outline-none" value={cycle.id} onChange={(e) => setCycleId(e.target.value)}>
               {cycles.filter((c) => c.cycle_type === "quarterly").map((c) => <option key={c.id} value={c.id} className="text-slate-900">{c.period} quarterly</option>)}
             </select>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-leaf-400" style={{ width: `${(cycle.day / 45) * 100}%` }} /></div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-leaf-400" style={{ width: `${Math.max(4, (cycle.status === "closed" ? 1 : cycle.progress ?? 0) * 100)}%` }} /></div>
             <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-300">
               <span>Quarterly marks</span>
               <span className="rounded-full bg-lime-400 px-2 py-0.5 text-[10px] font-semibold text-navy-900">{cycle.status === "closed" ? "Closed" : cycle.status === "draft" ? "Kickoff pending" : phase}</span>

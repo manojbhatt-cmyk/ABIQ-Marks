@@ -9,7 +9,7 @@ export default function Reviews() {
   const { cycle, user } = useApp();
   const q = useApi<any[]>(cycle ? `/cycles/${cycle.id}/reviews` : null, [cycle?.id]);
   const [sel, setSel] = useState<any>(null);
-  const item = sel ? q.data?.find((x) => x.cmr_id === sel) : q.data?.find((x) => x.review_id || x.stage === "file");
+  const item = (sel && q.data?.find((x) => x.cmr_id === sel)) || q.data?.find((x) => x.review_id || x.stage === "file" || x.stage === "refile");
   const cmr = useApi<any>(item ? `/loans/${item.cycle_loan_id}/cmr` : null, [item?.cmr_id]);
   const act = useAction();
   const confirm = useConfirm();
@@ -39,7 +39,7 @@ export default function Reviews() {
             </button>)) : <Empty text="Nothing awaiting your stage" />}
         </div>
         <div className="col-span-6">
-          {c ? (
+          {c && item ? (
             <Card title={`${item.borrower} CMR v${c.cmr.version}`} actions={<button className="btn-ghost" onClick={() => openFile(`/api/cmr/${c.cmr.id}/pdf`)}>PDF</button>}>
               {c.sections.map((s: any) => (
                 <div key={s.id} className="mb-4">

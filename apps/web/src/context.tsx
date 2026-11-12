@@ -2,7 +2,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import { api, token, User } from "./api";
 import { setDay0 } from "./display";
 
-type Cycle = { id: string; period: string; day: number; day0?: string; status: string; cycle_type: string; final_value: number | null };
+type Cycle = { id: string; period: string; day: number; day0?: string; stage_step?: number; progress?: number; status: string; cycle_type: string; final_value: number | null };
 type Ctx = { user: User | null; setUser: (u: User | null) => void; cycle: Cycle | null; cycles: Cycle[]; setCycleId: (id: string) => void; refreshCycles: () => Promise<void> };
 
 const AppCtx = createContext<Ctx>({} as Ctx);

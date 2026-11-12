@@ -73,7 +73,16 @@ def health():
 # ---------------- cycles (S01, S02, S03) ----------------
 @app.get("/api/cycles")
 def list_cycles(a: Actor = A, s: Session = S):
-    return [cyc_svc.cycle_dict(c) for c in s.query(ValuationCycle).order_by(ValuationCycle.day0_date.desc())]
+    from domain.services.work import cycle_stage
+
+    out = []
+    for c in s.query(ValuationCycle).order_by(ValuationCycle.day0_date.desc()):
+        d = cyc_svc.cycle_dict(c)
+        if c.cycle_type == "quarterly" and c.status == "open":
+            step, progress = cycle_stage(s, c.id)
+            d.update({"stage_step": step, "progress": progress})
+        out.append(d)
+    return out
 
 
 @app.get("/api/dashboard")

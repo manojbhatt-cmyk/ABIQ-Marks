@@ -483,7 +483,10 @@ def review_queue(session: Session, actor: Actor, cycle_id: str) -> list[dict]:
         mine = (stage == stage_for.get(actor.role)) or (stage == "file" and actor.role == "pm_team") or \
                (actor.role in ("deal_analyst", "deal_lead") and cl.deal_team_id == actor.deal_team_id) or \
                actor.role == "admin"
-        if not stage and actor.role not in ("deal_analyst", "deal_lead", "admin"):
+        refile = cmr.status == "filed" and not stage and actor.role in ("pm_team", "admin")
+        if refile:
+            stage, mine = "refile", True
+        elif not stage and actor.role not in ("deal_analyst", "deal_lead", "admin"):
             continue
         if not mine:
             continue
@@ -491,5 +494,5 @@ def review_queue(session: Session, actor: Actor, cycle_id: str) -> list[dict]:
         out.append({"cmr_id": cmr.id, "cycle_loan_id": cl.id, "borrower": cl.borrower, "facility_id": cl.facility_id,
                     "team": cl.team_name, "stage": stage, "status": cmr.status, "version": cmr.version,
                     "review_id": rv.id if rv else None, "loops": (cl.loop_counts_json or {}).get("QB", 0),
-                    "due_day": {"ac_manager": 19, "pm_team": 21, "file": 24, "sct": 26}.get(stage)})
+                    "due_day": {"ac_manager": 19, "pm_team": 21, "file": 24, "sct": 26, "refile": 26}.get(stage)})
     return out
