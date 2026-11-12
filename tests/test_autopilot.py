@@ -46,3 +46,13 @@ def test_autopilot_leaves_harbor_and_moves_the_rest(cycle_at_q1):
         harbor = s.query(CycleLoan).filter_by(facility_id="F-0002").one()
         assert harbor.status != "approved"
         autopilot.set_setting(s, None)
+
+
+def test_next_event_names_what_the_outside_world_does(cycle_at_q1):
+    """No clock in the UI: one button says what borrowers or Lincoln do next."""
+    from domain.db import session_scope as ss
+
+    with ss() as s:
+        ev = world.next_event(s, cycle_at_q1)
+        # this module's earlier test already moved past intake and Lincoln v1
+        assert ev is None or ev["key"] in ("revision", "waiting", "lincoln")

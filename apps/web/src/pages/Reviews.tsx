@@ -3,6 +3,7 @@ import { api, fmt, openFile, useApi } from "../api";
 import { AssumedChip, Card, Chip, Empty, ErrorState, Field, Loading, LoopBadge, PageHeader, StatusChip, useAction, useConfirm } from "../components/ui";
 import SctSessions from "../components/SctSessions";
 import { useApp } from "../context";
+import { dayDate } from "../display";
 
 export default function Reviews() {
   const { cycle, user } = useApp();
@@ -34,7 +35,7 @@ export default function Reviews() {
           {q.data!.length ? q.data!.map((x) => (
             <button key={x.cmr_id} onClick={() => setSel(x.cmr_id)} className={`mb-1 w-full rounded-lg px-3 py-2 text-left ${item?.cmr_id === x.cmr_id ? "bg-brand-50" : "hover:bg-canvas-100"}`}>
               <div className="flex justify-between text-sm font-medium"><span>{x.borrower}</span><LoopBadge code="QB" n={x.loops} /></div>
-              <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">v{x.version} {x.stage ? <Chip tone="amber">{fmt.label(x.stage)}</Chip> : <StatusChip status={x.status} />}{x.due_day && <span>due day {x.due_day}</span>}</div>
+              <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">v{x.version} {x.stage ? <Chip tone="amber">{fmt.label(x.stage)}</Chip> : <StatusChip status={x.status} />}{x.due_day && <span>due {dayDate(x.due_day)}</span>}</div>
             </button>)) : <Empty text="Nothing awaiting your stage" />}
         </div>
         <div className="col-span-6">

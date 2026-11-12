@@ -67,7 +67,7 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
             </Card>
           )}
           <Card title="Mark block (read-only, from Q15)">
-            {mb.mark !== undefined ? <div className="text-sm">Q3 mark <b className="num">{fmt.mark(mb.mark)}</b>; Lincoln range {fmt.mark(mb.range_low)} to {fmt.mark(mb.range_high)}; approved by {mb.approved_by} on {mb.approved_at?.slice(0, 10)}.
+            {mb.mark !== undefined ? <div className="text-sm">Quarter mark <b className="num">{fmt.mark(mb.mark)}</b>; Lincoln range {fmt.mark(mb.range_low)} to {fmt.mark(mb.range_high)}; approved by {mb.approved_by} on {mb.approved_at?.slice(0, 10)}.
               {mb.committee_mark !== undefined && <div className="mt-1">Committee mark <b className="num">{fmt.mark(mb.committee_mark)}</b>: {mb.committee_rationale}</div>}</div> : <div className="text-sm text-slate-400">To be updated after Lincoln's report and the Deal Team's G1 decision.</div>}
           </Card>
         </div>

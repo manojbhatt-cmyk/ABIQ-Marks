@@ -1,6 +1,6 @@
 # Demo script: 2026-Q3 marks cycle (Harbor Logistics)
 
-Open http://localhost:5173. Every password is `demo`. Use **My Work** at each step: it lists the signed-in user's next action, with a **Go** button.
+Open http://localhost:5173. Every password is `demo`. On screen, steps show as numbers (Q14 appears as 14) and there is no day counter. Use **My Work** at each step: it lists the signed-in user's next action, with a **Go** button.
 
 ## 0. Before the demo
 
@@ -25,7 +25,7 @@ cd apps/web && npm run dev                # web
 ## 1. Kickoff and intake (Q1 to Q3): PM Team
 
 1. **Q1 Kickoff:** create the cycle from Snowflake (24 loans), check the calendar, preview the message for each team, then **send the kickoff inside TIQ**. Internal communication never uses email.
-2. **Demo clock:** click Next day, or jump to day 8. Borrowers email their financials to the deal teams, with the PM Team copied.
+2. **Outside world:** in Demo controls, click **Borrowers send their packages**, then **Late borrowers reply to the reminders**. Borrowers email their financials to the deal teams, with the PM Team copied. (There is no clock on screen; this one button always names what borrowers or Lincoln do next.)
 3. **Q2 Intake:** in **External mail** (Inbox), TIQ has pulled out each attachment and classified it. It also tracks each package and drafts reminders to borrowers who are late.
 4. **Q3 Share with Lincoln:** **Share all complete packages** sends them to Lincoln in one click (no manual download and upload).
 
@@ -40,11 +40,11 @@ cd apps/web && npm run dev                # web
 
 ## 3. Valuation and Gate 1 (Q10 to Q14)
 
-11. **Q10 Lincoln:** jump the clock to day 20. Lincoln's draft marks arrive: Harbor **86.5** (range 85.0 to 88.0).
+11. **Q10 Lincoln:** click **Lincoln sends draft marks**. Lincoln's draft marks arrive: Harbor **86.5** (range 85.0 to 88.0).
 12. **Q11 Impact note:** the PM Team sends it in TIQ. Story-loan delta is **−3.95M**.
 13. **Q12/Q13:** the PM Team loads the marks to Everest and copies them to SharePoint.
 14. **Gate 1** (`team.blue.lead`): run the **A5 challenge**. It uses the sponsor's 55 / 16 = 3.4x, which is inside the covenant. **Send back** to Lincoln with the TIQ-drafted note.
-15. Advance the clock 2 days. **Lincoln v2: 88.0** arrives, and the PM Team loads it.
+15. Click **Lincoln sends the revised valuation**. **Lincoln v2: 88.0** arrives, and the PM Team loads it.
 16. **Gate 1 again:** the lead **approves 88.0**. Impact note v2 shows **−3.05M**.
 
 ## 4. Valuation Committee, Gate 2 (Q15 to Q18)

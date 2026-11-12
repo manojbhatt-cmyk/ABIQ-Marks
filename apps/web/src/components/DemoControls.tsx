@@ -1,4 +1,4 @@
-import { Eraser, Loader2, Wand2 } from "lucide-react";
+import { Eraser, Loader2, Send, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, useApi } from "../api";
@@ -9,11 +9,29 @@ import { Modal } from "./ui";
 export default function DemoControls() {
   const { user, cycle, refreshCycles } = useApp();
   const nav = useNavigate();
-  const [busy, setBusy] = useState<"" | "clear" | "autofill">("");
+  const [busy, setBusy] = useState<"" | "clear" | "autofill" | "event">("");
   const [ask, setAsk] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const auto = useApi<any>(cycle ? `/cycles/${cycle.id}/autopilot` : null, [cycle?.id]);
+  const ev = useApi<any>(cycle && cycle.status !== "draft" ? `/cycles/${cycle.id}/next-event` : null, [cycle?.id, cycle?.day, cycle?.status]);
   if (!user || !["pm_team", "admin"].includes(user.role)) return null;
+  const next = ev.data?.event;
+
+  const outside = async () => {
+    if (!cycle) return;
+    setBusy("event");
+    setMsg(`${next?.label || "Outside world"}...`);
+    try {
+      const r = await api(`/cycles/${cycle.id}/next-event`, { body: {} });
+      setMsg(r.log.join(" · "));
+      await refreshCycles();
+      await ev.reload();
+    } catch (e: any) {
+      setMsg(`Stopped: ${e.message}`);
+    } finally {
+      setBusy("");
+    }
+  };
   const autoOn = !!auto.data?.except;
 
   const clear = async () => {
@@ -67,7 +85,10 @@ export default function DemoControls() {
         title={cycle?.status === "draft" ? "Send the kickoff first" : "Complete the routine steps for every loan except Harbor Logistics"}>
         {busy === "autofill" ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />} Autofill other loans
       </button>
-      {autoOn && <span className="rounded-full bg-leaf-50 px-2 py-0.5 text-xs font-semibold text-leaf-700">Autofill on: other loans keep up each time the clock moves</span>}
+      {next && (next.to_day ? <button className="btn-accent" disabled={!!busy} onClick={outside} title={next.detail}>
+          {busy === "event" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} {next.label}
+        </button> : <span className="rounded-full bg-warn-100 px-2 py-0.5 text-xs text-warn-700" title={next.detail}>{next.label}</span>)}
+      {autoOn && <span className="rounded-full bg-leaf-50 px-2 py-0.5 text-xs font-semibold text-leaf-700">Autofill on: other loans keep up whenever something arrives</span>}
       {msg && <span className="text-xs text-slate-600">{msg}</span>}
       {ask && (
         <Modal title="Clear the cycle?" onClose={() => setAsk(false)} footer={<>

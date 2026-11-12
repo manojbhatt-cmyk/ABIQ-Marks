@@ -5,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { token } from "./api";
 import Shell, { homeFor } from "./components/Shell";
 import { AppProvider, useApp } from "./context";
+import { installDisplayFilter } from "./display";
 import "./index.css";
 import Admin from "./pages/Admin";
 import Approvals from "./pages/Approvals";
@@ -70,6 +71,7 @@ function Protected() {
   );
 }
 
+installDisplayFilter();
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <AppProvider>

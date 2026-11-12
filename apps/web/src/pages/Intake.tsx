@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { api, downloadFile, fmt, openFile, useApi } from "../api";
 import { AiCard, AssumedChip, Card, Chip, ConfidenceRing, Empty, ErrorState, Loading, PageHeader, StatusChip, useAction } from "../components/ui";
 import { useApp } from "../context";
+import { dayDate } from "../display";
 
 const TYPES = ["financial_statements", "covenant_certificate", "supporting", "sponsor_letter", "waiver_request", "other"];
 
@@ -54,12 +55,12 @@ export default function Intake() {
                       {d.confirmed_by && <div className="text-[10px] text-slate-400">confirmed by {d.confirmed_by.split("@")[0]}</div>}</td>
                     <td className="td"><ConfidenceRing value={d.confidence} /></td><td className="td text-xs">{d.period}</td><td className="tdn">{d.pages}</td><td className="td"><StatusChip status={d.status === "indexed" ? "done" : d.status} /></td></tr>))}</tbody></table>
             ) : <Empty text="No documents received yet" />}
-            <div className="mt-4"><div className="section-title">Tasks</div>{loan.tasks.map((t: any, i: number) => <div key={i} className="flex justify-between border-b border-canvas-100 py-1 text-sm"><span>{t.title}</span><span className="flex gap-2"><span className="text-xs text-slate-400">day {t.due_day}</span><StatusChip status={t.status} /></span></div>)}</div>
+            <div className="mt-4"><div className="section-title">Tasks</div>{loan.tasks.map((t: any, i: number) => <div key={i} className="flex justify-between border-b border-canvas-100 py-1 text-sm"><span>{t.title}</span><span className="flex gap-2"><span className="text-xs text-slate-400">{dayDate(t.due_day)}</span><StatusChip status={t.status} /></span></div>)}</div>
           </Card>}
           {loan && <Card title="Email thread">
             {loan.emails.length ? loan.emails.map((e: any) => (
               <div key={e.id} className="mb-3 rounded-lg border border-canvas-200 p-3">
-                <div className="flex justify-between text-xs text-slate-500"><span>{e.from} {e.match && <Chip tone="blue">matched by {e.match}</Chip>}</span><span>day {e.day}</span></div>
+                <div className="flex justify-between text-xs text-slate-500"><span>{e.from} {e.match && <Chip tone="blue">matched by {e.match}</Chip>}</span><span>{dayDate(e.day)}</span></div>
                 <div className="mt-1 text-sm font-medium">{e.subject}</div>
                 <div className="mt-1 whitespace-pre-wrap text-xs text-slate-600">{e.body}</div>
                 {e.attachments?.length > 0 && <div className="mt-1 text-[11px] text-slate-400">Attachments: {e.attachments.join(", ")}</div>}

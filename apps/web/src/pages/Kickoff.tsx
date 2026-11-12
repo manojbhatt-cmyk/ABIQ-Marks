@@ -5,7 +5,7 @@ import { api, useApi } from "../api";
 import { AssumedChip, Card, Chip, Field, PageHeader, useAction, useConfirm } from "../components/ui";
 import { useApp } from "../context";
 
-const STEPS = ["Period and day 0", "Calendar", "Loan universe", "Ownership", "Message preview", "Send in TIQ"];
+const STEPS = ["Period and quarter end", "Calendar", "Loan universe", "Ownership", "Message preview", "Send in TIQ"];
 
 export default function Kickoff() {
   const { cycle, refreshCycles, setCycleId } = useApp();
@@ -32,13 +32,13 @@ export default function Kickoff() {
           </button>
         ))}
       </div>
-      {sent && <div className="mb-4 rounded-lg bg-success-100 px-4 py-2 text-sm text-success-700">Kickoff sent for {cycle!.period}. The clock is running (day {cycle!.day}).</div>}
+      {sent && <div className="mb-4 rounded-lg bg-success-100 px-4 py-2 text-sm text-success-700">Kickoff sent for {cycle!.period}. The cycle is running.</div>}
       {step === 0 && (
-        <Card title="1. Period and day 0">
+        <Card title="1. Period and quarter end">
           {cycle ? <div className="text-sm">Cycle {cycle.period} exists. <button className="btn-secondary ml-2" onClick={() => setStep(1)}>Continue</button></div> : (
             <div className="grid max-w-lg grid-cols-2 gap-4">
               <Field label="Period"><input className="input" value={period} onChange={(e) => setPeriod(e.target.value)} /></Field>
-              <Field label="Day 0 (quarter end)"><input className="input" type="date" value={day0} onChange={(e) => setDay0(e.target.value)} /></Field>
+              <Field label="Quarter end"><input className="input" type="date" value={day0} onChange={(e) => setDay0(e.target.value)} /></Field>
               <button className="btn-primary col-span-2 w-fit" disabled={act.busy} onClick={() => act.run(async () => {
                 const c = await api("/cycles", { body: { period, day0 } }); setCycleId(c.id); await refreshCycles(); setStep(1);
               })}>Create cycle from Snowflake</button>
@@ -47,11 +47,13 @@ export default function Kickoff() {
       )}
       {step === 1 && cycle && (
         <Card title="2. Calendar" actions={<button className="btn-primary" onClick={() => setStep(2)}>Next</button>}>
-          <table className="w-full"><thead><tr>{["Step", "Deadline", "Day", "Date", "Source", ""].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
+          <table className="w-full"><thead><tr>{["Step", "Deadline", "Date", "Source", ""].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
             <tbody>{(dl.data || []).map((d) => (
               <tr key={d.step}><td className="td font-medium">{d.step}</td><td className="td">{d.label}</td>
-                <td className="td w-28"><input className="input num" type="number" defaultValue={d.day} disabled={!!sent} onBlur={(e) => Number(e.target.value) !== d.day && act.run(async () => { await api(`/cycles/${cycle.id}/deadlines/${d.step}`, { method: "PUT", body: { day: Number(e.target.value) } }); dl.reload(); })} /></td>
-                <td className="td num">{d.date}</td><td className="td text-xs text-slate-500">{d.source}</td><td className="td">{d.assumed ? <AssumedChip dq="DQ1" what="interpolated deadline" /> : <Chip tone="green">source note</Chip>}</td></tr>))}</tbody></table>
+                <td className="td w-44"><input className="input num" type="date" defaultValue={d.date} disabled={!!sent} onBlur={(e) => {
+                  const day = cycle.day0 && e.target.value ? Math.round((Date.parse(e.target.value) - Date.parse(cycle.day0)) / 86400000) : d.day;
+                  if (day !== d.day) act.run(async () => { await api(`/cycles/${cycle.id}/deadlines/${d.step}`, { method: "PUT", body: { day } }); dl.reload(); });
+                }} /></td><td className="td text-xs text-slate-500">{d.source}</td><td className="td">{d.assumed ? <AssumedChip dq="DQ1" what="interpolated deadline" /> : <Chip tone="green">source note</Chip>}</td></tr>))}</tbody></table>
         </Card>
       )}
       {step === 2 && cycle && (
@@ -81,7 +83,7 @@ export default function Kickoff() {
       )}
       {step === 5 && cycle && (
         <Card title="6. Send in TIQ">
-          <div className="text-sm">{(preview.data || []).length} in-platform messages, one per deal team. Sending starts the clock (day 1), creates the per-loan tasks and deadlines, and puts the next actions in each team's My Work. Deal teams ask their borrowers for the package; borrowers reply by email (third party), which TIQ picks up.</div>
+          <div className="text-sm">{(preview.data || []).length} in-platform messages, one per deal team. Sending starts the cycle, creates the per-loan tasks and deadlines, and puts the next actions in each team's My Work. Deal teams ask their borrowers for the package; borrowers reply by email (third party), which TIQ picks up.</div>
           <button className="btn-primary mt-4" disabled={!!sent} onClick={() => confirm.ask(<>You are sending the {cycle.period} kickoff inside TIQ to {(preview.data || []).length} deal teams: {(preview.data || []).map((p) => p.team_name).join(", ")}.</>,
             async () => { await api(`/cycles/${cycle.id}/kickoff`, { body: { edits } }); await refreshCycles(); nav("/work"); })}>{sent ? "Kickoff sent" : "Send kickoff in TIQ"}</button>
         </Card>

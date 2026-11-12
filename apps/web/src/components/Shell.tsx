@@ -75,7 +75,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </select>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-leaf-400" style={{ width: `${(cycle.day / 45) * 100}%` }} /></div>
             <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-300">
-              <span className="num">Day {cycle.day} of 45</span>
+              <span>Quarterly marks</span>
               <span className="rounded-full bg-lime-400 px-2 py-0.5 text-[10px] font-semibold text-navy-900">{cycle.status === "closed" ? "Closed" : cycle.status === "draft" ? "Kickoff pending" : phase}</span>
             </div>
           </div>

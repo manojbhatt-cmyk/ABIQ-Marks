@@ -5,6 +5,7 @@ import { Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, Loops, PageHeader, 
 import DemoControls from "../components/DemoControls";
 import { useApp } from "../context";
 import { PHASE_STYLE, ProcessStrip } from "./Work";
+import { dayDate } from "../display";
 
 const DT_COLS = [["Intake", ["Q1", "Q2", "Q3"]], ["Spread", ["Q4"]], ["CMR", ["Q5"]], ["Review", ["Q6", "Q7", "Q8", "Q9"]], ["Agreed", ["Q10", "Q11", "Q12", "Q13", "Q14", "Q15", "Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22"]]] as const;
 const LN_COLS = [["Not shared", ["Q1", "Q2", "Q3"]], ["Package shared", ["Q10"]], ["Marks received", ["Q11"]], ["Loaded", ["Q12", "Q13"]]] as const;
@@ -62,15 +63,14 @@ export default function Dashboard() {
   const g1Loans = loans.map((l: any) => ({ ...l, g1step: l.status === "waiting_on_lincoln" ? "Q14" : l.current_step }));
   return (
     <>
-      <PageHeader title="Cycle Dashboard" subtitle={`${d.cycle.period} quarterly cycle, day 0 ${d.cycle.day0}, deadline ${d.cycle.deadline}`}
+      <PageHeader title="Cycle Dashboard" subtitle={`${d.cycle.period} quarterly cycle, quarter end ${d.cycle.day0}, deadline ${d.cycle.deadline}`}
         actions={<>
           <select className="input w-40" value={team} onChange={(e) => setTeam(e.target.value)}><option value="">All deal teams</option>{teams.map((t) => <option key={t}>{t}</option>)}</select>
-          <button className="btn-secondary" title="Demo clock: borrowers and Lincoln act on their days" disabled={d.cycle.status === "draft"} onClick={() => act.run(async () => { await api(`/cycles/${d.cycle.id}/advance`, { body: { days: 1 } }); await reload(); await refreshCycles(); })}>Next day</button>
           <button className="btn-secondary" onClick={() => window.print()}>Export PDF</button>
         </>} />
       {act.node}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <Kpi label="Day of cycle" value={`${k.day} of ${k.length}`} sub={d.cycle.status === "closed" ? "Cycle closed" : d.cycle.status} />
+        <Kpi label="Cycle" value={d.cycle.period} sub={d.cycle.status === "closed" ? "Closed" : d.cycle.status === "draft" ? "Kickoff pending" : "Open"} />
         <Kpi label="Loans in cycle" value={k.loans} sub="in scope" />
         <Kpi label="Gates passed" value={`G1 ${k.g1_passed} of ${k.loans}`} />
         <Kpi label="Portfolio value so far" value={fmt.m(k.portfolio_current)} sub={<><Delta v={k.delta} /> vs {fmt.m(k.portfolio_previous)}; story loans {fmt.m(k.story_current)}</>} tone={k.delta < 0 ? "red" : undefined} />
@@ -78,7 +78,7 @@ export default function Dashboard() {
       </div>
       <DemoControls />
       <ProcessStrip process={work.data?.process || []} />
-      <Card title="45-day timeline" className="mb-6">
+      <Card title="Cycle calendar" className="mb-6">
         <div className="relative h-16">
           {d.phases.map((p: any) => (
             <div key={p.phase} className={`absolute top-0 h-7 rounded-lg px-2 text-[11px] font-semibold leading-7 text-white shadow-sm ${PHASE_STYLE[p.phase - 1]?.bg || "bg-brand-600"} ${p.phase === 5 ? "!text-navy-900" : ""}`} style={{ left: `${(p.start / 45) * 100}%`, width: `${((p.end - p.start + 1) / 45) * 100}%`, top: p.phase === 3 ? 30 : 0 }} title={`${p.name}, days ${p.start} to ${p.end}${p.assumed ? " (assumed)" : ""}`}>
@@ -86,7 +86,6 @@ export default function Dashboard() {
             </div>
           ))}
           {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}${x.assumed ? " (assumed)" : ""}`} className={`absolute bottom-0 h-3 w-0.5 ${x.day < k.day ? "bg-slate-300" : "bg-slate-500"}`} style={{ left: `${(x.day / 45) * 100}%` }} />)}
-          <div className="absolute -top-1 bottom-0 w-1 rounded bg-danger-600" style={{ left: `${(k.day / 45) * 100}%` }} title={`Today: day ${k.day}`} />
         </div>
       </Card>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -98,7 +97,7 @@ export default function Dashboard() {
         </div>
         <div className="space-y-6">
           <Card title="Needs attention">
-            {d.attention.length ? d.attention.map((a: any, i: number) => <Link to={`/loans/${a.cycle_loan_id}`} key={i} className="mb-2 flex items-center justify-between rounded-lg bg-danger-100 px-3 py-2 text-sm text-danger-700"><span>{a.title}</span><span className="text-xs">due day {a.day}</span></Link>)
+            {d.attention.length ? d.attention.map((a: any, i: number) => <Link to={`/loans/${a.cycle_loan_id}`} key={i} className="mb-2 flex items-center justify-between rounded-lg bg-danger-100 px-3 py-2 text-sm text-danger-700"><span>{a.title}</span><span className="text-xs">due {dayDate(a.day)}</span></Link>)
               : <Empty text="Nothing overdue" />}
             {d.loans.filter((l: any) => l.status === "sent_back" || l.status === "waiting_on_lincoln").map((l: any) => <Link to={`/loans/${l.id}`} key={l.id} className="mb-2 flex items-center justify-between rounded-lg bg-warn-100 px-3 py-2 text-sm text-warn-700"><span>{l.borrower}</span><StatusChip status={l.status} /></Link>)}
           </Card>

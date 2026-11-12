@@ -917,6 +917,26 @@ def advance(cycle_id: str, body: dict = Body(default={}), a: Actor = A, s: Sessi
     return {"day": s.get(ValuationCycle, cycle_id).current_day, "log": log}
 
 
+@app.get("/api/cycles/{cycle_id}/next-event")
+def next_event(cycle_id: str, a: Actor = A, s: Session = S):
+    """Demo: what the outside world (borrowers, Lincoln) does next. No clock is shown."""
+    from synth import world
+
+    return {"event": world.next_event(s, cycle_id)}
+
+
+@app.post("/api/cycles/{cycle_id}/next-event")
+def run_next_event(cycle_id: str, a: Actor = A, s: Session = S):
+    require(a, "cycle.manage")
+    from synth import world
+
+    try:
+        log = world.run_next_event(s, a, cycle_id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+    return {"log": log, "event": world.next_event(s, cycle_id)}
+
+
 # ---------------- admin (S22) ----------------
 @app.get("/api/admin/rules")
 def rules(a: Actor = A, s: Session = S):

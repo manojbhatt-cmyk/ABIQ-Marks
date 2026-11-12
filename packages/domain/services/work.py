@@ -141,7 +141,7 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
         for cl in loans:
             sp, c, lv = spread_of(cl), cmr_of(cl), lv_of(cl)
             if cl.package_status in ("not_received", "late", "incomplete"):
-                missing = ", ".join(m.replace("_", " ") for m in cl.package_missing or []) or "the Q3 package"
+                missing = ", ".join(m.replace("_", " ") for m in cl.package_missing or []) or "the quarterly package"
                 items.append(_item("Q2", f"Collect financials: {cl.borrower}", f"Waiting on the borrower: {missing}. Upload "
                                    "anything you received directly.", "/intake", kind="waiting", loan=cl.borrower))
                 continue
