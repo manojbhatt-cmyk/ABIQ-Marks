@@ -292,4 +292,18 @@ export const Field = ({ label, children, help }: { label: string; children: Reac
   <label className="flex flex-col gap-1.5"><span className="text-[13px] font-medium text-slate-500">{label}</span>{children}{help && <span className="text-xs text-slate-500">{help}</span>}</label>
 );
 
+/** AI provenance chip: sage tint and a sparkle. Marks anything an agent produced. */
+export function AiChip({ children = "AI", title }: { children?: ReactNode; title?: string }) {
+  return <span className="ai-chip" title={title || "Prepared by TIQ. Agents prepare, people decide."}><Sparkles size={12} aria-hidden="true" />{children}</span>;
+}
+
+/** Segmented control: filters or switches one view. */
+export function Seg({ value, options, onChange, label }: { value: string; options: { id: string; label: ReactNode; count?: number }[]; onChange: (id: string) => void; label?: string }) {
+  return (
+    <div className="seg" role="group" aria-label={label}>
+      {options.map((o) => <button key={o.id} type="button" aria-pressed={value === o.id} onClick={() => onChange(o.id)}>{o.label}{o.count !== undefined && <span className="count">{o.count}</span>}</button>)}
+    </div>
+  );
+}
+
 export default React;

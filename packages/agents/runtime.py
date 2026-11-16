@@ -64,8 +64,9 @@ def suggest(session: Session, run: AgentRun, kind: str, target_type: str, target
     return s
 
 
-def rewrite(run: AgentRun, draft: str, instruction: str, heavy: bool = False) -> str:
-    """Optional LLM polish of a deterministic draft. Facts must not change; returns the draft on any failure."""
+def rewrite(run: AgentRun, draft: str, instruction: str, heavy: bool = False, sources: str = "") -> str:
+    """Optional LLM polish of a deterministic draft. Facts must not change; returns the draft on any failure.
+    With `sources`, the model may add facts, but only ones found in those sources, cited as [file p.N]."""
     if not llm_enabled():
         return draft
     model = settings.model_heavy if heavy else settings.model_light
@@ -75,8 +76,12 @@ def rewrite(run: AgentRun, draft: str, instruction: str, heavy: bool = False) ->
                           json={"model": model, "temperature": 0.2, "messages": [
                               {"role": "system", "content": "You edit credit memo text for a private credit "
                                "valuation team. Keep every number, name and citation marker exactly. Do not add "
-                               "facts. Never use em dashes. " + instruction},
-                              {"role": "user", "content": draft}]})
+                               "facts. Never use em dashes. " + instruction if not sources else
+                               "You edit credit memo text for a private credit valuation team. Keep every number, "
+                               "name and citation marker exactly. Add facts only from SOURCES, cite each as "
+                               "[file p.N], and return only the section text. Never use em dashes. " + instruction},
+                              {"role": "user", "content": draft if not sources else
+                               f"CURRENT TEXT:\n{draft}\n\nSOURCES:\n{sources}"}]})
         resp.raise_for_status()
         data = resp.json()
         usage = data.get("usage", {})

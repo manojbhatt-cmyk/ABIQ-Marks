@@ -82,7 +82,8 @@ def _note_facts(session: Session, cl: CycleLoan) -> dict:
     return facts
 
 
-def draft_sections(session: Session, actor: Actor, cmr_id: str, codes: list[str] | None = None) -> list[CmrSection]:
+def draft_sections(session: Session, actor: Actor, cmr_id: str, codes: list[str] | None = None,
+                   instruction: str = "") -> list[CmrSection]:
     cmr = session.get(Cmr, cmr_id)
     cl = session.get(CycleLoan, cmr.cycle_loan_id)
     require(actor, "cmr.edit", team=cl.deal_team_id)
@@ -96,7 +97,10 @@ def draft_sections(session: Session, actor: Actor, cmr_id: str, codes: list[str]
     fs_cite = [{"doc_id": d.id, "file": d.file_name, "page": 1, "spread_id": sp.id} for d in fin_docs]
     rec_hint = a2_recommendation(mets, cov, cl.previous_rating or 2, bool(cl.previous_watchlist), "sponsor" in notes)
     with agent_run(session, "A2", "cmr_drafting", cycle_id=cl.cycle_id, cycle_loan_id=cl.id,
-                   input_summary=f"{cl.borrower} sections {codes or 'all'}") as run:
+                   input_summary=f"{cl.borrower} sections {codes or 'all'}"
+                   + (f"; instruction: {instruction}" if instruction else "")) as run:
+        if instruction:
+            step(run, "instruction", instruction)
         step(run, "gather_facts", {"metrics": list(mets), "notes": list(notes)})
         drafts = a2_draft({"borrower": cl.borrower, "metrics": mets, "covenant": cov, "notes": notes,
                            "cites": {"financials": fs_cite}, "sponsor": cl.sponsor, "recommendation_hint": rec_hint})
@@ -107,7 +111,9 @@ def draft_sections(session: Session, actor: Actor, cmr_id: str, codes: list[str]
             d = drafts.get(s.section_code)
             if not d:
                 continue
-            body = rewrite(run, d["body"], "Tighten the wording for a credit memo section.", heavy=True)
+            body = rewrite(run, d["body"], "Tighten the wording for a credit memo section."
+                           + (f" The Deal Team asks: {instruction}" if instruction else ""), heavy=True)
+            _supersede(session, s.id)
             s.draft_body_markdown, s.citations_json, s.drafted_by_agent_run_id = body, d["citations"], run.id
             if not s.body_markdown:
                 s.status = "ai_draft"
@@ -121,6 +127,93 @@ def draft_sections(session: Session, actor: Actor, cmr_id: str, codes: list[str]
     audit(session, actor, "cmr.section_drafted", "cmr", cmr.id, cycle_id=cl.cycle_id, cycle_loan_id=cl.id,
           after={"sections": [s.section_code for s in out]}, agent_run_id=run.id)
     return out
+
+
+def _supersede(session: Session, section_id: str) -> None:
+    for old in session.query(AgentSuggestion).filter_by(target_entity_type="cmr_section", target_entity_id=section_id,
+                                                         status="proposed"):
+        old.status = "superseded"
+
+
+STOP = {"missing", "please", "about", "include", "mention", "should", "would", "their", "there", "what", "with",
+        "from", "that", "this", "also", "more", "detail", "details", "section", "write", "forgot", "forgets"}
+
+
+def _sentences_about(text: str, terms: list[str]) -> list[str]:
+    out = []
+    for sent in re.split(r"(?<=[.!?])\s+|\n+", text or ""):
+        sent = sent.strip()
+        if 20 <= len(sent) <= 400 and any(t[:6] in sent.lower() for t in terms):
+            out.append(sent)
+    return out
+
+
+def _words(t: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9.$]{3,}", t.lower()))
+
+
+def _pick_facts(hits: list[dict], terms: list[str], current: str, n: int = 2) -> tuple[list[str], list[dict]]:
+    """The clearest sentences on the instruction's terms: most terms first, then shortest; near-duplicates and
+    facts the section already states are skipped."""
+    cands = []
+    for h in hits:
+        for sent in _sentences_about(h["text"], terms):
+            if len(sent) <= 260:
+                cands.append((-sum(t[:6] in sent.lower() for t in terms), len(sent), sent, h))
+    found, cites, seen = [], [], [_words(x) for x in re.split(r"(?<=[.!?])\s+", current) if x]
+    for _, _, sent, h in sorted(cands, key=lambda c: (c[0], c[1])):
+        w = _words(sent)
+        if any(len(w & x) >= 0.6 * min(len(w), len(x) or 1) for x in seen):
+            continue
+        seen.append(w)
+        found.append(sent)
+        cites.append({"doc_id": h["document_id"], "file": h["file"], "page": h["page"]})
+        if len(found) == n:
+            break
+    return found, cites
+
+
+def redraft_section(session: Session, actor: Actor, section_id: str, instruction: str) -> CmrSection:
+    """Tell TIQ what the section misses (decision D27). A2 redrafts from the current text, the instruction and the
+    loan's documents. The result is a suggestion next to the current text: Accept, Edit or Reject."""
+    from domain.services.lineage import _search
+
+    instruction = (instruction or "").strip()
+    if len(instruction) < 4:
+        raise BusinessRuleError("Say what is missing, for example: add the truck appraisal date")
+    s = session.get(CmrSection, section_id)
+    cmr = session.get(Cmr, s.cmr_id)
+    cl = session.get(CycleLoan, cmr.cycle_loan_id)
+    require(actor, "cmr.edit", team=cl.deal_team_id)
+    if cmr.status != "draft":
+        raise BusinessRuleError("The CMR is not editable in its current status")
+    current = (s.body_markdown or s.draft_body_markdown or "").strip()
+    terms = [t for t in re.findall(r"[a-z]{4,}", instruction.lower()) if t not in STOP]
+    with agent_run(session, "A2", "cmr_redraft", cycle_id=cl.cycle_id, cycle_loan_id=cl.id,
+                   input_summary=f"{cl.borrower} {s.section_code}: {instruction}") as run:
+        step(run, "instruction", instruction)
+        hits = _search(session, cl.cycle_id, " ".join(terms), facility_id=cl.facility_id) if terms else []
+        step(run, "search_documents", [{"file": h["file"], "page": h["page"], "score": h["score"]} for h in hits])
+        found, cites = _pick_facts(hits[:3], terms, current)
+        added = " ".join(f"{t.rstrip('.')}. [{c['file']} p.{c['page']}]" for t, c in zip(found, cites))
+        body = (current + "\n\n" + added).strip() if added else current
+        sources = "\n".join(f"[{h['file']} p.{h['page']}] {h['text'][:1200]}" for h in hits[:3])
+        body = rewrite(run, body, f"Rewrite the section so it covers what the Deal Team says is missing: {instruction}. "
+                       "Keep everything that is already right.", heavy=True, sources=sources)
+        nothing = body.strip() == current
+        _supersede(session, s.id)
+        citations = list(s.citations_json or []) + [c for c in cites if c not in (s.citations_json or [])]
+        s.draft_body_markdown, s.drafted_by_agent_run_id, s.citations_json = body, run.id, citations
+        if not s.body_markdown:
+            s.status = "ai_draft"
+        suggest(session, run, "cmr_redraft", "cmr_section", s.id,
+                {"body": body, "citations": citations, "instruction": instruction, "found": len(found),
+                 "nothing_found": nothing}, 0.75 if found else 0.4)
+        run.output_summary = f"{s.section_code} redrafted, {len(found)} fact(s) added from documents"
+    audit(session, actor, "cmr.section_redraft_requested", "cmr_section", s.id, cycle_id=cl.cycle_id,
+          cycle_loan_id=cl.id, after={"section": s.section_code, "instruction": instruction, "facts_found": len(found)},
+          agent_run_id=run.id)
+    return s
 
 
 def _kept_ratio(draft: str, final: str) -> float:
@@ -148,9 +241,8 @@ def decide_section(session: Session, actor: Actor, section_id: str, action: str,
         s.status = "empty" if not s.body_markdown else s.status
     if s.draft_body_markdown:
         s.kept_sentence_ratio = _kept_ratio(s.draft_body_markdown, s.body_markdown)
-        sug = session.query(AgentSuggestion).filter_by(target_entity_type="cmr_section", target_entity_id=s.id,
-                                                       status="proposed").first()
-        if sug:
+        for sug in session.query(AgentSuggestion).filter_by(target_entity_type="cmr_section", target_entity_id=s.id,
+                                                             status="proposed"):
             sug.status = {"accept": "accepted", "edit": "edited", "save": "edited", "reject": "rejected"}[action]
             sug.decided_by, sug.decided_at = actor.email, now()
             sug.edit_distance = round(1 - difflib.SequenceMatcher(None, s.draft_body_markdown, s.body_markdown or "").ratio(), 3)
@@ -434,6 +526,17 @@ def attach_mark(session: Session, actor: Actor, cycle_loan_id: str, decision) ->
     return cmr
 
 
+def _pending(session: Session, section_id: str) -> dict | None:
+    """The TIQ draft or redraft waiting for a person's decision, if any."""
+    sug = session.query(AgentSuggestion).filter_by(target_entity_type="cmr_section", target_entity_id=section_id,
+                                                   status="proposed").order_by(AgentSuggestion.created_at.desc()).first()
+    if not sug:
+        return None
+    p = sug.payload_json or {}
+    return {"id": sug.id, "kind": sug.kind, "instruction": p.get("instruction"), "found": p.get("found"),
+            "nothing_found": p.get("nothing_found", False)}
+
+
 def cmr_view(session: Session, cycle_loan_id: str) -> dict | None:
     cmr = latest_cmr(session, cycle_loan_id)
     if not cmr:
@@ -447,6 +550,7 @@ def cmr_view(session: Session, cycle_loan_id: str) -> dict | None:
                 "findings": cmr.review_findings_json, "author": cmr.author_user_id},
         "sections": [{"id": s.id, "code": s.section_code, "title": s.title, "body": s.body_markdown,
                       "draft": s.draft_body_markdown, "citations": s.citations_json, "status": s.status,
+                      "pending": _pending(session, s.id),
                       "kept_ratio": s.kept_sentence_ratio,
                       "comments": sum(1 for rv in reviews for c in session.query(CmrReviewComment).filter_by(
                           cmr_review_id=rv.id, section_code=s.section_code) if not c.resolved)}

@@ -458,8 +458,14 @@ def create_cmr(cycle_loan_id: str, a: Actor = A, s: Session = S):
 
 @app.post("/api/cmr/{cmr_id}/draft")
 def draft_cmr(cmr_id: str, body: dict = Body(default={}), a: Actor = A, s: Session = S):
-    secs = cmrs.draft_sections(s, a, cmr_id, body.get("codes"))
+    secs = cmrs.draft_sections(s, a, cmr_id, body.get("codes"), body.get("instruction") or "")
     return {"drafted": [x.section_code for x in secs]}
+
+
+@app.post("/api/cmr-sections/{section_id}/redraft")
+def redraft_section(section_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
+    x = cmrs.redraft_section(s, a, section_id, body.get("instruction", ""))
+    return {"id": x.id, "draft": x.draft_body_markdown, "citations": x.citations_json}
 
 
 @app.post("/api/cmr-sections/{section_id}")
