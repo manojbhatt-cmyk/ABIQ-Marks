@@ -5,7 +5,7 @@ import { api } from "../api";
 import { useApp } from "../context";
 import { AiChip } from "./ui";
 
-type Turn = { q: string; a: { answer: string; citations?: { label: string }[] } };
+type Turn = { q: string; a: { answer: string; citations?: { label: string }[]; kind?: string } };
 
 /** Open the chat from anywhere, optionally with a question: window.dispatchEvent(new CustomEvent("tiq:ask", { detail })) */
 export const openAsk = (question?: string) => window.dispatchEvent(new CustomEvent("tiq:ask", { detail: question || "" }));
@@ -36,7 +36,8 @@ export default function AskLauncher() {
     if (!question.trim() || busy) return;
     setBusy(true); setQ("");
     try {
-      const a = await api("/ask", { body: { question, cycle_id: cycle?.id, cycle_loan_id: ctx.id } });
+      const history = log.slice(-3).flatMap((t) => [{ role: "user", content: t.q }, { role: "assistant", content: t.a.answer }]);
+      const a = await api("/ask", { body: { question, cycle_id: cycle?.id, cycle_loan_id: ctx.id, history } });
       setLog((l) => [...l, { q: question, a }]);
     } catch (e: any) {
       setLog((l) => [...l, { q: question, a: { answer: e.message, citations: [] } }]);
@@ -83,7 +84,7 @@ export default function AskLauncher() {
               <div key={i} className="space-y-2">
                 <div className="ml-10 rounded-[12px_12px_4px_12px] bg-brand-600 px-3 py-2 text-[13.5px] text-on-brand">{x.q}</div>
                 <div className="ai-note">
-                  <div className="mb-1"><AiChip>TIQ</AiChip></div>
+                  <div className="mb-1 flex flex-wrap items-center gap-2"><AiChip>TIQ</AiChip>{x.a.kind === "general" && <span className="text-[11px] text-muted">General answer, not from a loan's records</span>}</div>
                   <div className="text-[13.5px] leading-relaxed">{x.a.answer}</div>
                   {!!x.a.citations?.length && (
                     <div className="mt-2 flex flex-wrap gap-1.5">{x.a.citations.map((c, j) => <span key={j} className="badge badge-gray"><FileText size={12} aria-hidden="true" />{c.label}</span>)}</div>)}

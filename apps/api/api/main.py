@@ -843,8 +843,11 @@ def get_audit(cycle_id: str | None = None, cycle_loan_id: str | None = None, ent
 
 @app.post("/api/ask")
 def ask(body: dict = Body(...), a: Actor = A, s: Session = S):
-    return lineage.ask(s, a, quarterly_cycle(s, body.get("cycle_id")).id, body.get("question", ""),
-                       body.get("cycle_loan_id"))
+    try:
+        cycle_id = quarterly_cycle(s, body.get("cycle_id")).id
+    except HTTPException:
+        cycle_id = None  # no cycle yet: Ask TIQ still answers general questions
+    return lineage.ask(s, a, cycle_id, body.get("question", ""), body.get("cycle_loan_id"), body.get("history"))
 
 
 @app.post("/api/suggestions/{suggestion_id}")

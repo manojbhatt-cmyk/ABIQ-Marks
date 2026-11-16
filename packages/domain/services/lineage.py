@@ -5,7 +5,7 @@ import re
 
 from sqlalchemy.orm import Session
 
-from agents.runtime import agent_run, rewrite, step
+from agents.runtime import agent_run, chat, rewrite, step
 from domain.models import (AgendaTestResult, Approval, ApprovalRequest, AuditEvent, Cmr, CmrFile, CmrReview,
                            CommitteeDecision, CycleLoan, Distribution, Document, DocumentChunk, FinancialSpread,
                            GovernanceSignoff, LincolnValuation, ReconciliationItem, ValuationCycle, ValuationDecision)
@@ -90,27 +90,64 @@ def audit_events(session: Session, cycle_id: str | None = None, cycle_loan_id: s
 
 # ---------------- A9 Ask TIQ ----------------
 
-def ask(session: Session, actor: Actor, cycle_id: str, question: str, cycle_loan_id: str | None = None) -> dict:
+GENERAL = ("You are TIQ, the assistant inside TIQ Marks, AllianceBernstein Private Credit's quarterly and monthly "
+           "loan valuation (marks) workflow. The quarterly cycle has 22 steps in six phases: kickoff and intake (Q1 to "
+           "Q3), modelling and CMR (Q4 to Q9), Lincoln draft marks (Q10 to Q13), Deal Team approval at Gate 1 (Q14 to "
+           "Q15), the Valuation Committee (Q16 to Q18) and finalise and distribute (Q19 to Q22). Agents prepare, people "
+           "decide: you never set a mark, rating, approval or send-back and cannot take actions; say which screen to "
+           "use instead. Answer briefly and plainly. Use only the CYCLE STATE below for facts about this cycle; if it "
+           "does not hold the answer, say so. You have no live data (weather, news, prices): say so instead of "
+           "guessing. Never use em dashes.")
+
+
+def _cycle_state(session: Session, cycle_id: str | None) -> str:
+    if not cycle_id:
+        return "No quarterly cycle has been created yet. The PM Team starts one from Kickoff."
+    cyc = session.get(ValuationCycle, cycle_id)
+    lines = [f"Cycle {cyc.period}, status {cyc.status}, day {cyc.current_day} of 45."]
+    for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).order_by(CycleLoan.facility_id):
+        lv = session.query(LincolnValuation).filter_by(cycle_loan_id=cl.id).order_by(LincolnValuation.version.desc()).first()
+        lines.append(f"- {cl.borrower} ({cl.facility_id}, {cl.team_name}): step {cl.current_step}, status "
+                     f"{cl.status.replace('_', ' ')}, package {cl.package_status.replace('_', ' ')}, previous mark "
+                     f"{cl.previous_mark}" + (f", Lincoln v{lv.version} {lv.point_estimate:.2f}" if lv else ""))
+    return "\n".join(lines)
+
+
+def _general(session: Session, cycle_id: str | None, question: str, history: list[dict] | None) -> dict:
+    """Questions that name no loan: answered by the model from the cycle's current state, labelled as general."""
+    hits = _search(session, cycle_id, question.lower()) if cycle_id else []
+    with agent_run(session, "A9", "ask_tiq_general", cycle_id=cycle_id, input_summary=question) as run:
+        context = _cycle_state(session, cycle_id) + ("\n\nDOCUMENT PASSAGES:\n" + "\n".join(
+            f"[{h['file']} p.{h['page']}] {h['text'][:600]}" for h in hits[:3]) if hits else "")
+        msgs = [{"role": m["role"], "content": str(m["content"])[:2000]} for m in (history or [])[-6:]
+                if m.get("role") in ("user", "assistant")]
+        answer = chat(run, GENERAL + "\n\nCYCLE STATE:\n" + context, msgs + [{"role": "user", "content": question}])
+        run.output_summary = (answer or "")[:300]
+    if answer is None:
+        answer = ("I answer questions about this cycle's loans, marks and decisions. Name a loan, for example "
+                  "\"Why is Harbor on the agenda?\"") if cycle_id else ("No cycle has been started yet. The PM Team "
+                                                                     "starts the quarter from Kickoff.")
+    return {"answer": answer, "citations": [{"type": "document", "id": h["document_id"], "label": f"{h['file']} p.{h['page']}"}
+                                            for h in hits[:3]], "kind": "general", "footer": "TIQ cannot take actions"}
+
+
+def ask(session: Session, actor: Actor, cycle_id: str | None, question: str, cycle_loan_id: str | None = None,
+        history: list[dict] | None = None) -> dict:
     """Read-only answers with citations built by code from the records used. TIQ cannot take actions.
     `cycle_loan_id` is the loan on the screen the question was asked from; a loan named in the question wins."""
     q = question.lower()
     if re.search(r"\b(approve|send back|change the mark|set the rating|sign off|email)\b", q) and q.startswith(("please", "can you", "approve", "send")):
         return {"answer": "TIQ cannot take actions. Use the Pricing Panel (S10), the Committee screen (S13) or "
                           "Approvals (S15) to do this.", "citations": []}
+    if not cycle_id:
+        return _general(session, None, question, history)
     loans = session.query(CycleLoan).filter_by(cycle_id=cycle_id).all()
     cl = next((c for c in loans if c.borrower and c.borrower.split()[0].lower() in q), None) or next(
         (c for c in loans if c.id == cycle_loan_id), None)
-    with agent_run(session, "A9", "ask_tiq", cycle_id=cycle_id, cycle_loan_id=cl.id if cl else None,
-                   input_summary=question) as run:
-        citations: list[dict] = []
-        if cl is None:
-            hits = _search(session, cycle_id, q)
-            step(run, "search_documents", len(hits))
-            answer = ("I could not tell which loan you mean. Closest passages: " +
-                      " | ".join(h["text"][:160] for h in hits[:3])) if hits else \
-                "I could not find that in this cycle's records."
-            citations = [{"type": "document", "id": h["document_id"], "label": f"{h['file']} p.{h['page']}"} for h in hits[:3]]
-            return {"answer": answer, "citations": citations}
+    if cl is None:
+        return _general(session, cycle_id, question, history)
+    with agent_run(session, "A9", "ask_tiq", cycle_id=cycle_id, cycle_loan_id=cl.id, input_summary=question) as run:
+        citations = []
         step(run, "load_loan", cl.facility_id)
         parts = []
         lvs = session.query(LincolnValuation).filter_by(cycle_loan_id=cl.id).order_by(LincolnValuation.version).all()

@@ -25,7 +25,37 @@ PROMPT_VERSION = "2026-11-04.1"
 
 
 def llm_enabled() -> bool:
-    return os.environ.get("LLM_ENABLED", "false").lower() == "true" and bool(settings.openai_api_key)
+    """The model is used whenever an OpenAI key is configured, unless LLM_ENABLED=false (the tests set it)."""
+    return os.environ.get("LLM_ENABLED", "auto").lower() != "false" and bool(settings.openai_api_key)
+
+
+def _complete(run: AgentRun, messages: list[dict], heavy: bool = False, temperature: float = 0.2) -> str:
+    """One chat completion with token and cost accounting on the run. Raises on any failure."""
+    model = settings.model_heavy if heavy else settings.model_light
+    resp = httpx.post("https://api.openai.com/v1/chat/completions", timeout=30,
+                      headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+                      json={"model": model, "temperature": temperature, "messages": messages})
+    resp.raise_for_status()
+    data = resp.json()
+    usage = data.get("usage", {})
+    pin, pout = usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
+    run.prompt_tokens = (run.prompt_tokens or 0) + pin
+    run.completion_tokens = (run.completion_tokens or 0) + pout
+    price_in, price_out = MODEL_PRICES.get(model, (0.15, 0.60))
+    run.cost_usd = (run.cost_usd or 0) + (pin * price_in + pout * price_out) / 1_000_000
+    step(run, "llm_call", {"model": model, "prompt_tokens": pin, "completion_tokens": pout})
+    return data["choices"][0]["message"]["content"].strip().replace("\u2014", ", ")
+
+
+def chat(run: AgentRun, system: str, messages: list[dict]) -> str | None:
+    """A conversational answer (Ask TIQ general questions). None when the model is off or fails."""
+    if not llm_enabled():
+        return None
+    try:
+        return _complete(run, [{"role": "system", "content": system}] + messages, temperature=0.3) or None
+    except Exception as exc:
+        step(run, "llm_chat_failed", str(exc)[:200])
+        return None
 
 
 @contextmanager
