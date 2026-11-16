@@ -15,7 +15,7 @@ export default function DemoControls() {
   const [msg, setMsg] = useState<string | null>(null);
   const ev = useApi<any>(cycle && cycle.status !== "draft" ? `/cycles/${cycle.id}/next-event` : null, [cycle?.id, cycle?.day, cycle?.status]);
   if (!user || !["pm_team", "admin"].includes(user.role)) return null;
-  const next = ev.data?.event;
+  const next = cycle && cycle.status !== "draft" ? ev.data?.event : null;
 
   const outside = async () => {
     if (!cycle) return;

@@ -54,6 +54,9 @@ export function useApi<T = any>(path: string | null, deps: any[] = []) {
   const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
   const load = useCallback(async () => {
     if (!path) {
+      // Nothing to load (for example the cycle was cleared): drop the last answer so no screen shows stale data.
+      setData(null);
+      setError(null);
       setLoading(false);
       setLoadedFor(path);
       return;
