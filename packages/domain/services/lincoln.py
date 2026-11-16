@@ -171,20 +171,28 @@ def load_to_everest(session: Session, actor: Actor, cycle_id: str, only: list[st
     """Q12: write the latest Lincoln draft per loan to the Everest pricing panel through the adapter."""
     require(actor, "lincoln.exchange")
     cyc = session.get(ValuationCycle, cycle_id)
-    n = 0
+    todo = []
     for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True):
         if only is not None and cl.id not in only:
             continue
         lv = latest_valuation(session, cl.id)
-        if not lv or lv.loaded_to_everest:
+        if lv and not lv.loaded_to_everest:
+            todo.append((cl, lv))
+    if not todo:
+        return 0
+    # One batched write for every loan: per-loan writes cost two Snowflake round trips each.
+    changes = writeback.upsert_many(session, "EVEREST", "PRICING_PANEL", [{
+        "key": {"FACILITY_ID": cl.facility_id, "PERIOD": cyc.period},
+        "payload": {"LINCOLN_VERSION": lv.version, "LINCOLN_POINT": lv.point_estimate,
+                    "LINCOLN_RANGE_LOW": lv.range_low, "LINCOLN_RANGE_HIGH": lv.range_high,
+                    "REQUIRED_YIELD": lv.required_yield, "VALUATION_DATE": lv.valuation_date.isoformat(),
+                    "DEAL_TEAM_STATUS": "pending"},
+        "tiq_entity_type": "lincoln_valuation", "tiq_entity_id": lv.id, "tiq_entity_version": lv.version}
+        for cl, lv in todo], actor=actor.email)
+    n = 0
+    for (cl, lv), change in zip(todo, changes):
+        if change.status == "failed":
             continue
-        writeback.upsert(session, "EVEREST", "PRICING_PANEL", {"FACILITY_ID": cl.facility_id, "PERIOD": cyc.period},
-                         {"LINCOLN_VERSION": lv.version, "LINCOLN_POINT": lv.point_estimate,
-                          "LINCOLN_RANGE_LOW": lv.range_low, "LINCOLN_RANGE_HIGH": lv.range_high,
-                          "REQUIRED_YIELD": lv.required_yield, "VALUATION_DATE": lv.valuation_date.isoformat(),
-                          "DEAL_TEAM_STATUS": "pending"},
-                         actor=actor.email, tiq_entity_type="lincoln_valuation", tiq_entity_id=lv.id,
-                         tiq_entity_version=lv.version)
         lv.loaded_to_everest = True
         if cl.lincoln_step in ("Q10", "Q11", "Q12"):
             cl.lincoln_step = "Q13" if (lv.sharepoint_copy_path or (lv.source or "lincoln") != "lincoln") else "Q12"

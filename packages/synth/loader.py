@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from connectors.warehouse import DuckDBWarehouse, SnowflakeWarehouse, Warehouse
+from connectors.warehouse import DuckDBWarehouse, SnowflakeWarehouse, Warehouse, clear_reference_cache
 from domain.config import REPO_ROOT, settings
 from synth import schema
 from synth.warehouse_data import build_rows
@@ -20,6 +20,7 @@ def write_ddl_file() -> Path:
 
 def load(target: str = "duckdb", reset_account: bool = False, log=print) -> dict:
     rows = build_rows()
+    clear_reference_cache()
     if target == "snowflake":
         wh: Warehouse = _prepare_snowflake(reset_account, log)
     else:

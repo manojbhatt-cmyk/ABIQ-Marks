@@ -13,6 +13,12 @@ from typing import Any, Iterable, Sequence
 from domain.config import settings
 
 SCHEMAS = ["DEALCLOUD", "EVEREST", "SENTRY", "SIGMA", "FINANCE"]
+_reference_cache: dict[tuple, list[dict]] = {}
+
+
+def clear_reference_cache() -> None:
+    """Called whenever the warehouse is reloaded or swapped."""
+    _reference_cache.clear()
 
 
 def _plain(v: Any) -> Any:
@@ -32,6 +38,15 @@ class Warehouse(ABC):
 
     @abstractmethod
     def insert_rows(self, table: str, columns: list[str], rows: Iterable[Sequence[Any]]) -> int: ...
+
+    def reference(self, sql: str, params: Sequence[Any] | None = None) -> list[dict]:
+        """A query on reference data TIQ never writes (covenants, positions, the spread template, the Sigma
+        snapshot). Cached per process until the synthetic data is reloaded, so recomputing a spread costs no
+        warehouse round trips (each is 80 to 130 ms on Snowflake)."""
+        key = (self.name, sql, tuple(params or ()))
+        if key not in _reference_cache:
+            _reference_cache[key] = self.query(sql, params)
+        return [dict(r) for r in _reference_cache[key]]
 
     def health(self) -> dict:
         try:
@@ -179,3 +194,4 @@ def get_warehouse(kind: str | None = None) -> Warehouse:
 def set_warehouse(wh: Warehouse | None) -> None:
     global _instance
     _instance = wh
+    clear_reference_cache()

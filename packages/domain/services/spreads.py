@@ -92,7 +92,7 @@ def recompute_metrics(session: Session, sp: FinancialSpread) -> dict:
     pending = sum(a.amount for a in session.query(Adjustment).filter_by(spread_id=sp.id, accepted=None)
                   if a.allowed)
     # Proposed allow-listed add-backs count in the preview until a person rejects them.
-    undrawn = sum(r["U"] or 0 for r in get_warehouse().query(
+    undrawn = sum(r["U"] or 0 for r in get_warehouse().reference(
         "select sum(p.UNFUNDED_AMOUNT) U from SENTRY.POSITION p join DEALCLOUD.FACILITY f on f.FACILITY_ID = p.FACILITY_ID "
         "where f.DEAL_ID = ? and f.FACILITY_TYPE = 'revolver' and p.AS_OF_DATE = cast('2026-09-30' as date)", [cl.deal_id]))
     res = M.compute(_values(session, sp), {"quarter": accepted + pending}, revolver_undrawn=undrawn)
@@ -101,7 +101,7 @@ def recompute_metrics(session: Session, sp: FinancialSpread) -> dict:
     for code, m in res.items():
         session.add(Metric(spread_id=sp.id, line_code=code, value=m["value"], formula_text=m["formula"],
                            inputs_json=m["inputs"]))
-    for cov in get_warehouse().query("select * from DEALCLOUD.COVENANT where FACILITY_ID = ?", [cl.facility_id]):
+    for cov in get_warehouse().reference("select * from DEALCLOUD.COVENANT where FACILITY_ID = ?", [cl.facility_id]):
         t = M.covenant_test(res, cov)
         session.add(CovenantTest(spread_id=sp.id, covenant_id=cov["COVENANT_ID"], covenant_type=cov["COVENANT_TYPE"], **t))
         if cov["COVENANT_TYPE"] == "max_leverage":
@@ -138,14 +138,14 @@ def spread_view(session: Session, cycle_loan_id: str) -> dict | None:
                          "allowed": a.allowed, "evidence": a.evidence_json, "accepted": a.accepted,
                          "decided_by": a.decided_by} for a in session.query(Adjustment).filter_by(spread_id=sp.id)],
         "metrics": mets, "covenants": covs, "certificate": cert, "prior": prior,
-        "template": [r for r in get_warehouse().query(
+        "template": [r for r in get_warehouse().reference(
             "select LINE_CODE, LINE_LABEL, LINE_GROUP, SORT_ORDER, IS_CALCULATED, FORMULA, UNIT "
             "from EVEREST.SPREAD_TEMPLATE order by SORT_ORDER")],
     }
 
 
 def previous_quarter_metrics(cl: CycleLoan) -> dict:
-    rows = get_warehouse().query("select LTM_LEVERAGE, LTM_INTEREST_COVER from SIGMA.PORTFOLIO_SNAPSHOT where "
+    rows = get_warehouse().reference("select LTM_LEVERAGE, LTM_INTEREST_COVER from SIGMA.PORTFOLIO_SNAPSHOT where "
                                  "FACILITY_ID = ?", [cl.facility_id])
     return rows[0] if rows else {}
 
