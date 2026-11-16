@@ -98,3 +98,14 @@ def test_harbor_chase_is_sent_for_real_to_the_borrower(live):
         assert m.to_addrs == [BORROWER] and m.cc_addrs == ["team.real@example.org"] and m.eml_path.startswith("sent/live-")
     frm, to, _ = FakeSmtp.sent[-1]
     assert frm == "pm.real@example.org" and set(to) == {BORROWER, "team.real@example.org"}
+
+
+def test_mail_older_than_the_cycle_is_never_filed(live):
+    from datetime import datetime, timezone
+
+    _, old = build_eml(BORROWER, ["pm.real@example.org"], "Last year's package", "Old.",
+                       date=datetime(2025, 1, 5, tzinfo=timezone.utc))
+    FakeImap.mails = FakeImap.mails + [old]
+    with session_scope() as s:
+        assert intake.process_inbox(s, live) == []
+        assert not s.query(EmailMessage).filter_by(subject="Last year's package").count()

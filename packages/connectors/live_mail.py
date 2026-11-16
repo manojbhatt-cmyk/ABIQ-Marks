@@ -14,9 +14,12 @@ Sending happens only when a person clicks Send on that loan's chase. Settings co
 """
 from __future__ import annotations
 
+import email
+import email.utils
 import imaplib
 import smtplib
 import ssl
+from datetime import datetime, timezone
 
 from connectors.mailbox import build_eml
 from connectors.object_store import get_store
@@ -45,9 +48,18 @@ def _imap() -> imaplib.IMAP4_SSL:
     return con
 
 
-def poll() -> list[str]:
-    """Copy new mail from the borrower sender into the mail bucket; returns the new object keys. Never raises: a
-    connection problem is reported by health() and the next poll tries again."""
+def _received(raw: bytes) -> datetime | None:
+    try:
+        d = email.utils.parsedate_to_datetime(email.message_from_bytes(raw)["Date"])
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+def poll(since: datetime | None = None) -> list[str]:
+    """Copy new mail from the borrower sender into the mail bucket; returns the new object keys. Only mail received
+    at or after `since` (the cycle's start) counts, so older mail from the same sender is never filed. Never raises:
+    a connection problem is reported by health() and the next poll tries again."""
     if not enabled():
         return []
     store, new = get_store(), []
@@ -57,13 +69,21 @@ def poll() -> list[str]:
             con.select(settings.mail_imap_folder, readonly=True)
             validity = (con.response("UIDVALIDITY")[1] or [b"0"])[0]
             validity = validity.decode() if isinstance(validity, bytes) else str(validity)
-            _, data = con.uid("search", None, "FROM", f'"{settings.mail_live_borrower}"')
+            crit = ["FROM", f'"{settings.mail_live_borrower}"']
+            if since:
+                crit += ["SINCE", since.strftime("%d-%b-%Y")]  # day granularity; the exact time is checked below
+            _, data = con.uid("search", None, *crit)
             for uid in (data[0] or b"").split()[-50:]:
                 key = f"inbox/live/{validity}-{uid.decode()}.eml"
-                if store.exists("mail", key):
+                skipped = f"live-skipped/{validity}-{uid.decode()}"
+                if store.exists("mail", key) or store.exists("mail", skipped):
                     continue
                 _, msg = con.uid("fetch", uid, "(RFC822)")
                 raw = next((p[1] for p in msg if isinstance(p, tuple)), None)
+                at = _received(raw) if raw else None
+                if raw and since and (at is None or at < since):
+                    store.put("mail", skipped, b"")  # older than the cycle: never filed, never fetched again
+                    continue
                 if raw:
                     store.put("mail", key, raw)
                     new.append(key)

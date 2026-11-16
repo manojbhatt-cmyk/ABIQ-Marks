@@ -26,7 +26,8 @@ def process_inbox(session: Session, cycle_id: str) -> list[EmailMessage]:
     from domain.config import settings
 
     cyc = session.get(ValuationCycle, cycle_id)
-    live_mail.poll()  # copies new real mail (one loan only) into the bucket; a no-op when live mail is off
+    # Copies new real mail (one loan only) received since this cycle was created; a no-op when live mail is off.
+    live_mail.poll(since=cyc.created_at)
     done = {m.eml_path for m in session.query(EmailMessage.eml_path).filter_by(direction="in")}
     out = []
     for key in mailbox.inbox():
