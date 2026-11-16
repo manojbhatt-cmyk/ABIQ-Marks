@@ -215,7 +215,11 @@ def refresh_step(cl: CycleLoan) -> None:
     """Derive current_step from the two tracks until G1 (Functional Spec section 0)."""
     if step_index(cl.current_step) >= step_index("Q14") and cl.status not in ("waiting_on_lincoln",):
         return
-    if step_index(cl.dt_step) >= step_index("Q3") and step_index(cl.lincoln_step) >= step_index("Q10"):
+    # Q13 on a track means that track is finished (CMR agreed; Lincoln draft loaded and copied), so a loan with
+    # both tracks finished waits at Gate 1.
+    if cl.dt_step == "Q13" and cl.lincoln_step == "Q13":
+        cl.current_step = "Q14"
+    elif step_index(cl.dt_step) >= step_index("Q3") and step_index(cl.lincoln_step) >= step_index("Q10"):
         cl.current_step = STEP_ORDER[min(step_index(cl.dt_step), step_index(cl.lincoln_step))]
     else:
         cl.current_step = cl.dt_step

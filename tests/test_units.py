@@ -80,3 +80,25 @@ def test_no_em_dashes_in_templates():
 
     for subject, body in TEMPLATES.values():
         assert "—" not in subject + body
+
+
+def test_loan_moves_to_gate_1_once_both_tracks_are_finished():
+    """Q13 finished on both tracks means the loan waits at Gate 1 (Q14), not at "Copy to SharePoint"."""
+    from domain.models import CycleLoan
+    from domain.services.cycle import refresh_step
+
+    cl = CycleLoan(current_step="Q12", dt_step="Q13", lincoln_step="Q13", status="in_progress")
+    refresh_step(cl)
+    assert cl.current_step == "Q14"
+
+
+def test_loan_stays_with_the_track_furthest_behind():
+    from domain.models import CycleLoan
+    from domain.services.cycle import refresh_step
+
+    cl = CycleLoan(current_step="Q9", dt_step="Q9", lincoln_step="Q13", status="in_progress")
+    refresh_step(cl)
+    assert cl.current_step == "Q9"
+    cl = CycleLoan(current_step="Q12", dt_step="Q13", lincoln_step="Q12", status="in_progress")
+    refresh_step(cl)
+    assert cl.current_step == "Q12"

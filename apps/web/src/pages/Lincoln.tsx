@@ -1,4 +1,5 @@
-import { FileText, Upload } from "lucide-react";
+import { CheckCircle2, FileText, Upload, X } from "lucide-react";
+import { useState } from "react";
 import { api, fmt, openFile, useApi } from "../api";
 import { Card, Chip, Empty, ErrorState, Loading, PageHeader, StatusChip, useAction, useConfirm } from "../components/ui";
 import { useApp } from "../context";
@@ -9,10 +10,19 @@ export default function Lincoln() {
   const { data, error, loading, reload } = useApi<any>(cycle ? `/cycles/${cycle.id}/lincoln` : null, [cycle?.id]);
   const act = useAction();
   const confirm = useConfirm();
+  const [note, setNote] = useState<string | null>(null);
   if (!cycle) return <Empty text="No cycle yet" />;
   if (loading && !data) return <Loading />;
   if (error) return <ErrorState error={error} retry={reload} />;
   const external = user?.role === "lincoln";
+  /** "Copied 3 reports to SharePoint. 2 loans are still waiting for Lincoln's report." */
+  const result = (verb: string, n: number, noun: string, where: string, flag: "sharepoint" | "loaded_to_everest") => {
+    const latest = data.loans.filter((l: any) => l.valuation_method === "Lincoln").map((l: any) => l.valuations[l.valuations.length - 1]);
+    const waiting = latest.filter((v: any) => !v).length;
+    const done = latest.filter((v: any) => v && v[flag]).length + n;
+    const head = n ? `${verb} ${n} ${noun}${n === 1 ? "" : "s"} ${where}.` : `Nothing new to send ${where}: ${done} already there.`;
+    return waiting ? `${head} ${waiting} loan${waiting === 1 ? " is" : "s are"} still waiting for Lincoln's report.` : head;
+  };
   if (external) {
     return (
       <>
@@ -40,10 +50,11 @@ export default function Lincoln() {
           {(() => { const n = data.loans.filter((l: any) => l.valuation_method === "Lincoln" && l.package_status === "complete" && !l.packages.length).length;
             return n > 0 && <button className="btn-primary" onClick={() => confirm.ask(`Share ${n} complete package${n === 1 ? "" : "s"} with Lincoln through Box? Each gets a manifest listing its classified documents.`, async () => { await api(`/cycles/${cycle.id}/lincoln/share-all`, { body: {} }); reload(); })}>Share all complete packages ({n})</button>; })()}
           <button className="btn-secondary" onClick={() => act.run(async () => { const r = await api(`/cycles/${cycle.id}/lincoln/ingest`, { body: {} }); alert(`${r.received} valuations received`); reload(); })}>Check Box for Lincoln files</button>
-          <button className="btn-secondary" onClick={() => confirm.ask("Load the latest Lincoln draft marks for every loan to the Everest pricing panel through the write-back adapter?", async () => { await api(`/cycles/${cycle.id}/lincoln/load-everest`, { body: {} }); reload(); })}>Bulk load to Everest</button>
-          <button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/lincoln/copy-sharepoint`, { body: {} }); reload(); })}>Bulk copy to SharePoint</button>
+          <button className="btn-secondary" onClick={() => confirm.ask("Load the latest Lincoln draft marks for every loan to the Everest pricing panel through the write-back adapter?", async () => { const r = await api(`/cycles/${cycle.id}/lincoln/load-everest`, { body: {} }); setNote(result("Loaded", r.loaded, "draft mark", "to Everest", "loaded_to_everest")); reload(); })}>Bulk load to Everest</button>
+          <button className="btn-secondary" disabled={act.busy} onClick={() => act.run(async () => { const r = await api(`/cycles/${cycle.id}/lincoln/copy-sharepoint`, { body: {} }); setNote(result("Copied", r.copied, "report", "to SharePoint", "sharepoint")); reload(); })}>Bulk copy to SharePoint</button>
         </>} />
       {act.node}{confirm.node}
+      {note && <div role="status" className="mb-4 flex items-center gap-2 rounded-tile border border-line-200 bg-white px-4 py-3 text-[13.5px]"><CheckCircle2 size={16} className="text-success-600" aria-hidden="true" />{note}<button className="ml-auto text-slate-400 hover:text-slate-600" aria-label="Dismiss" onClick={() => setNote(null)}><X size={14} /></button></div>}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         <div className="card overflow-x-auto xl:col-span-3">
           <table className="w-full">
