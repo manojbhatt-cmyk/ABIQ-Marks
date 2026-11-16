@@ -1,18 +1,19 @@
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, fmt, openFile, useApi } from "../api";
-import { AiCard, AssumedChip, Banner, Card, Chip, ErrorState, Field, GateIcon, Loading, useAction, useConfirm } from "../components/ui";
+import { AssumedChip, Banner, Card, Chip, ErrorState, Field, GateIcon, Loading, useAction, useConfirm } from "../components/ui";
+import Challenge from "../components/Challenge";
 
 function RangeBar({ low, high, point, mark, min, max }: { low: number; high: number; point: number; mark?: number | null; min: number; max: number }) {
   const pos = (v: number) => `${((v - min) / (max - min)) * 100}%`;
   return (
     <div className="relative mt-3 h-8">
-      <div className="absolute top-3 h-2 w-full rounded bg-canvas-200" />
-      <div className="absolute top-3 h-2 rounded bg-info-600/60" style={{ left: pos(low), width: `calc(${pos(high)} - ${pos(low)})` }} />
-      <div className="absolute top-1.5 h-5 w-1 rounded bg-navy-900" style={{ left: pos(point) }} title={`Point ${point}`} />
-      {mark !== undefined && mark !== null && <div className="absolute top-1.5 h-5 w-1 rounded bg-brand-600" style={{ left: pos(mark) }} title={`Mark ${mark}`} />}
-      <div className="absolute top-6 text-[11px] text-slate-500" style={{ left: pos(low) }}>{low.toFixed(2)}</div>
-      <div className="absolute top-6 text-[11px] text-slate-500" style={{ left: pos(high) }}>{high.toFixed(2)}</div>
+      <div className="absolute top-3 h-2 w-full rounded-full bg-sunken" />
+      <div className="absolute top-3 h-2 rounded-full bg-accent-300" style={{ left: pos(low), width: `calc(${pos(high)} - ${pos(low)})` }} />
+      <div className="absolute top-1.5 h-5 w-1 rounded bg-brand-600" style={{ left: pos(point) }} title={`Point ${point}`} />
+      {mark !== undefined && mark !== null && <div className="absolute top-1.5 h-5 w-1 rounded bg-warn-500" style={{ left: pos(mark) }} title={`Mark ${mark}`} />}
+      <div className="absolute top-6 text-[11px] text-muted num" style={{ left: pos(low) }}>{low.toFixed(2)}</div>
+      <div className="absolute top-6 text-[11px] text-muted num" style={{ left: pos(high) }}>{high.toFixed(2)}</div>
     </div>
   );
 }
@@ -29,6 +30,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
   const [usedDraft, setUsedDraft] = useState(false);
   const [ry, setRy] = useState<number | null>(null);
   const [cc, setCc] = useState<any>(null);
+  const [running, setRunning] = useState(false);
   useEffect(() => { if (data?.crosscheck && ry === null) setRy(data.crosscheck.required_yield); }, [data?.crosscheck]);
   useEffect(() => { if (ry !== null && data) api(`/loans/${loanId}/crosscheck?required_yield=${ry}`).then(setCc).catch(() => {}); }, [ry]);
   if (loading && !data) return <Loading />;
@@ -54,14 +56,14 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
       <div className="mb-4 flex items-center gap-3">
         <GateIcon state={gate as any} /><span className="text-sm font-semibold">Gate G1: Deal Team approval</span>
         {decided && <span className="text-sm text-slate-500">passed: {fmt.label(decided.outcome)} {fmt.mark(decided.mark)} by {decided.decided_by} {fmt.date(decided.decided_at)}</span>}
-        <span className="ml-auto flex gap-1">{data.versions.map((x: any) => <Chip key={x.version} tone={x.version === v.version ? "violet" : "neutral"}>Lincoln v{x.version} {x.point.toFixed(2)} ({x.valuation_date})</Chip>)}</span>
+        <span className="ml-auto flex flex-wrap gap-1">{data.versions.map((x: any) => <Chip key={x.version} tone={x.version === v.version ? "blue" : "neutral"} dot={x.version === v.version}>Lincoln v{x.version} {x.point.toFixed(2)} ({x.valuation_date})</Chip>)}</span>
       </div>
       {!v ? <InternalValuation data={data} loanId={loanId} onDone={refresh} /> : (
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-3 space-y-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="space-y-4 xl:col-span-3">
             {data.versions.slice().reverse().map((x: any) => (
-              <Card key={x.version} title={`Lincoln v${x.version}`} actions={x.report_document_id && <button className="btn-ghost" onClick={() => api(`/documents/${x.report_document_id}`).then((d) => openFile(d.url))}><FileText size={13} /> report</button>}>
-                <div className="text-3xl font-bold num">{x.point.toFixed(2)}</div>
+              <Card key={x.version} title={`Lincoln v${x.version}`} actions={x.report_document_id && <button className="btn-ghost btn-sm" onClick={() => api(`/documents/${x.report_document_id}`).then((d) => openFile(d.url))}><FileText size={14} aria-hidden="true" /> Report</button>}>
+                <div className="text-[24px] font-semibold tracking-[-0.02em] num">{x.point.toFixed(2)}</div>
                 <div className="text-xs text-slate-500">previous mark {fmt.mark(data.loan.previous_mark)}; required yield {fmt.pct(x.yield)}</div>
                 <RangeBar low={x.low} high={x.high} point={x.point} mark={decided?.mark} min={Math.min(x.low, data.loan.previous_mark ?? x.low) - 1.5} max={Math.max(x.high, data.loan.previous_mark ?? x.high) + 1.5} />
                 <div className="mt-4 text-xs"><div className="label">Methodology</div>{x.methodology}</div>
@@ -69,7 +71,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
                 {x.comments && <div className="mt-2 text-xs"><div className="label">Comments</div>{x.comments}</div>}
               </Card>))}
           </div>
-          <div className="col-span-5 space-y-4">
+          <div className="space-y-4 xl:col-span-5">
             <Card title="What the Deal Team knows">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>CMR recommendation: rating {k.recommendation?.previous_rating} to {k.recommendation?.rating}, {k.recommendation?.direction}</div>
@@ -79,37 +81,28 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
                 {k.sponsor_equity && <div className="col-span-2">Sponsor support: {k.sponsor_equity.sponsor} committed ${k.sponsor_equity.amount}M (letter {k.sponsor_equity.date}); net leverage after equity <b>{fmt.x(k.net_leverage_after_equity)}</b></div>}
               </div>
             </Card>
-            {ch ? (
-              <AiCard title="Challenge Assistant (A5)" confidence={data.challenge.payload.differences.length ? 0.85 : 0.6} status={data.challenge.status}>
-                <div className="mb-2">{ch.summary}</div>
-                {ch.differences.map((d: any, i: number) => (
-                  <div key={i} className="mb-2 rounded-lg bg-white p-3">
-                    <div className="text-xs italic text-slate-500">Lincoln: "{d.assumption_quote}"</div>
-                    <div className="mt-1">{d.finding}</div>
-                    {d.math && <div className="mt-1 font-mono text-xs">{d.math}</div>}
-                    <div className="mt-1 flex gap-2"><Chip tone={d.materiality === "high" ? "red" : "neutral"}>materiality {d.materiality}</Chip>{d.evidence.map((e: any, j: number) => <button key={j} className="text-xs text-info-600 hover:underline" onClick={() => api(`/documents/${e.doc_id}`).then((dd) => openFile(dd.url))}>{e.file} p.{e.page}</button>)}</div>
-                  </div>))}
-                {ch.draft_note && <><div className="label mt-2">Draft send-back note</div><div className="rounded bg-white p-2 text-xs">{ch.draft_note}</div></>}
-              </AiCard>
-            ) : <button className="btn-secondary" disabled={!data.ready || !!decided} onClick={() => act.run(async () => { await api(`/loans/${loanId}/challenge`, { body: {} }); refresh(); })}>Run the Challenge Assistant</button>}
-            <Card title="Decisions">{data.decisions.length ? data.decisions.map((d: any) => <div key={d.id} className="border-b border-canvas-100 py-1 text-sm"><Chip tone={d.outcome === "sent_back" ? "red" : "green"}>{fmt.label(d.outcome)}</Chip> v{d.lincoln_version} {d.mark ? fmt.mark(d.mark) : ""} by {d.decided_by} {fmt.date(d.decided_at)}<div className="text-xs text-slate-500">{d.note || d.rationale}</div>{d.box_note && <button className="text-xs text-info-600" onClick={() => openFile(`/api/files/box/${d.box_note}`)}>box/{d.box_note}</button>}</div>) : <div className="text-sm text-slate-400">None yet</div>}</Card>
+            <Challenge challenge={data.challenge} canRun={data.ready && !decided && !waiting} running={running}
+              onRun={() => { setRunning(true); act.run(async () => { await api(`/loans/${loanId}/challenge`, { body: {} }); refresh(); }).finally(() => setRunning(false)); }}
+              onUseNote={(n) => { setOutcome("sent_back"); setNote(n); setUsedDraft(true); document.getElementById("g1-decision")?.scrollIntoView({ behavior: "smooth", block: "center" }); }} />
+            <Card title="Decisions">{data.decisions.length ? data.decisions.map((d: any) => <div key={d.id} className="border-b border-line py-2 text-sm last:border-0"><Chip tone={d.outcome === "sent_back" ? "red" : "green"} dot>{fmt.label(d.outcome)}</Chip> v{d.lincoln_version} {d.mark ? fmt.mark(d.mark) : ""} by {d.decided_by} {fmt.date(d.decided_at)}<div className="text-xs text-slate-500">{d.note || d.rationale}</div>{d.box_note && <button className="text-xs font-medium text-ink underline-offset-2 hover:underline" onClick={() => openFile(`/api/files/box/${d.box_note}`)}>box/{d.box_note}</button>}</div>) : <div className="text-sm text-slate-400">None yet</div>}</Card>
           </div>
-          <div className="col-span-4 space-y-4">
+          <div className="space-y-4 xl:col-span-4">
             {data.reunderwriting && (
               <Card title="Reunderwriting guidance (1 Sep 2026)">
                 <div className="text-sm">{data.reunderwriting.security}, EBITDA band {data.reunderwriting.band} (${data.reunderwriting.band_range[0]}M to ${data.reunderwriting.band_range[1]}M, assumed)</div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-sky-50 p-2"><div className="label">Market spread</div><div className="num font-bold">S+{data.reunderwriting.spread_bps}</div><div className="text-[11px] text-slate-500">May S+{data.reunderwriting.may_spread_bps}</div></div>
-                  <div className="rounded-lg bg-teal-50 p-2"><div className="label">Max leverage</div><div className="num font-bold">{fmt.x(data.reunderwriting.max_leverage)}</div><div className="text-[11px] text-slate-500">May {fmt.x(data.reunderwriting.may_max_leverage)}</div></div>
+                  <div className="rounded-control bg-sunken p-3"><div className="label">Market spread</div><div className="num font-bold">S+{data.reunderwriting.spread_bps}</div><div className="text-[11px] text-slate-500">May S+{data.reunderwriting.may_spread_bps}</div></div>
+                  <div className="rounded-control bg-sunken p-3"><div className="label">Max leverage</div><div className="num font-bold">{fmt.x(data.reunderwriting.max_leverage)}</div><div className="text-[11px] text-slate-500">May {fmt.x(data.reunderwriting.may_max_leverage)}</div></div>
                 </div>
                 <div className="mt-2 text-xs">Loan leverage <b>{fmt.x(k.metrics.LEVERAGE)}</b>{k.net_leverage_after_equity ? <>, {fmt.x(k.net_leverage_after_equity)} net of equity</> : null}: {(k.net_leverage_after_equity ?? k.metrics.LEVERAGE) > data.reunderwriting.max_leverage ? <Chip tone="amber">above market max</Chip> : <Chip tone="green">within market max</Chip>}</div>
               </Card>)}
             <Card title="Indicative cross-check">
-              <div className="mb-2 rounded bg-warn-100 px-2 py-1 text-[11px] font-semibold text-warn-700">Indicative, not a mark</div>
+              <div className="mb-2"><Chip tone="amber" dot>Indicative, not a mark</Chip></div>
               {cc && <div className="text-sm">Coupon {fmt.pct(cc.coupon, 2)}, {cc.years} years to maturity</div>}
               <Field label={`Required yield ${ry !== null ? (ry * 100).toFixed(1) : ""}%`}><input type="range" min={0.06} max={0.25} step={0.0025} value={ry ?? 0.1} onChange={(e) => setRy(Number(e.target.value))} className="w-full" /></Field>
-              <div className="text-3xl font-bold num">{cc ? cc.indicative_price.toFixed(2) : "-"}</div>
+              <div className="text-[24px] font-semibold tracking-[-0.02em] num">{cc ? cc.indicative_price.toFixed(2) : "-"}</div>
             </Card>
+            <div id="g1-decision" />
             <Card title="Gate decision" actions={<AssumedChip dq="DQ15" what="approve at a different mark" />}>
               {gate === "passed" ? <div className="text-sm text-success-700">Decided. Q15: the mark is attached to the CMR.</div> : !data.ready ? <div className="text-sm text-slate-400">G1 opens when the CMR is filed (Q8) and Lincoln's draft is loaded to Everest (Q12).</div> : (
                 <div className="space-y-3 text-sm">
@@ -122,7 +115,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
                   {outcome === "sent_back" && <>
                     <Field label="Reason category"><select className="input" value={reason} onChange={(e) => setReason(e.target.value)}>{["new_information", "factual_error", "methodology_question", "other"].map((x) => <option key={x} value={x}>{fmt.label(x)}</option>)}</select></Field>
                     <Field label="Note to Lincoln"><textarea className="input h-28" value={note} onChange={(e) => { setNote(e.target.value); }} /></Field>
-                    {ch?.draft_note && <button className="btn-ghost text-brand-700" onClick={() => { setNote(ch.draft_note); setUsedDraft(true); }}>Use TIQ's draft</button>}</>}
+                    {ch?.draft_note && <button className="btn-ghost btn-sm" onClick={() => { setNote(ch.draft_note); setUsedDraft(true); }}>Use TIQ's draft</button>}</>}
                   <button className="btn-primary w-full justify-center" disabled={!outcome} onClick={() => confirm.ask(words, async () => {
                     await api(`/loans/${loanId}/g1`, { body: { outcome, mark: mark ? Number(mark) : null, rationale, reason_category: reason, note, used_tiq_draft: usedDraft, evidence: outcome === "sent_back" ? ch?.evidence : undefined } }); refresh();
                   }, outcome === "sent_back")}>Decide</button>
