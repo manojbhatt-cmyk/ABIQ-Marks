@@ -14,8 +14,8 @@ from datetime import date
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from domain.pdf import (BODY, H1, H2, LINCOLN_GREEN, LINCOLN_NAVY, LINCOLN_STEEL, SMALL, PageBreak, Spacer, band,
-                        build, colors, grid, image_page, inch, kv, para, render_text_image)
+from domain.pdf import (BODY, H1, H2, LINCOLN_GREEN, LINCOLN_NAVY, LINCOLN_STEEL, SMALL, PageBreak, Spacer, Table,
+                        band, build, colors, frame, grid, image_page, inch, kv, para, render_text_image)
 from synth.portfolio import HARBOR_V1_ASSUMPTIONS, HARBOR_V2, Q_LABELS, Borrower, Facility
 
 # Line labels differ by family on purpose (tests label mapping).
@@ -281,8 +281,13 @@ def lincoln_report_pdf(br: Borrower, fac: Facility, row: dict, prev_mark: float,
                    [3.5 * inch, 2.0 * inch, 2.0 * inch], header_bg=LINCOLN_NAVY, header_fg=colors.white,
                    bold_rows=[3])]
     _ = (LINCOLN_GREEN, W)
+    # Every schedule table gets a border and inner rules in Lincoln's steel; the text is unchanged, so the
+    # cross-check (A4) reads the report the same way.
+    story = [frame(f, rule=LINCOLN_STEEL) if isinstance(f, Table) else f for f in story]
     return build(story, landscape_mode=True, title=f"{br.name} Lincoln draft valuation v{row['version']}",
-                 footer=f"DRAFT | Lincoln International | {br.name} | Version {row['version']}")
+                 footer=f"DRAFT | Lincoln International | {br.name} | Version {row['version']}",
+                 header=(f"Lincoln International  |  {br.name}", f"Draft valuation  |  Version {row['version']}"),
+                 header_color=LINCOLN_NAVY)
 
 
 def pacing_xlsx(rows: list[dict], month: str) -> bytes:

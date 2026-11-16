@@ -22,6 +22,15 @@ LINCOLN_GREEN = colors.HexColor("#00A67E")
 TIQ_NAVY = colors.HexColor("#183850")
 ROW_GREY = colors.HexColor("#F0F0F0")
 
+# Stone & Sage (TIQ's own documents): graphite text, warm hairlines, sage for AI and accents. No blue.
+GRAPHITE = colors.HexColor("#3D3935")
+INK = colors.HexColor("#2B2926")
+MUTED = colors.HexColor("#625D56")
+HAIRLINE = colors.HexColor("#D7D3CB")
+WELL = colors.HexColor("#F2F0EC")
+SAGE = colors.HexColor("#4F8062")
+SAGE_TINT = colors.HexColor("#F1F6F2")
+
 _styles = getSampleStyleSheet()
 BODY = ParagraphStyle("body", parent=_styles["BodyText"], fontName="Helvetica", fontSize=9, leading=11.5)
 SMALL = ParagraphStyle("small", parent=BODY, fontSize=7.5, leading=9, textColor=colors.HexColor("#555555"))
@@ -77,21 +86,105 @@ def kv(rows: Sequence[tuple[str, str]], widths=(1.8 * inch, 2.4 * inch)) -> Tabl
     return t
 
 
-def build(flowables: list, landscape_mode: bool = False, title: str = "", footer: str = "") -> bytes:
+def build(flowables: list, landscape_mode: bool = False, title: str = "", footer: str = "",
+          header: tuple[str, str] | None = None, header_color=GRAPHITE) -> bytes:
+    """`header` = (left, right): a band on every page; pages are then numbered "Page n"."""
     buf = io.BytesIO()
     size = landscape(letter) if landscape_mode else letter
 
-    def _footer(canvas, doc):
+    def _page(canvas, doc):
         canvas.saveState()
+        if header:
+            top = size[1] - 0.42 * inch
+            canvas.setFillColor(header_color)
+            canvas.rect(0.5 * inch, top - 0.06 * inch, size[0] - inch, 0.3 * inch, stroke=0, fill=1)
+            canvas.setFillColor(colors.white)
+            canvas.setFont("Helvetica-Bold", 8.5)
+            canvas.drawString(0.62 * inch, top + 0.04 * inch, clean(header[0]))
+            canvas.setFont("Helvetica", 8)
+            canvas.drawRightString(size[0] - 0.62 * inch, top + 0.04 * inch, clean(header[1]))
+        canvas.setStrokeColor(HAIRLINE)
+        canvas.setLineWidth(0.5)
+        canvas.line(0.5 * inch, 0.48 * inch, size[0] - 0.5 * inch, 0.48 * inch)
+        canvas.setFillColor(MUTED)
         canvas.setFont("Helvetica", 7)
-        canvas.drawString(0.5 * inch, 0.35 * inch, clean(footer))
-        canvas.drawRightString(size[0] - 0.5 * inch, 0.35 * inch, str(doc.page))
+        canvas.drawString(0.5 * inch, 0.33 * inch, clean(footer))
+        canvas.drawRightString(size[0] - 0.5 * inch, 0.33 * inch, f"Page {doc.page}" if header else str(doc.page))
         canvas.restoreState()
 
     doc = SimpleDocTemplate(buf, pagesize=size, leftMargin=0.5 * inch, rightMargin=0.5 * inch,
-                            topMargin=0.5 * inch, bottomMargin=0.6 * inch, title=clean(title))
-    doc.build(flowables, onFirstPage=_footer, onLaterPages=_footer)
+                            topMargin=(0.85 if header else 0.5) * inch, bottomMargin=0.65 * inch, title=clean(title))
+    doc.build(flowables, onFirstPage=_page, onLaterPages=_page)
     return buf.getvalue()
+
+
+# ---------- bordered building blocks ----------
+TITLE_BAR = ParagraphStyle("titlebar", parent=_styles["BodyText"], fontName="Helvetica-Bold", fontSize=9.5,
+                           leading=12, textColor=INK)
+LABEL = ParagraphStyle("label", parent=_styles["BodyText"], fontName="Helvetica", fontSize=7.5, leading=9.5,
+                       textColor=MUTED)
+FIGURE = ParagraphStyle("figure", parent=_styles["BodyText"], fontName="Helvetica-Bold", fontSize=13, leading=16,
+                        textColor=INK)
+PROSE = ParagraphStyle("prose", parent=_styles["BodyText"], fontName="Helvetica", fontSize=9.5, leading=13.5,
+                       textColor=INK, spaceAfter=0)
+
+
+def boxed(title: str, content: list, width: float, number: str | None = None, bar=WELL, rule=HAIRLINE,
+          title_color=INK) -> Table:
+    """A section with a title bar and a hairline box. Each flowable is its own row, so long sections break between
+    paragraphs and the title bar repeats on the next page."""
+    head = f"<font color='#78726A'>{number}</font>&nbsp;&nbsp;{clean(title)}" if number else clean(title)
+    rows = [[Paragraph(head, ParagraphStyle("tb", parent=TITLE_BAR, textColor=title_color))]]
+    rows += [[c] for c in content] or [[para("To be updated.", PROSE)]]
+    t = Table(rows, colWidths=[width], repeatRows=1)
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, rule), ("BACKGROUND", (0, 0), (-1, 0), bar),
+                           ("LINEBELOW", (0, 0), (-1, 0), 0.6, rule),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                           ("TOPPADDING", (0, 0), (-1, 0), 6), ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+                           ("TOPPADDING", (0, 1), (-1, -1), 4), ("BOTTOMPADDING", (0, 1), (-1, -1), 4),
+                           ("TOPPADDING", (0, 1), (-1, 1), 8), ("BOTTOMPADDING", (0, -1), (-1, -1), 9),
+                           ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    return t
+
+
+def figures(items: list[tuple[str, str, str]], width: float, per_row: int = 4) -> Table:
+    """Key figures panel: label, big value, small note, in bordered cells."""
+    cells = [[para(lbl, LABEL), para(val, FIGURE), para(note, LABEL)] for lbl, val, note in items]
+    while len(cells) % per_row:
+        cells.append("")
+    rows = [cells[i:i + per_row] for i in range(0, len(cells), per_row)]
+    t = Table(rows, colWidths=[width / per_row] * per_row)
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, HAIRLINE), ("INNERGRID", (0, 0), (-1, -1), 0.6, HAIRLINE),
+                           ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 9),
+                           ("TOPPADDING", (0, 0), (-1, -1), 7), ("BOTTOMPADDING", (0, 0), (-1, -1), 8)]))
+    return t
+
+
+def callout(title: str, content: list, width: float, rule=SAGE, tint=SAGE_TINT) -> Table:
+    """A bordered block with a coloured rule on the left, for the recommendation or a conclusion."""
+    rows = [[Paragraph(clean(title), TITLE_BAR)]] + [[c] for c in content]
+    t = Table(rows, colWidths=[width])
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, HAIRLINE), ("LINEBEFORE", (0, 0), (0, -1), 3, rule),
+                           ("BACKGROUND", (0, 0), (-1, -1), tint), ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                           ("RIGHTPADDING", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, 0), 8),
+                           ("TOPPADDING", (0, 1), (-1, -1), 2), ("BOTTOMPADDING", (0, -1), (-1, -1), 9)]))
+    return t
+
+
+def ruled(rows: Sequence[Sequence], col_widths: Sequence[float], header_bg=WELL, header_fg=INK,
+          bold_rows: Sequence[int] = (), font_size: float = 8.5) -> Table:
+    """A bordered table: hairline box and inner grid, a tinted header, roomy rows, numbers right-aligned."""
+    t = grid(rows, col_widths, header_bg=header_bg, header_fg=header_fg, zebra=False, bold_rows=bold_rows,
+             font_size=font_size)
+    return frame(t)
+
+
+def frame(t: Table, rule=HAIRLINE, width: float = 0.6) -> Table:
+    """Add a hairline box and inner grid to a table (third-party layouts keep their own colours)."""
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), width, rule), ("INNERGRID", (0, 0), (-1, -1), 0.4, rule),
+                           ("TOPPADDING", (0, 0), (-1, -1), 3.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
+    return t
 
 
 def image_page(png: bytes, width: float = 7.5 * inch) -> Image:
@@ -122,6 +215,7 @@ def render_text_image(lines: list[str], width: int = 1400, line_h: int = 30) -> 
     return out.getvalue()
 
 
-__all__ = ["para", "band", "grid", "kv", "build", "image_page", "render_text_image", "PageBreak", "Spacer",
+__all__ = ["para", "band", "grid", "kv", "build", "boxed", "figures", "callout", "ruled", "frame", "PROSE", "LABEL",
+           "GRAPHITE", "INK", "MUTED", "HAIRLINE", "WELL", "SAGE", "SAGE_TINT", "image_page", "render_text_image", "PageBreak", "Spacer",
            "inch", "H1", "H2", "BODY", "SMALL", "RIGHT", "AB_TEAL", "LINCOLN_NAVY", "LINCOLN_STEEL",
            "LINCOLN_GREEN", "TIQ_NAVY", "colors", "Table", "TableStyle", "clean"]
