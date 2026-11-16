@@ -181,12 +181,20 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             items.append(_item("Q18", f"Present at the committee: {mt.meeting_date} {mt.start_time}",
                                f"Your loans: {', '.join(mine) or 'see agenda'}.", "/committee/meeting", kind="waiting"))
     if role in ("ac_manager", "sct"):
+        # Any A/C Manager may decide (as on the Review queue); the CMRs assigned to you come first.
+        from domain.models import AppUser
+
         stage = "ac_manager" if role == "ac_manager" else "sct"
-        for cl in session.query(CycleLoan).filter_by(cycle_id=cyc.id, in_scope=True):
+        for cl in session.query(CycleLoan).filter_by(cycle_id=cyc.id, in_scope=True).order_by(CycleLoan.facility_id):
             c = cmr_of(cl)
-            if c and c.current_stage == stage and (role == "sct" or cl.ac_manager_email == actor.email):
-                items.append(_item("Q6" if stage == "ac_manager" else "Q9", f"Review {cl.borrower}'s CMR",
-                                   "Pass, or send back with comments.", "/reviews", loan=cl.borrower, priority=1))
+            if not c or c.current_stage != stage:
+                continue
+            mine = role == "sct" or cl.ac_manager_email == actor.email
+            owner = session.query(AppUser).filter_by(email=cl.ac_manager_email).first()
+            detail = "Pass, or send back with comments." if mine else (
+                f"Assigned to {owner.display_name if owner else cl.ac_manager_email}; any A/C Manager can review it.")
+            items.append(_item("Q6" if stage == "ac_manager" else "Q9", f"Review {cl.borrower}'s CMR", detail,
+                               "/reviews", loan=cl.borrower, priority=1 if mine else 2))
     if role in ("committee_member", "committee_chair"):
         from domain.services.committee import latest_agenda
 
