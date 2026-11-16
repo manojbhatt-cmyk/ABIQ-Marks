@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { api, fmt, ROLE_LABEL, useApi } from "../api";
 import { Card, Empty, ErrorState, Loading, PageHeader } from "../components/ui";
 import DemoControls from "../components/DemoControls";
+import { DeadlinesCard } from "../components/Reminders";
 import { useApp } from "../context";
 
 /* Phases are told apart by their names, not by colour (Design.md 1.2: colour has a job). */
@@ -111,6 +112,7 @@ export default function Work() {
           </>}
         </div>
         <div className="space-y-6">
+          {data.cycle && <DeadlinesCard />}
           <Card title={<span className="flex items-center gap-2"><MessagesSquare size={18} className="text-brand-600" aria-hidden="true" /> Messages</span>} subtitle="Internal communication, inside TIQ" actions={<button className="btn-ghost btn-sm" onClick={() => nav("/messages")}>Open</button>}>
             {inbox.length ? inbox.map((m) => <button key={m.id} onClick={() => nav(m.link || "/messages")} className={`mb-2 block w-full rounded-tile border px-3 py-2 text-left transition-colors duration-150 hover:border-brand-300 ${m.read ? "border-line-200 bg-white" : "border-info-100 bg-info-100"}`}>
               <div className="text-[13.5px] font-medium text-ink-900">{m.subject}</div><div className="text-xs text-slate-500">from {m.from} · {fmt.date(m.at)}</div></button>)

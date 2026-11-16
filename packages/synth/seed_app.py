@@ -13,6 +13,7 @@ RULES = [
      "Documents required for a standard CMR package", False, "DQ5"),
     ("intake.required_docs.watchlist", ["financial_statements", "covenant_certificate", "sponsor_letter"], "list",
      "Documents required for a watchlist CMR package", False, "DQ5"),
+    ("reminder.lead_days", 2, "int", "Days before a deadline when TIQ reminds the task owner", False, "DQ6"),
     ("chase.cadence_days", [-3, 0, 2, 4, 6], "list", "Reminder days relative to the due date", False, "DQ6"),
     ("spread.addback_allowlist", ["severance", "restructuring", "non_recurring_legal"], "list",
      "Add-back types allowed without exception", False, "DQ8"),

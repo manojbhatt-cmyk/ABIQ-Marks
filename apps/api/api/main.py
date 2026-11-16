@@ -843,6 +843,21 @@ def notifications_read(a: Actor = A, s: Session = S):
     return {"ok": True}
 
 
+@app.get("/api/cycles/{cycle_id}/deadlines/status")
+def deadline_status(cycle_id: str, a: Actor = A, s: Session = S):
+    from domain.services import reminders
+
+    return reminders.status(s, cycle_id)
+
+
+@app.post("/api/cycles/{cycle_id}/reminders")
+def send_manual_reminder(cycle_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
+    from domain.services import reminders
+
+    return reminders.send_manual(s, a, cycle_id, step=body.get("step", ""), cycle_loan_id=body.get("cycle_loan_id"),
+                                 to=body.get("to"), note=body.get("note", ""))
+
+
 # ---------------- in-platform work and messages ----------------
 @app.get("/api/work")
 def work(cycle_id: str | None = None, a: Actor = A, s: Session = S):

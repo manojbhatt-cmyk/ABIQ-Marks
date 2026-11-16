@@ -54,6 +54,11 @@ def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[
     keep = autopilot.setting(session)
     if keep is not None:
         log += autopilot.run(session, cycle_id, keep)
+    from domain.services import reminders
+
+    sent = reminders.send_due(session, cycle_id)
+    if sent:
+        log.append(f"TIQ sent {len(sent)} deadline reminder(s)")
     if not log:
         log.append("Nothing arrived from outside")
     return list(dict.fromkeys(log))

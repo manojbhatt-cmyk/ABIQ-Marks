@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api, fmt, useApi } from "../api";
 import { AiCard, Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, PageHeader, StatusChip, useAction, useConfirm } from "../components/ui";
 import { useApp } from "../context";
+import { DeadlinesCard } from "../components/Reminders";
 
 const ALL_COLS = ["borrower", "facility", "team", "funded", "previous", "lincoln", "range", "deal_team", "committee", "final", "prev_value", "cur_value", "delta", "prev_rating", "rating", "watchlist", "waiver", "status", "agenda"];
 
@@ -71,6 +72,7 @@ export default function Tracker() {
               actions={<><button className="btn-primary" onClick={() => confirm.ask(`Send impact note v${draft.version} (delta ${fmt.delta(draft.delta)}) to ${data.recipients.join(", ")}?`, async () => { await api(`/impact/${draft.id}/send`, { body: body !== null ? { body } : {} }); setBody(null); reload(); })}>Send</button></>}>
               <textarea className="input h-64 font-mono text-[11px]" value={body ?? draft.body} onChange={(e) => setBody(e.target.value)} />
             </AiCard>) : <button className="btn-primary w-full justify-center" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/impact`, { body: {} }); reload(); })}>Draft impact note (A6)</button>)}
+          {pm && <DeadlinesCard limit={6} />}
           <Card title="By fund">{(funds.data || []).map((f: any) => <div key={f.fund} className="flex justify-between border-b border-canvas-100 py-1 text-xs"><span className="font-medium">{f.fund} <span className="text-slate-400">({f.loans})</span></span><span className="num">{fmt.num(f.current, 3)} <Delta v={f.delta} /></span></div>)}</Card>
           <Card title="Sent versions">{data.impacts.filter((i: any) => i.sent_at).map((i: any) => <div key={i.id} className="flex justify-between border-b border-canvas-100 py-1 text-sm"><span>v{i.version} to {i.sent_to?.map((x: string) => x.split(".")[0]).join(", ")}</span><Delta v={i.delta} /></div>)}
             {!data.impacts.some((i: any) => i.sent_at) && <div className="text-sm text-slate-400">None sent yet</div>}</Card>

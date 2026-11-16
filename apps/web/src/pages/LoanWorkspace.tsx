@@ -2,6 +2,7 @@ import { Download, FileText } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { downloadFile, fmt, openFile, useApi } from "../api";
 import { Card, Chip, ErrorState, Loading, Loops, PageHeader, StatusChip, Tabs } from "../components/ui";
+import { DeadlinesCard } from "../components/Reminders";
 import CmrEditor from "./CmrEditor";
 import LineageView from "./LineageView";
 import Pricing from "./Pricing";
@@ -33,6 +34,7 @@ export default function LoanWorkspace() {
         <div><Loops loops={l.loops} /></div>
       </div>
       <Tabs active={tab} onChange={(x) => nav(`/loans/${id}/${x}`)} tabs={[{ id: "overview", label: "Overview" }, { id: "documents", label: "Documents" }, { id: "spread", label: "Spread" }, { id: "cmr", label: "CMR" }, { id: "pricing", label: "Pricing (G1)" }, { id: "lineage", label: "Lineage" }]} />
+      {tab === "overview" && <div className="mb-6"><DeadlinesCard loanId={l.id} /></div>}
       {tab === "overview" && (
         <Card title="Timeline of this loan">
           <table className="w-full"><thead><tr>{["Day", "When", "Who", "Role", "Action", "Detail"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
