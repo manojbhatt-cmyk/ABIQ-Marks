@@ -19,7 +19,9 @@ LINCOLN_V1_DAY = 20
 
 
 def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[str]:
-    cyc = session.get(ValuationCycle, cycle_id)
+    # Lock the cycle row: a second click (or a second tab) waits, then sees the new day, so no day's borrower
+    # mail or Lincoln file is delivered twice.
+    cyc = session.query(ValuationCycle).filter_by(id=cycle_id).with_for_update().populate_existing().one()
     if cyc.status == "draft":
         raise ValueError("Send the kickoff first")
     log: list[str] = []
