@@ -49,6 +49,12 @@ def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[
                 generator.deliver_revision(cl.facility_id, current + 1)
             lincoln.ingest_lincoln(session, cycle_id)
             log.append(f"Lincoln delivered a revised valuation for {cl.borrower}")
+    from connectors import live_mail
+
+    if live_mail.enabled():
+        got = intake.process_inbox(session, cycle_id)
+        if got:
+            log.append(f"{len(got)} real email(s) received and classified")
     from synth import autopilot
 
     keep = autopilot.setting(session)

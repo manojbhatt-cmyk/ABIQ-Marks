@@ -8,6 +8,7 @@ os.environ["WAREHOUSE"] = "duckdb"
 os.environ["WAREHOUSE_DUCKDB_PATH"] = os.path.join(_tmp, "warehouse.duckdb")
 os.environ["OBJECT_STORE_ROOT"] = os.path.join(_tmp, "objects")
 os.environ["LLM_ENABLED"] = "false"
+os.environ["MAIL_LIVE_ENABLED"] = "false"  # tests never touch a real mailbox
 
 import psycopg  # noqa: E402
 import pytest  # noqa: E402

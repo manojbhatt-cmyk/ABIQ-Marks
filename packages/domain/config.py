@@ -49,6 +49,18 @@ class Settings:
     model_heavy: str = _env("MODEL_HEAVY", "gpt-4o-mini")
     model_light: str = _env("MODEL_LIGHT", "gpt-4o-mini")
     llm_enabled: bool = _env("LLM_ENABLED", "auto") != "false"
+    # Live mail for one loan (connectors/live_mail.py, decision D30). Off unless MAIL_LIVE_ENABLED=true.
+    mail_live_enabled: bool = _env("MAIL_LIVE_ENABLED", "false").lower() == "true"
+    mail_live_facility: str = _env("MAIL_LIVE_FACILITY", "F-0002")
+    mail_live_borrower: str = _env("MAIL_LIVE_BORROWER").lower()
+    mail_live_deal_team: str = _env("MAIL_LIVE_DEAL_TEAM")
+    mail_user: str = _env("MAIL_USER")
+    mail_password: str = _env("MAIL_PASSWORD")
+    mail_imap_host: str = _env("MAIL_IMAP_HOST", "imap.gmail.com")
+    mail_imap_port: int = int(_env("MAIL_IMAP_PORT", "993"))
+    mail_imap_folder: str = _env("MAIL_IMAP_FOLDER", "INBOX")
+    mail_smtp_host: str = _env("MAIL_SMTP_HOST", "smtp.gmail.com")
+    mail_smtp_port: int = int(_env("MAIL_SMTP_PORT", "465"))
 
 
 settings = Settings()

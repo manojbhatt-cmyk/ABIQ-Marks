@@ -22,7 +22,11 @@ MIME = {".pdf": "application/pdf", ".xlsx": "application/vnd.openxmlformats-offi
 
 def process_inbox(session: Session, cycle_id: str) -> list[EmailMessage]:
     """Pick up new inbound .eml files, match them to a borrower, store and classify attachments."""
+    from connectors import live_mail
+    from domain.config import settings
+
     cyc = session.get(ValuationCycle, cycle_id)
+    live_mail.poll()  # copies new real mail (one loan only) into the bucket; a no-op when live mail is off
     done = {m.eml_path for m in session.query(EmailMessage.eml_path).filter_by(direction="in")}
     out = []
     for key in mailbox.inbox():
@@ -33,6 +37,13 @@ def process_inbox(session: Session, cycle_id: str) -> list[EmailMessage]:
         domain = (msg["from"] or "").split("@")[-1].strip("> ").lower()
         loans = session.query(CycleLoan).filter_by(cycle_id=cycle_id, email_domain=domain).all()
         method = "domain" if loans else None
+        if live_mail.is_live_key(key):
+            # Real mail from the configured borrower address belongs to the live loan.
+            sender = (msg["from"] or "").lower()
+            loans = [cl for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id,
+                                                                     facility_id=settings.mail_live_facility)
+                     if settings.mail_live_borrower and settings.mail_live_borrower in sender]
+            method = "live sender" if loans else None
         if not loans:
             loans = [cl for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id)
                      if cl.borrower and cl.borrower.lower() in (msg["subject"] or "").lower()]
@@ -255,10 +266,22 @@ def send_chase(session: Session, actor: Actor, reminder_id: str, subject: str | 
         raise BusinessRuleError("This reminder has already been handled")
     cl = session.get(CycleLoan, r.cycle_loan_id)
     subject, body = subject or r.draft_subject, body or r.draft_body
-    to = [f"finance@{cl.email_domain}"]
-    msg_id, path = mailbox.send(actor.email, to, subject, body, cc=[cl.analyst_email])
-    m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=actor.email, to_addrs=to,
-                     cc_addrs=[cl.analyst_email], subject=subject, body_text=body, sent_at=now(),
+    from connectors import live_mail
+
+    if live_mail.is_live_loan(cl.facility_id):
+        # A real email, sent only because a person clicked Send (decision D30).
+        from domain.config import settings
+
+        sender, to, cc = settings.mail_user, [settings.mail_live_borrower], live_mail.deal_team()
+        try:
+            msg_id, path = live_mail.send(to, subject, body, cc=cc)
+        except Exception as exc:
+            raise BusinessRuleError(f"The email could not be sent: {exc}") from exc
+    else:
+        sender, to, cc = actor.email, [f"finance@{cl.email_domain}"], [cl.analyst_email]
+        msg_id, path = mailbox.send(actor.email, to, subject, body, cc=cc)
+    m = EmailMessage(direction="out", message_id=msg_id, thread_id=msg_id, from_addr=sender, to_addrs=to,
+                     cc_addrs=cc, subject=subject, body_text=body, sent_at=now(),
                      template_code="chase_borrower", cycle_id=cl.cycle_id, matched_facility_id=cl.facility_id,
                      matched_borrower_id=cl.borrower_id, eml_path=path, status="sent",
                      cycle_day=session.get(ValuationCycle, cl.cycle_id).current_day)

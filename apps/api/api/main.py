@@ -744,6 +744,17 @@ def distribute(cycle_id: str, a: Actor = A, s: Session = S):
     return {"sent": len(closing.distribute(s, a, cycle_id))}
 
 
+@app.post("/api/cycles/{cycle_id}/mail/check")
+def check_mail(cycle_id: str, a: Actor = A, s: Session = S):
+    """Read the real mailbox now (live mail, one loan) and run the email pipeline on anything new."""
+    require(a, "intake.manage")
+    from connectors import live_mail
+
+    got = intake.process_inbox(s, cycle_id)
+    return {"received": len(got), "live": live_mail.health(),
+            "subjects": [m.subject for m in got]}
+
+
 @app.get("/api/inbox")
 def inbox(a: Actor = A, s: Session = S):
     """External (third-party) mail: borrower packages and chases, Lincoln send-backs."""
@@ -1001,7 +1012,9 @@ def connectors(a: Actor = A, s: Session = S):
     from domain.models import IngestionRun
 
     last = s.query(IngestionRun).order_by(IngestionRun.created_at.desc()).first()
-    return {"connectors": [get_warehouse().health(), get_store().health(), mailbox.health(),
+    from connectors import live_mail
+
+    return {"connectors": [get_warehouse().health(), get_store().health(), mailbox.health(), live_mail.health(),
                            {"connector": "snowflake", "status": "configured" if settings.snowflake_account else "not configured",
                             "account": settings.snowflake_account or None, "database": settings.snowflake_database}],
             "warehouse": settings.warehouse, "writeback_mode": settings.writeback_mode,

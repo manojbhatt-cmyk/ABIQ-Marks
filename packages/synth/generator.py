@@ -43,8 +43,12 @@ def package_files(br) -> list[tuple[str, bytes, str]]:
 
 def mail_schedule() -> dict[int, list[tuple[str, list]]]:
     """day -> [(borrower_id, files)]. Items missing until chased arrive two days after the due date chase."""
+    from connectors import live_mail
+
     sched: dict[int, list] = {}
     for br in borrowers():
+        if any(live_mail.is_live_loan(f.facility_id) for f in br.facilities if f.in_scope):
+            continue  # this borrower's package arrives by real email (decision D30)
         files = package_files(br)
         held = [f for f in files if any(m.replace("_", "-") in f[0] for m in ("covenant-cert",)) and br.missing_until_chased]
         first = [f for f in files if f not in held]

@@ -7,6 +7,8 @@
   synth play --until Q11            drive the demo story to a step (Q1..Q22, M1..M6)
   synth reset [--until Q0] [--target duckdb|snowflake]
                                     drop and reload everything, optionally play to a step
+  synth package --facility F-0002   write a borrower's quarterly package files to local-data/package-<id>/
+                                    (to attach to a real email when live mail is on)
 """
 from __future__ import annotations
 
@@ -73,6 +75,20 @@ def reset(target: str = "duckdb", until: str | None = None, log=print, reset_acc
         play(until, log)
 
 
+def write_package(facility_id: str) -> Path:
+    """The borrower package the generator would email, as files a person can attach to a real email."""
+    from domain.config import REPO_ROOT
+    from synth.generator import package_files
+    from synth.portfolio import borrowers
+
+    br = next(b for b in borrowers() if any(f.facility_id == facility_id for f in b.facilities))
+    out = REPO_ROOT / "local-data" / f"package-{facility_id}"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, data, _ in package_files(br):
+        (out / name).write_bytes(data)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="synth")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -82,6 +98,8 @@ def main(argv: list[str] | None = None) -> int:
     lp.add_argument("--reset-account", action="store_true", help="drop every other user database first (Snowflake)")
     sub.add_parser("migrate")
     sub.add_parser("seed-app")
+    kp = sub.add_parser("package")
+    kp.add_argument("--facility", default="F-0002")
     pp = sub.add_parser("play")
     pp.add_argument("--until", default="Q22")
     rp = sub.add_parser("reset")
@@ -105,6 +123,8 @@ def main(argv: list[str] | None = None) -> int:
         from synth.play import play
 
         play(a.until)
+    elif a.cmd == "package":
+        print(write_package(a.facility))
     elif a.cmd == "reset":
         reset(a.target, a.until, reset_account=a.reset_account)
     return 0
