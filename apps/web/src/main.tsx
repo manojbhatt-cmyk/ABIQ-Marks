@@ -8,6 +8,7 @@ import { AppProvider, useApp } from "./context";
 import { installDisplayFilter } from "./display";
 import "./index.css";
 import Admin from "./pages/Admin";
+import Process from "./pages/Process";
 import Approvals from "./pages/Approvals";
 import Committee from "./pages/Committee";
 import Dashboard from "./pages/Dashboard";
@@ -59,6 +60,7 @@ function Protected() {
         <Route path="/distribution" element={<Distribution />} />
         <Route path="/monthly" element={<Monthly />} />
         <Route path="/ask" element={<Navigate to="/work" replace />} />
+        <Route path="/process" element={<Process />} />
         <Route path="/lineage" element={<Lineage />} />
         <Route path="/lineage/:id" element={<Lineage />} />
         <Route path="/inbox" element={<Inbox />} />
