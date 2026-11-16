@@ -44,7 +44,7 @@ function Templates() {
   const { data } = useApi<any>("/admin/templates", []);
   if (!data) return <Loading />;
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 gap-4">
       <Card title="Calendar templates">{data.calendar.map((c: any) => <div key={c.cycle_type + c.phase} className="flex justify-between border-b border-canvas-100 py-1 text-sm"><span>{c.cycle_type} phase {c.phase}: {c.name} ({c.steps.join(", ")})</span><span className="flex gap-2"><span className="num">days {c.start} to {c.end}</span>{c.assumed && <AssumedChip dq="DQ1" />}</span></div>)}</Card>
       <Card title="Email templates">{data.email.map((t: any) => <details key={t.code} className="border-b border-canvas-100 py-1 text-sm"><summary className="cursor-pointer font-medium">{t.code} <span className="text-xs text-slate-400">v{t.version}</span></summary><div className="mt-1 text-xs font-semibold">{t.subject}</div><pre className="whitespace-pre-wrap text-xs text-slate-600">{t.body}</pre></details>)}</Card>
     </div>
@@ -86,7 +86,7 @@ function Synthetic() {
         {st?.running && <Chip tone="amber">running</Chip>}
       </div>
       {st?.error && <div className="mt-3 rounded bg-danger-100 p-2 text-sm text-danger-700">{st.error}</div>}
-      <pre className="mt-4 max-h-80 overflow-y-auto rounded-lg bg-navy-950 p-3 text-xs text-slate-200">{(st?.log || []).join("\n") || "No job run yet"}</pre>
+      <pre className="mt-4 max-h-80 overflow-y-auto rounded-control border border-line bg-sunken p-3 text-xs text-ink">{(st?.log || []).join("\n") || "No job run yet"}</pre>
     </Card>
   );
 }
@@ -109,7 +109,7 @@ function Agents() {
         <Kpi label="Model spend this cycle" value={`$${data.cost_total.toFixed(4)}`} />
         <Kpi label="Cost per loan" value={`$${data.cost_per_loan.toFixed(4)}`} sub="target under $2" tone="green" />
       </div>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-4">
         <Card title="Runs by component">{data.components.map((c: any) => <div key={c.component} className="flex justify-between border-b border-canvas-100 py-1 text-sm"><span>{c.component}</span><span className="num">{c.runs} runs, {c.tokens} tokens, ${c.cost.toFixed(4)}</span></div>)}</Card>
         <Card title="Suggestions by outcome">{Object.entries(data.suggestions).map(([k, v]: any) => <div key={k} className="flex justify-between py-1 text-sm"><StatusChip status={k} /><span className="num">{v}</span></div>)}</Card>
         <Card title="Recent runs"><div className="max-h-80 overflow-y-auto">{data.recent.map((r: any) => <div key={r.id} className="border-b border-canvas-100 py-1 text-xs"><b>{r.component}</b> {r.graph} <StatusChip status={r.status === "succeeded" ? "done" : r.status} /><div className="text-slate-500">{r.output}</div></div>)}</div></Card>

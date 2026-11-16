@@ -32,7 +32,7 @@ export default function Kickoff() {
           </button>
         ))}
       </div>
-      {sent && <div className="mb-4 rounded-lg bg-success-100 px-4 py-2 text-sm text-success-700">Kickoff sent for {cycle!.period}. The cycle is running.</div>}
+      {sent && <div className="mb-4 rounded-control border border-success-100 bg-success-50 px-4 py-2.5 text-[13.5px] text-success-700">Kickoff sent for {cycle!.period}. The cycle is running.</div>}
       {step === 0 && (
         <Card title="1. Period and quarter end">
           {cycle ? <div className="text-sm">Cycle {cycle.period} exists. <button className="btn-secondary ml-2" onClick={() => setStep(1)}>Continue</button></div> : (

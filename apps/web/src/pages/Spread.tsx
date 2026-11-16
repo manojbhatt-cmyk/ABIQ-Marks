@@ -39,7 +39,7 @@ export default function Spread({ loanId, onChange }: { loanId: string; onChange:
   return (
     <>
       {act.node}{confirm.node}
-      {sp.not_found?.length > 0 && <div className="mb-4 rounded-lg bg-warn-100 px-4 py-2 text-sm text-warn-700">Partial: not found by the agent: {sp.not_found.join(", ")}. Scanned pages have no text layer; enter these lines from the page with a note.</div>}
+      {sp.not_found?.length > 0 && <div className="mb-4 rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700">Partial: not found by the agent: {sp.not_found.join(", ")}. Scanned pages have no text layer; enter these lines from the page with a note.</div>}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm"><Chip tone={approved ? "green" : "amber"}>Spread v{sp.version} {sp.status}</Chip>{sp.approved_by && <span className="text-slate-500">approved by {sp.approved_by} {fmt.date(sp.approved_at)}; Everest {sp.written_back}</span>}</div>
         <div className="flex gap-2">
@@ -49,8 +49,8 @@ export default function Spread({ loanId, onChange }: { loanId: string; onChange:
           {!approved && <button className="btn-primary" onClick={() => confirm.ask(<>Approve spread v{sp.version} for this loan, Q3 2026; {new Set(lines.map((l) => l.line_code)).size} lines, {accepted.length} add-back(s). This writes the model to Everest.</>, async () => { await api(`/spreads/${sp.id}/approve`, { body: {} }); refresh(); })}>Approve spread</button>}
         </div>
       </div>
-      <div className="grid grid-cols-12 gap-6">
-        <div className="card col-span-8 overflow-x-auto">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="card xl:col-span-8 overflow-x-auto">
           <table className="w-full">
             <thead><tr><th className="th">Template line</th>{COLS.map(([, l]) => <th key={l} className="th text-right">{l}</th>)}<th className="th text-right">LTM (computed)</th></tr></thead>
             <tbody>
@@ -82,11 +82,11 @@ export default function Spread({ loanId, onChange }: { loanId: string; onChange:
             </tbody>
           </table>
         </div>
-        <div className="col-span-4 space-y-4">
+        <div className="xl:col-span-4 space-y-4">
           <Card title="Add-backs" ai actions={<AssumedChip dq="DQ8" what="add-back allow-list" />}>
             {data.adjustments.length ? data.adjustments.map((a: any) => (
               <AiCard key={a.id} title={`${fmt.label(a.adj_type)} ${fmt.num(a.amount)}`} status={a.accepted === true ? "accepted" : a.accepted === false ? "rejected" : undefined}
-                evidence={<button className="text-info-600 hover:underline" onClick={() => setEvidence({ evidence: a.evidence, source_label: a.description })}>{a.evidence.file} p.{a.evidence.page}</button>}
+                evidence={<button className="font-medium text-ink underline-offset-2 hover:underline" onClick={() => setEvidence({ evidence: a.evidence, source_label: a.description })}>{a.evidence.file} p.{a.evidence.page}</button>}
                 actions={!approved && a.accepted === null ? <><button className="btn-primary" onClick={() => act.run(async () => { await api(`/adjustments/${a.id}`, { body: { accept: true } }); refresh(); })}>Accept</button><button className="btn-secondary" onClick={() => act.run(async () => { await api(`/adjustments/${a.id}`, { body: { accept: false } }); refresh(); })}>Reject</button></> : undefined}>
                 <div className="italic">"{a.description}"</div>
                 <div className="mt-1">{a.allowed ? <Chip tone="green">on the allow-list</Chip> : <Chip tone="red">not on the allow-list</Chip>}</div>

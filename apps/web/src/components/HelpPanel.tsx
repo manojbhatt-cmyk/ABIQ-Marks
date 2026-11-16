@@ -36,10 +36,10 @@ export default function HelpPanel({ path, onClose }: { path: string; onClose: ()
   const h = helpFor(path);
   return (
     <>
-      <div className="anim-scrim fixed inset-0 z-[45]" style={{ background: "rgba(11,20,55,.25)" }} onClick={onClose} />
-      <aside role="dialog" aria-modal="true" aria-label="How this screen works" className="anim-panel fixed inset-y-0 right-0 z-[46] flex w-[min(420px,100vw)] flex-col bg-white shadow-raised">
-        <div className="flex h-[60px] items-center justify-between border-b border-line-200 px-5">
-          <h2 className="flex items-center gap-2 text-base font-bold"><HelpCircle size={18} className="text-brand-600" aria-hidden="true" /> How this screen works</h2>
+      <div className="anim-scrim scrim fixed inset-0 z-[45]" onClick={onClose} />
+      <aside role="dialog" aria-modal="true" aria-label="How this screen works" className="anim-panel fixed inset-y-0 right-0 z-[46] flex w-[min(420px,100vw)] flex-col border-l border-line bg-surface shadow-float">
+        <div className="flex h-14 items-center justify-between border-b border-line px-5">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold"><HelpCircle size={18} className="text-accent-600" aria-hidden="true" /> How this screen works</h2>
           <button className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-5">
@@ -50,7 +50,7 @@ export default function HelpPanel({ path, onClose }: { path: string; onClose: ()
               <ol className="mt-4 space-y-3">
                 {h[3].map((s, i) => (
                   <li key={i} className="flex gap-3 text-[13.5px] leading-relaxed text-ink-700">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{i + 1}</span>{s}
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-line text-xs font-semibold text-muted num">{i + 1}</span>{s}
                   </li>))}
               </ol>
             </>

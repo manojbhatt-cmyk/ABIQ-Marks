@@ -31,8 +31,8 @@ export default function Intake() {
           {pm && <button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/chase`, { body: {} }); reload(); })}>Draft chases (A8)</button>}
         </>} />
       {act.node}
-      <div className="grid grid-cols-12 gap-6">
-        <div className="card col-span-3 max-h-[75vh] overflow-y-auto p-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="card xl:col-span-3 max-h-[75vh] overflow-y-auto p-2">
           {data.loans.map((l: any) => (
             <button key={l.id} onClick={() => setSel(l.id)} className={`mb-1 w-full rounded-lg px-3 py-2 text-left ${loan?.id === l.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}>
               <div className="flex justify-between text-sm font-medium"><span className="truncate">{l.borrower}</span></div>
@@ -40,17 +40,17 @@ export default function Intake() {
             </button>
           ))}
         </div>
-        <div className="col-span-6 space-y-6">
+        <div className="xl:col-span-6 space-y-6">
           {loan && <Card title={`${loan.borrower}: documents`} actions={<>
             {pm && loan.package_status !== "complete" && <button className="btn-secondary" onClick={() => act.run(async () => { const note = prompt("Note for marking the package complete"); if (note) { await api(`/loans/${loan.id}/complete`, { body: { note } }); reload(); } })}>Mark complete</button>}
             {pm && <button className="btn-secondary" onClick={() => nav("/lincoln")}>Share with Lincoln</button>}
             <label className="btn-secondary cursor-pointer"><Upload size={14} /> Upload<input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && act.run(async () => { const f = new FormData(); f.append("file", e.target.files![0]); await api(`/loans/${loan.id}/upload`, { form: f }); reload(); })} /></label>
           </>}>
-            {loan.package_missing.length > 0 && <div className="mb-3 rounded-lg bg-warn-100 px-3 py-2 text-sm text-warn-700">Missing: {loan.package_missing.map(fmt.label).join(", ")}</div>}
+            {loan.package_missing.length > 0 && <div className="mb-3 rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700">Missing: {loan.package_missing.map(fmt.label).join(", ")}</div>}
             {loan.documents.length ? (
               <table className="w-full"><thead><tr>{["File", "Type", "Conf.", "Period", "Pages", "Status"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
                 <tbody>{loan.documents.map((d: any) => (
-                  <tr key={d.id}><td className="td"><div className="flex items-center gap-2"><button className="flex items-center gap-1 text-info-600 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><FileText size={13} />{d.file_name}</button><button title="Download" className="text-slate-400 hover:text-brand-600" onClick={() => downloadFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><Download size={13} /></button></div></td>
+                  <tr key={d.id}><td className="td"><div className="flex items-center gap-2"><button className="flex items-center gap-1 font-medium text-ink underline-offset-2 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><FileText size={13} />{d.file_name}</button><button title="Download" className="text-slate-400 hover:text-brand-600" onClick={() => downloadFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><Download size={13} /></button></div></td>
                     <td className="td"><select className="rounded border border-canvas-200 bg-white px-1 py-0.5 text-xs" value={d.doc_type || "other"} onChange={(e) => act.run(async () => { await api(`/documents/${d.id}/classify`, { body: { doc_type: e.target.value } }); reload(); })}>{TYPES.map((t) => <option key={t} value={t}>{fmt.label(t)}</option>)}</select>
                       {d.confirmed_by && <div className="text-[11px] text-slate-400">confirmed by {d.confirmed_by.split("@")[0]}</div>}</td>
                     <td className="td"><ConfidenceRing value={d.confidence} /></td><td className="td text-xs">{d.period}</td><td className="tdn">{d.pages}</td><td className="td"><StatusChip status={d.status === "indexed" ? "done" : d.status} /></td></tr>))}</tbody></table>
@@ -67,7 +67,7 @@ export default function Intake() {
               </div>)) : <Empty text="No emails" />}
           </Card>}
         </div>
-        <div className="col-span-3 space-y-4">
+        <div className="xl:col-span-3 space-y-4">
           {data.low_confidence.map((d: any) => (
             <AiCard key={d.id} title={`Classification: ${d.file_name}`} confidence={d.confidence} status={d.suggestion?.status}
               actions={<><button className="btn-primary" onClick={() => act.run(async () => { await api(`/documents/${d.id}/classify`, { body: { doc_type: d.doc_type } }); reload(); })}>Accept</button>

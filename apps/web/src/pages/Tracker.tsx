@@ -31,7 +31,7 @@ export default function Tracker() {
       <PageHeader title="Marks tracker" ai subtitle="Every loan's previous, Lincoln, deal team, committee and final mark. Derived from its sources on every change, never edited by hand."
         actions={<><button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycle.id}/tracker/recompute`, { body: {} }); reload(); })}>Recompute</button><button className="btn-secondary" onClick={download}>Export to Excel</button></>} />
       {act.node}{confirm.node}
-      {user?.role === "finance_ir" && cycle.status !== "closed" && <div className="mb-4 rounded-lg bg-warn-100 px-4 py-2 text-sm text-warn-700">Draft marks: final only after governance sign-off.</div>}
+      {user?.role === "finance_ir" && cycle.status !== "closed" && <div className="mb-4 rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700">Draft marks: final only after governance sign-off.</div>}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Kpi label="Previous portfolio value" value={fmt.m(k.previous)} sub={`story loans ${fmt.m(k.story_previous)}`} />
         <Kpi label="Current value" value={fmt.m(k.current)} sub={`story loans ${fmt.m(k.story_current)}`} />
@@ -39,8 +39,8 @@ export default function Tracker() {
         <Kpi label="Loans with draft marks" value={k.draft_marks} />
         <Kpi label="Loans on agenda" value={k.on_agenda} />
       </div>
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-9">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-9">
           <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
             <select className="input w-40" value={filter.team} onChange={(e) => setFilter({ ...filter, team: e.target.value })}><option value="">All teams</option>{Array.from(new Set(data.rows.map((r: any) => r.deal_team))).map((t: any) => <option key={t}>{t}</option>)}</select>
             <select className="input w-40" value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })}><option value="">All statuses</option>{Array.from(new Set(data.rows.map((r: any) => r.status))).map((t: any) => <option key={t}>{t}</option>)}</select>
@@ -66,7 +66,7 @@ export default function Tracker() {
             </table>
           </div>
         </div>
-        <div className="col-span-3 space-y-4">
+        <div className="xl:col-span-3 space-y-4">
           {pm && (draft ? (
             <AiCard title={`Impact note v${draft.version} draft (A6)`} confidence={0.9}
               actions={<><button className="btn-primary" onClick={() => confirm.ask(`Send impact note v${draft.version} (delta ${fmt.delta(draft.delta)}) to ${data.recipients.join(", ")}?`, async () => { await api(`/impact/${draft.id}/send`, { body: body !== null ? { body } : {} }); setBody(null); reload(); })}>Send</button></>}>

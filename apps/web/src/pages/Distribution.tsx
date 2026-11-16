@@ -26,18 +26,18 @@ export default function Distribution() {
       <PageHeader title="Distribution" subtitle="Send the final marks, CMRs and impact note to Finance, Investor Relations and the deal teams, then close the cycle." actions={user?.role === "pm_team" && !data.distribution.length &&
         <button className="btn-primary" disabled={!gov} onClick={() => confirm.ask(`Send the ${cycle.period} final CMRs and marks to Finance, Investor Relations and the Deal Teams, and close the cycle?`, async () => { await api(`/cycles/${cycle.id}/distribute`, { body: {} }); reload(); refreshCycles(); })}>Send and close cycle</button>} />
       {confirm.node}
-      {!gov && <div className="mb-4 rounded-lg bg-warn-100 px-4 py-2 text-sm text-warn-700">Distribution opens after governance sign-off (G3).</div>}
+      {!gov && <div className="mb-4 rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700">Distribution opens after governance sign-off (G3).</div>}
       <div className="mb-6 grid grid-cols-3 gap-4">
         <Kpi label="Cycle" value={cycle.status === "closed" ? "Closed" : cycle.status} />
         <Kpi label="Final portfolio value" value={fmt.m(data.schedule.total)} sub={`change ${fmt.delta(data.schedule.delta)}`} tone={data.schedule.delta < 0 ? "red" : undefined} />
         <Kpi label="Story loans" value={fmt.m(data.schedule.story_total)} sub={`from ${fmt.m(data.schedule.story_previous)}`} />
       </div>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-4">
         {groups.map(([id, name, members]: any) => {
           const sent = data.distribution.find((d: any) => d.group === id);
           return <Card key={id} title={name} actions={sent ? <Chip tone="green">sent {fmt.date(sent.sent_at)}</Chip> : <Chip>not sent</Chip>}>
             <div className="text-sm text-slate-600">{members.join(", ")}</div>
-            {sent && <div className="mt-2 max-h-48 overflow-y-auto text-xs">{sent.documents.map((p: string) => <div key={p}><button className="text-info-600 hover:underline" onClick={() => openFile(`/api/files/sharepoint/${p}`)}>{p.split("/").pop()}</button></div>)}</div>}
+            {sent && <div className="mt-2 max-h-48 overflow-y-auto text-xs">{sent.documents.map((p: string) => <div key={p}><button className="font-medium text-ink underline-offset-2 hover:underline" onClick={() => openFile(`/api/files/sharepoint/${p}`)}>{p.split("/").pop()}</button></div>)}</div>}
           </Card>;
         })}
       </div>

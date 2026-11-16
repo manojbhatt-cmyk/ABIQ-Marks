@@ -52,9 +52,9 @@ function Proposals({ data, go, canPropose }: any) {
   const [text, setText] = useState("");
   if (!row) return <Empty text="No loans for your team" />;
   return (
-    <div className="grid grid-cols-12 gap-6">
-      <div className="card col-span-3 p-2">{data.rows.map((r: any) => <button key={r.id} onClick={() => { setSel(r.facility_id); setMark(""); setDraft(null); setText(""); }} className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${row.id === r.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}><div className="font-medium">{r.borrower}</div><StatusChip status={r.status} /></button>)}</div>
-      <div className="col-span-5 space-y-4">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <div className="card xl:col-span-3 p-2">{data.rows.map((r: any) => <button key={r.id} onClick={() => { setSel(r.facility_id); setMark(""); setDraft(null); setText(""); }} className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${row.id === r.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}><div className="font-medium">{r.borrower}</div><StatusChip status={r.status} /></button>)}</div>
+      <div className="xl:col-span-5 space-y-4">
         <Card title={`Signals: ${row.borrower}`}>
           <div className="space-y-1 text-sm">
             <div>Last quarter final mark <b className="num">{fmt.mark(row.quarter?.mark ?? row.current_mark)}</b>{row.quarter?.low ? `, Lincoln range ${fmt.mark(row.quarter.low)} to ${fmt.mark(row.quarter.high)}` : ""}</div>
@@ -74,7 +74,7 @@ function Proposals({ data, go, canPropose }: any) {
             <button className="btn-primary mt-2" disabled={!mark || !text} onClick={() => go("propose", { facility_id: row.facility_id, proposed_mark: Number(mark), rationale: text, suggestion_id: draft?.suggestion_id })}>Submit</button>
           </Card>)}
       </div>
-      <Card title="DDTL rebalance (M4)" className="col-span-4" actions={<AssumedChip dq={data.ddtl_rule.discovery_question} what="mark applied to funded" />}>
+      <Card title="DDTL rebalance (M4)" className="xl:col-span-4" actions={<AssumedChip dq={data.ddtl_rule.discovery_question} what="mark applied to funded" />}>
         {data.ddtl.map((d: any) => (
           <div key={d.id} className="mb-3 rounded-lg border border-canvas-200 p-3 text-sm">
             <div className="font-semibold">{d.facility_id}</div>

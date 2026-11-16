@@ -18,7 +18,7 @@ export function MeetingCard({ m, compact }: { m: Meeting; compact?: boolean }) {
     <div className="card px-6 py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-brand-600">Committee meeting{m.version && m.version > 1 ? ` (updated v${m.version})` : ""}</div>
+          <div className="text-[11.5px] font-medium text-brand-600">Committee meeting{m.version && m.version > 1 ? ` (updated v${m.version})` : ""}</div>
           <div className="mt-0.5 text-lg font-bold text-navy-900">{m.title}</div>
           <div className="mt-1 flex flex-wrap gap-4 text-sm text-slate-600">
             <span className="flex items-center gap-1"><Clock size={14} /> {when}, {m.start} ({m.timezone.split("/").pop()?.replace("_", " ")}), {m.duration_minutes} min</span>
@@ -69,7 +69,7 @@ export function OrganiseMeeting({ cycleId, existing, onDone }: { cycleId: string
       {open && m && (
         <Modal wide title={existing ? "Update the committee meeting" : "Organise the committee meeting"} onClose={() => setOpen(false)}
           footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={act.busy} onClick={send}><Send size={13} /> {existing ? "Send update in TIQ" : "Send invitation in TIQ"}</button></>}>
-          <div className="mb-3 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-700">TIQ drafted this from the agenda: date from the calendar (Q18), a slot per agenda loan, and everyone who must attend. Change anything before sending.</div>
+          <div className="ai-note mb-3 text-xs">TIQ drafted this from the agenda: date from the calendar (Q18), a slot per agenda loan, and everyone who must attend. Change anything before sending.</div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Field label="Date"><input className="input" type="date" value={m.date} onChange={(e) => setM({ ...m, date: e.target.value })} /></Field>
             <Field label="Start"><input className="input" type="time" value={m.start} onChange={(e) => setM({ ...m, start: e.target.value })} /></Field>

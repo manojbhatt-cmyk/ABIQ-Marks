@@ -36,7 +36,7 @@ export default function Universe() {
             <option value="">{label}: all</option>{o.map((x: string) => <option key={x} value={x}>{k === "watchlist" ? (x === "true" ? "on watchlist" : "not on watchlist") : x}</option>)}
           </select>))}
       </div>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
         <div className="card overflow-x-auto xl:col-span-3">
           <table className="w-full">
             <thead><tr>{["Facility", "Borrower", "Sector", "Sponsor", "Deal team", "Type", "Commitment", "Funded", "Coupon", "Maturity", "Prev mark", "Prev rating", "Watchlist", "CMR type", "Valuation method", "In scope"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>

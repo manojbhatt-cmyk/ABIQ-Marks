@@ -59,14 +59,14 @@ export default function DemoControls() {
   };
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-panel border border-dashed border-brand-300 bg-brand-50 px-4 py-3 text-[13.5px]">
-      <span className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-slate-500">Demo controls</span>
-      <button className="btn-danger" disabled={!!busy} onClick={() => setAsk(true)}>
+    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-card border border-dashed border-strong bg-raised px-4 py-3 text-[13.5px]">
+      <span className="text-[11.5px] font-medium text-slate-500">Demo controls</span>
+      <button className="btn-secondary" disabled={!!busy} onClick={() => setAsk(true)}>
         {busy === "clear" ? <Loader2 size={16} className="animate-spin" /> : <Eraser size={14} />} Clear cycle
       </button>
       {next && (next.to_day ? <button className="btn-primary" disabled={!!busy} onClick={outside} title={next.detail}>
           {busy === "event" ? <Loader2 size={16} className="animate-spin" /> : <Send size={14} />} {next.label}
-        </button> : <span className="badge bg-warn-100 text-warn-700" title={next.detail}>{next.label}</span>)}
+        </button> : <span className="badge badge-amber" title={next.detail}>{next.label}</span>)}
       {msg && <span className="text-xs text-slate-600">{msg}</span>}
       {ask && (
         <Modal title="Clear the cycle?" onClose={() => setAsk(false)} footer={<>

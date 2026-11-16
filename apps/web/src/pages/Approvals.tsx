@@ -29,14 +29,14 @@ export default function Approvals() {
       {act.node}{confirm.node}
       <Tabs active={tab} onChange={setTab} tabs={[{ id: "final", label: "Final marks approval (G2)" }, { id: "governance", label: "Governance (G3)" }, { id: "monthly", label: "Monthly (M6)" }]} />
       {tab === "final" && (
-        <div className="grid grid-cols-12 gap-6">
-          <Card title="Schedule" className="col-span-8"><Schedule /></Card>
-          <div className="col-span-4 space-y-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <Card title="Schedule" className="xl:col-span-8"><Schedule /></Card>
+          <div className="xl:col-span-4 space-y-4">
             <Card title="Changes since the committee">{data.changes.length ? data.changes.map((c: any) => <div key={c.facility_id} className="text-sm">{c.borrower}: {fmt.mark(c.from)} to {fmt.mark(c.to)}</div>) : <div className="text-sm text-slate-400">None</div>}</Card>
             <Card title={<span className="flex items-center gap-2"><GateIcon state={ap?.decision === "approved" ? "passed" : req ? "open" : "closed"} /> Written approval</span>}>
               {!req ? (user?.role === "pm_team" ? <button className="btn-primary" onClick={() => confirm.ask("Send the final marks approval request to the Committee Chair?", async () => { await api(`/cycles/${cycle.id}/approvals/request`, { body: {} }); reload(); })}>Send request</button> : <div className="text-sm text-slate-400">The PM Team sends the request after a clean reconciliation.</div>) :
                 ap ? <div className="text-sm"><StatusChip status={ap.decision} /> by {ap.approver} on {fmt.date(ap.decided_at)}<div className="mt-1 text-xs text-slate-500">{ap.comments}</div>
-                  {ap.evidence && <button className="mt-2 text-info-600 hover:underline" onClick={() => openFile(`/api/files/onedrive/${ap.evidence}`)}>onedrive/{ap.evidence}</button>}</div> :
+                  {ap.evidence && <button className="mt-2 font-medium text-ink underline-offset-2 hover:underline" onClick={() => openFile(`/api/files/onedrive/${ap.evidence}`)}>onedrive/{ap.evidence}</button>}</div> :
                   user?.role === "committee_chair" ? <div className="space-y-2"><textarea className="input h-20" placeholder="Comments (required to reject)" value={comments} onChange={(e) => setComments(e.target.value)} />
                     <div className="flex gap-2"><button className="btn-primary" onClick={() => confirm.ask(`Approve the ${cycle.period} final marks schedule, total ${fmt.m(sch.total)}?`, async () => { await api(`/approval-requests/${req.id}/decide`, { body: { decision: "approved", comments } }); reload(); })}>Approve</button>
                       <button className="btn-danger" onClick={() => confirm.ask("Reject the schedule and send it back to reconciliation (loop QD)?", async () => { await api(`/approval-requests/${req.id}/decide`, { body: { decision: "rejected", comments } }); reload(); }, true)}>Reject</button></div></div> :
@@ -45,10 +45,10 @@ export default function Approvals() {
           </div>
         </div>)}
       {tab === "governance" && (
-        <div className="grid grid-cols-12 gap-6">
-          <Card title="Schedule" className="col-span-8"><Schedule /></Card>
-          <Card className="col-span-4" title={<span className="flex items-center gap-2"><GateIcon state={gov?.status === "signed" ? "passed" : ap?.decision === "approved" ? "open" : "closed"} /> Governance sign-off</span>}>
-            <div className="mb-3 text-sm">Approval evidence: {ap?.evidence ? <button className="text-info-600 hover:underline" onClick={() => openFile(`/api/files/onedrive/${ap.evidence}`)}>{ap.evidence}</button> : "not yet"}</div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <Card title="Schedule" className="xl:col-span-8"><Schedule /></Card>
+          <Card className="xl:col-span-4" title={<span className="flex items-center gap-2"><GateIcon state={gov?.status === "signed" ? "passed" : ap?.decision === "approved" ? "open" : "closed"} /> Governance sign-off</span>}>
+            <div className="mb-3 text-sm">Approval evidence: {ap?.evidence ? <button className="font-medium text-ink underline-offset-2 hover:underline" onClick={() => openFile(`/api/files/onedrive/${ap.evidence}`)}>{ap.evidence}</button> : "not yet"}</div>
             {gov && <div className="mb-3 text-sm"><StatusChip status={gov.status} /> by {gov.signed_by} {fmt.date(gov.signed_at)}<div className="text-xs text-slate-500">Everest {gov.everest_id || "-"}; schedule hash {gov.hash.slice(0, 12)}{gov.reasons ? `; reasons: ${gov.reasons}` : ""}</div></div>}
             {user?.role === "governance" && ap?.decision === "approved" && gov?.status !== "signed" && <div className="space-y-2"><textarea className="input h-20" placeholder="Reasons (required to return)" value={comments} onChange={(e) => setComments(e.target.value)} />
               <div className="flex gap-2"><button className="btn-primary" onClick={() => confirm.ask(`Sign off the ${cycle.period} marks schedule in Everest?`, async () => { await api(`/cycles/${cycle.id}/governance`, { body: { decision: "signed" } }); reload(); })}>Sign off</button>

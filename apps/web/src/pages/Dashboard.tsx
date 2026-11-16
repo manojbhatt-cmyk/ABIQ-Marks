@@ -31,13 +31,13 @@ function LoanCard({ l }: { l: any }) {
 function Lane({ title, cols, loans, stepKey }: { title: string; cols: readonly (readonly [string, readonly string[]])[]; loans: any[]; stepKey: string }) {
   return (
     <div className="mb-4">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</div>
+      <div className="mb-2 text-xs font-medium text-slate-500">{title}</div>
       <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0,1fr))` }}>
         {cols.map(([name, steps]) => {
           const ls = loans.filter((l) => steps.includes(l[stepKey]));
           return (
-            <div key={name} className="rounded-panel border border-line-200 bg-surface-50 p-2">
-              <div className="mb-2 flex justify-between px-1 text-[11px] font-semibold text-brand-700"><span>{name}</span><span className="rounded-full bg-brand-600 px-1.5 text-white">{ls.length}</span></div>
+            <div key={name} className="rounded-control border border-line bg-raised p-2">
+              <div className="mb-2 flex justify-between px-1 text-[12px] font-medium text-muted"><span>{name}</span><span className="text-[11px] text-faint num">{ls.length}</span></div>
               <div className="max-h-[420px] overflow-y-auto">{ls.map((l) => <LoanCard key={l.id} l={l} />)}</div>
             </div>
           );
@@ -63,7 +63,7 @@ export default function Dashboard() {
   const g1Loans = loans.map((l: any) => ({ ...l, g1step: l.status === "waiting_on_lincoln" ? "Q14" : l.current_step }));
   return (
     <>
-      <PageHeader title="Cycle Dashboard" subtitle={`${d.cycle.period} quarterly cycle, quarter end ${d.cycle.day0}, deadline ${d.cycle.deadline}`}
+      <PageHeader title="Cycle dashboard" subtitle={`${d.cycle.period} quarterly cycle, quarter end ${d.cycle.day0}, deadline ${d.cycle.deadline}`}
         actions={<>
           <select className="input w-40" value={team} onChange={(e) => setTeam(e.target.value)}><option value="">All deal teams</option>{teams.map((t) => <option key={t}>{t}</option>)}</select>
           <button className="btn-secondary" onClick={() => window.print()}>Export PDF</button>
@@ -85,28 +85,28 @@ export default function Dashboard() {
             const width = Math.min(((p.end - p.start + 1) / 45) * 100, 100 - left);
             return (
               <div key={p.phase} title={`${p.name}${p.assumed ? " (assumed)" : ""}`} style={{ left: `${left}%`, width: `${width}%`, top: (i % 2) * 34 }}
-                className="absolute h-7 overflow-hidden truncate rounded-tile border border-brand-100 bg-brand-50 px-2 text-[11.5px] font-semibold leading-[26px] text-brand-700">{p.phase}. {p.name}</div>
+                className="absolute h-7 overflow-hidden truncate rounded-chip border border-line bg-sunken px-2 text-[11.5px] font-medium leading-[26px] text-ink">{p.phase}. {p.name}</div>
             );
           })}
-          {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}${x.assumed ? " (assumed)" : ""}`} className="absolute bottom-0 h-3 w-0.5 rounded-full bg-slate-300" style={{ left: `${Math.min((x.day / 45) * 100, 99.6)}%` }} />)}
+          {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}${x.assumed ? " (assumed)" : ""}`} className="absolute bottom-0 h-3 w-0.5 rounded-full bg-strong" style={{ left: `${Math.min((x.day / 45) * 100, 99.6)}%` }} />)}
         </div>
       </Card>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <Card title="Loan board">
             {preG1 && <><Lane title="Deal Team track" cols={DT_COLS} loans={loans} stepKey="dt_step" /><Lane title="Lincoln track" cols={LN_COLS} loans={loans} stepKey="lincoln_step" /></>}
             <Lane title={preG1 ? "From G1" : "Single lane from G1"} cols={G1_COLS} loans={g1Loans.filter((l: any) => ["Q14", "Q15", "Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22"].includes(l.g1step) && (l.status !== "in_progress"))} stepKey="g1step" />
           </Card>
         </div>
-        <div className="space-y-6">
+        <div className="space-y-4">
           <Card title="Needs attention">
-            {d.attention.length ? d.attention.map((a: any, i: number) => <Link to={`/loans/${a.cycle_loan_id}`} key={i} className="mb-2 flex items-center justify-between rounded-tile bg-danger-100 px-3 py-2 text-[13.5px] text-danger-700"><span>{a.title}</span><span className="text-xs">due {dayDate(a.day)}</span></Link>)
+            {d.attention.length ? d.attention.map((a: any, i: number) => <Link to={`/loans/${a.cycle_loan_id}`} key={i} className="mb-2 flex items-center justify-between gap-3 rounded-control border border-danger-100 bg-danger-50 px-3 py-2 text-[13px] text-danger-700"><span>{a.title}</span><span className="text-xs">due {dayDate(a.day)}</span></Link>)
               : <Empty text="Nothing overdue" />}
-            {d.loans.filter((l: any) => l.status === "sent_back" || l.status === "waiting_on_lincoln").map((l: any) => <Link to={`/loans/${l.id}`} key={l.id} className="mb-2 flex items-center justify-between rounded-lg bg-warn-100 px-3 py-2 text-sm text-warn-700"><span>{l.borrower}</span><StatusChip status={l.status} /></Link>)}
+            {d.loans.filter((l: any) => l.status === "sent_back" || l.status === "waiting_on_lincoln").map((l: any) => <Link to={`/loans/${l.id}`} key={l.id} className="mb-2 flex items-center justify-between rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700"><span>{l.borrower}</span><StatusChip status={l.status} /></Link>)}
           </Card>
           <Card title="Loops fired">
             <div className="grid grid-cols-3 gap-2 text-center">
-              {Object.entries(d.loops).map(([kk, v]: any) => <div key={kk} className="rounded-lg bg-canvas-100 py-2"><div className="text-lg font-bold num">{v}</div><div className="text-[11px] text-slate-500">{kk}</div></div>)}
+              {Object.entries(d.loops).map(([kk, v]: any) => <div key={kk} className="rounded-control border border-line py-2.5"><div className="text-[18px] font-semibold num">{v}</div><div className="text-[11px] text-muted">{kk}</div></div>)}
             </div>
             <div className="mt-3 text-[11px] text-slate-400">QA G1 send-back to Lincoln, QB review comments to analyst, QC Lincoln re-draft, QD approval rejected, QE governance returned, QF committee send-back.</div>
           </Card>

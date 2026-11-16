@@ -30,15 +30,15 @@ export default function Reviews() {
       <PageHeader title="Review queue" ai subtitle="A/C Manager, PM Team and SCT reviews, then filing. Comments go straight to the analyst." actions={<AssumedChip dq="DQ10" what="reviewer order" />} />
       {act.node}{confirm.node}
       {["pm_team", "sct", "admin"].includes(user!.role) && <SctSessions cycleId={cycle.id} canBuild={user!.role === "pm_team"} />}
-      <div className="grid grid-cols-12 gap-6">
-        <div className="card col-span-3 p-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="card xl:col-span-3 p-2">
           {q.data!.length ? q.data!.map((x) => (
             <button key={x.cmr_id} onClick={() => setSel(x.cmr_id)} className={`mb-1 w-full rounded-lg px-3 py-2 text-left ${item?.cmr_id === x.cmr_id ? "bg-brand-50" : "hover:bg-canvas-100"}`}>
               <div className="flex justify-between text-sm font-medium"><span>{x.borrower}</span><LoopBadge code="QB" n={x.loops} /></div>
               <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">v{x.version} {x.stage ? <Chip tone="amber">{fmt.label(x.stage)}</Chip> : <StatusChip status={x.status} />}{x.due_day && <span>due {dayDate(x.due_day)}</span>}</div>
             </button>)) : <Empty text="Nothing awaiting your stage" />}
         </div>
-        <div className="col-span-6">
+        <div className="xl:col-span-6">
           {c && item ? (
             <Card title={`${item.borrower} CMR v${c.cmr.version}`} actions={<button className="btn-ghost" onClick={() => openFile(`/api/cmr/${c.cmr.id}/pdf`)}>PDF</button>}>
               {c.sections.map((s: any) => (
@@ -51,7 +51,7 @@ export default function Reviews() {
               <div className="mt-2 text-sm"><b>Evidence attached:</b> {c.evidence.map((e: any) => e.file_name).join(", ") || "none"}</div>
             </Card>) : <Empty text="Select a CMR" />}
         </div>
-        <div className="col-span-3 space-y-4">
+        <div className="xl:col-span-3 space-y-4">
           {item?.stage === "file" && user?.role === "pm_team" && (
             <Card title="Q8 File the CMR"><div className="mb-2 text-sm">A/C Manager and PM Team passed. Filing renders the PDF to SharePoint and writes the CMR and rating to Everest.</div>
               <button className="btn-primary" onClick={() => confirm.ask(`File ${item.borrower} CMR v${item.version} to SharePoint and Everest?`, async () => { await api(`/cmr/${item.cmr_id}/file`, { body: {} }); refresh(); })}>File CMR</button></Card>)}

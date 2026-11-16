@@ -110,7 +110,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
                     <label key={k2} className="flex items-center gap-2"><input type="radio" name="o" checked={outcome === k2} onChange={() => setOutcome(k2)} />{l}</label>))}
                   {outcome === "approved_different_mark" && <>
                     <Field label="Mark"><input className="input num" value={mark} onChange={(e) => setMark(e.target.value)} /></Field>
-                    {outside && <div className="rounded bg-warn-100 px-2 py-1 text-xs text-warn-700">Outside Lincoln's range {v.low} to {v.high}: this puts the loan on the committee agenda.</div>}
+                    {outside && <div className="rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700">Outside Lincoln's range {v.low} to {v.high}: this puts the loan on the committee agenda.</div>}
                     <Field label="Rationale (mandatory)"><textarea className="input h-16" value={rationale} onChange={(e) => setRationale(e.target.value)} /></Field></>}
                   {outcome === "sent_back" && <>
                     <Field label="Reason category"><select className="input" value={reason} onChange={(e) => setReason(e.target.value)}>{["new_information", "factual_error", "methodology_question", "other"].map((x) => <option key={x} value={x}>{fmt.label(x)}</option>)}</select></Field>

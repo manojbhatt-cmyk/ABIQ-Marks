@@ -5,90 +5,75 @@ import {
 import React, { ReactNode, useEffect, useState } from "react";
 import { ApiError, fmt } from "../api";
 
-/* Tones (Design.md 3.7): pick by meaning. "violet" is kept as a name only and renders as brand: no purple. */
+/* Stone & Sage badges (guide 6, "Status badges"): a white chip on a hairline with a 6px status dot and the word.
+   The word carries the meaning and the dot reinforces it. "blue", "violet" and "brand" are kept as names only and
+   render as the neutral stone info badge: nothing in the interface turns blue or purple. */
 type Tone = "green" | "amber" | "red" | "blue" | "neutral" | "violet" | "brand";
 const BADGE: Record<Tone, string> = {
-  green: "bg-success-100 text-success-700",
-  amber: "bg-warn-100 text-warn-700",
-  red: "bg-danger-100 text-danger-700",
-  blue: "bg-info-100 text-info-700",
-  neutral: "bg-canvas-100 text-slate-500",
-  violet: "bg-brand-100 text-brand-700",
-  brand: "bg-brand-100 text-brand-700",
-};
-const TILE: Record<Tone, string> = {
-  green: "bg-success-100 text-success-600",
-  amber: "bg-warn-100 text-warn-600",
-  red: "bg-danger-100 text-danger-600",
-  blue: "bg-info-100 text-info-600",
-  neutral: "bg-canvas-100 text-slate-500",
-  violet: "bg-brand-100 text-brand-600",
-  brand: "bg-brand-100 text-brand-600",
+  green: "badge-green", amber: "badge-amber", red: "badge-red", blue: "badge-info", violet: "badge-info", brand: "badge-info",
+  neutral: "badge-gray",
 };
 
-export function Chip({ tone = "neutral", children, title, dot }: { tone?: Tone; children: ReactNode; title?: string; dot?: boolean }) {
-  return (
-    <span title={title} className={`badge ${BADGE[tone]}`}>
-      {dot && <span className="h-[7px] w-[7px] rounded-full bg-current" aria-hidden="true" />}{children}
-    </span>
-  );
+export function Chip({ tone = "neutral", children, title }: { tone?: Tone; children: ReactNode; title?: string; dot?: boolean }) {
+  return <span title={title} className={`badge ${BADGE[tone]}`}>{children}</span>;
 }
 
 const STATUS_TONE: Record<string, Tone> = {
   done: "green", approved: "green", passed: "green", clean: "green", final: "green", complete: "green", match: "green",
   agreed: "green", filed: "green", reconciled: "green", decided: "green", signed: "green", monthly_final: "green",
   resolved: "green", accepted: "green", closed: "green",
-  sent: "blue", queued: "blue", new: "blue", on_agenda: "blue", deferred: "blue",
+  sent: "blue", queued: "blue", new: "blue", on_agenda: "blue", deferred: "blue", ai_draft: "blue", edited: "blue",
   waiting_on_borrower: "amber", waiting_on_lincoln: "amber", in_review: "amber", in_progress: "amber", proposed: "amber",
-  incomplete: "amber", draft: "amber", pending: "amber", requested: "amber", edited: "amber", ai_draft: "amber",
-  explained: "amber", open: "amber", needs_review: "amber",
+  incomplete: "amber", draft: "amber", pending: "amber", requested: "amber",
+  explained: "amber", open: "amber", needs_review: "amber", warn: "amber", warning: "amber",
   overdue: "red", sent_back: "red", mismatch: "red", failed: "red", fail: "red", late: "red", rejected: "red",
   pushed_back: "red", returned: "red", mismatches: "red",
   not_started: "neutral", not_received: "neutral", empty: "neutral",
 };
 
 export function StatusChip({ status }: { status?: string | null }) {
-  if (!status) return <span className="text-slate-400">-</span>;
-  return <Chip tone={STATUS_TONE[status] || "neutral"}>{fmt.label(status)}</Chip>;
+  if (!status) return <span className="text-faint">-</span>;
+  const label = status === "ai_draft" ? "TIQ draft" : fmt.label(status);
+  return <Chip tone={STATUS_TONE[status] || "neutral"}>{label}</Chip>;
 }
 
-/** Marks a rule AllianceBernstein has not confirmed yet. Extra small warn badge. */
+/** Marks a rule AllianceBernstein has not confirmed yet. */
 export function AssumedChip({ dq, what }: { dq?: string | null; what?: string }) {
   return (
     <span title={`Assumed rule${what ? `: ${what}` : ""}. Not yet confirmed by AllianceBernstein${dq ? ` (discovery question ${dq})` : ""}.`}
-      className="inline-flex h-[17px] items-center whitespace-nowrap rounded-full bg-warn-100 px-2 text-[10.5px] font-semibold text-warn-700">Assumed{dq ? ` ${dq}` : ""}</span>
+      className="badge badge-amber">Assumed{dq ? ` ${dq}` : ""}</span>
   );
 }
 
 export function ConfirmedChip() {
-  return <span className="inline-flex h-[17px] items-center rounded-full bg-success-100 px-2 text-[10.5px] font-semibold text-success-700">Confirmed</span>;
+  return <span className="badge badge-green">Confirmed</span>;
 }
 
 export function LoopBadge({ code, n }: { code: string; n: number }) {
   if (!n) return null;
-  return <span title={`Rework loop ${code}: ${n} time${n === 1 ? "" : "s"}`} className="inline-flex h-[17px] items-center rounded-full bg-brand-100 px-2 text-[10.5px] font-semibold text-brand-700">{code} x{n}</span>;
+  return <span title={`Rework loop ${code}: ${n} time${n === 1 ? "" : "s"}`} className="badge badge-gray num">Loop {code} ×{n}</span>;
 }
 
 export function Loops({ loops }: { loops?: Record<string, number> }) {
   return <>{Object.entries(loops || {}).map(([k, v]) => <LoopBadge key={k} code={k} n={v} />)}</>;
 }
 
-/** Card (8.5): 15px title, optional subtitle, actions on the right, 16px above the content. */
+/** Card: white surface on a hairline, 12px radius, no shadow. Header and body share the 20px inset. */
 export function Card({ title, subtitle, children, actions, className = "", ai, flush }: {
   title?: ReactNode; subtitle?: ReactNode; children: ReactNode; actions?: ReactNode; className?: string; ai?: boolean; flush?: boolean;
 }) {
   return (
     <section className={`card ${className}`}>
       {(title || actions) && (
-        <div className="flex items-start justify-between gap-3 px-6 pt-5">
+        <div className="flex items-start justify-between gap-3 px-5 pt-4">
           <div className="min-w-0">
-            <h3 className="flex items-center gap-2 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-ink-900">{ai && <Sparkles size={16} className="text-brand-600" aria-hidden="true" />}{title}</h3>
-            {subtitle && <div className="mt-0.5 text-[12.5px] text-slate-500">{subtitle}</div>}
+            <h3 className="flex items-center gap-2 text-[14px] font-semibold leading-6 text-ink">{title}{ai && <AiChip />}</h3>
+            {subtitle && <div className="text-[12px] text-muted">{subtitle}</div>}
           </div>
-          {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+          {actions && <div className="flex min-h-6 shrink-0 flex-wrap items-center gap-2">{actions}</div>}
         </div>
       )}
-      <div className={`min-w-0 overflow-x-auto ${flush ? "mt-4" : `px-6 pb-5 ${title || actions ? "pt-4" : "pt-5"}`}`}>{children}</div>
+      <div className={`min-w-0 overflow-x-auto ${flush ? "mt-3" : `px-5 pb-5 ${title || actions ? "pt-3" : "pt-5"}`}`}>{children}</div>
     </section>
   );
 }
@@ -98,30 +83,32 @@ const KPI_ICON: [RegExp, any][] = [
   [/overdue|late|risk|mismatch/i, Clock], [/day|cycle|date/i, CalendarClock], [/run|check|match/i, Activity],
 ];
 
-/** KPI card (8.6): icon tile, two-line label, 28px value; values line up across a row. */
+/** KPI tile: 13px muted label, 24px figure in tabular numbers, 12px line under it coloured only when it has a direction. */
 export function Kpi({ label, value, sub, tone, icon }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "red" | "green" | "amber" | "blue" | "neutral" | "brand"; accent?: number; icon?: any }) {
   const Icon = icon || KPI_ICON.find(([re]) => re.test(label))?.[1] || BarChart3;
-  const t: Tone = tone === "red" ? "red" : tone === "green" ? "green" : tone === "amber" ? "amber" : tone === "blue" ? "blue" : tone === "neutral" ? "neutral" : "brand";
+  const subTone = tone === "red" ? "text-danger-600" : tone === "green" ? "text-success-600" : tone === "amber" ? "text-warn-600" : "text-muted";
   return (
-    <div className="card flex min-h-[148px] flex-col px-5 py-4">
-      <span className={`tile ${TILE[t]}`}><Icon size={18} aria-hidden="true" /></span>
-      <div className="mt-3 line-clamp-2 min-h-[39px] text-[13px] leading-snug text-slate-500">{label}</div>
-      <div className="mt-auto text-[26px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink-900 num">{value}</div>
-      {sub && <div className="mt-1 text-[12.5px] text-slate-500 num">{sub}</div>}
+    <div className="card anim-modal flex min-h-[112px] flex-col px-4 pb-3.5 pt-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="line-clamp-2 text-[13px] font-medium leading-snug text-muted">{label}</div>
+        <Icon size={16} className="mt-0.5 shrink-0 text-faint" aria-hidden="true" />
+      </div>
+      <div className="mt-auto pt-2 text-[24px] font-semibold leading-[1.2] tracking-[-0.02em] text-ink num">{value}</div>
+      {sub && <div className={`mt-0.5 text-[12px] font-medium num ${subTone}`}>{sub}</div>}
     </div>
   );
 }
 
-/** Page header (9.2): 24px title with the AI mark, 14px subtitle, actions on the right with the primary last. */
+/** Page header: 20px title, one muted line under it, actions on the right (the primary last). */
 export function PageHeader({ title, subtitle, ai, actions, back }: { title: string; subtitle?: ReactNode; ai?: boolean; actions?: ReactNode; back?: ReactNode }) {
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        {back && <div className="mb-2 text-[13px] text-slate-500">{back}</div>}
-        <h1 className="flex items-center gap-2 text-[22px] font-semibold leading-tight tracking-[-0.015em] text-ink-900">
-          {title}{ai && <span title="AI assisted: agents prepare, people decide" className="inline-flex"><Sparkles size={20} className="text-brand-600" aria-label="AI assisted" /></span>}
+        {back && <div className="mb-2 text-[13px] text-muted">{back}</div>}
+        <h1 className="flex flex-wrap items-center gap-2.5 text-[20px] font-semibold leading-tight tracking-[-0.01em] text-ink">
+          {title}{ai && <AiChip title="AI assisted: agents prepare, people decide">AI assisted</AiChip>}
         </h1>
-        {subtitle && <p className="mt-1 max-w-[720px] text-[13.5px] leading-relaxed text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 max-w-[760px] text-[13.5px] leading-relaxed text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -130,87 +117,87 @@ export function PageHeader({ title, subtitle, ai, actions, back }: { title: stri
 
 export function Loading({ label = "Loading" }: { label?: string }) {
   return (
-    <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 text-[13px] text-slate-500" role="status">
+    <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 text-[13px] text-muted" role="status">
       <span className="spinner" aria-hidden="true" />{label}
     </div>
   );
 }
 
+/** A failed request: say so and offer Retry. Never an empty state. */
 export function ErrorState({ error, retry }: { error: ApiError | Error; retry?: () => void }) {
   const denied = (error as ApiError).status === 403;
   return (
-    <div role="alert" className="flex items-center gap-3 rounded-tile bg-danger-100 px-4 py-3 text-[13.5px] text-danger-700">
+    <div role="alert" className="flex items-center gap-3 rounded-control border border-danger-100 bg-danger-50 px-4 py-3 text-[13.5px] text-danger-700">
       {denied ? <ShieldAlert size={18} aria-hidden="true" /> : <AlertTriangle size={18} aria-hidden="true" />}
       <div className="flex-1"><b>{denied ? "You don't have access to this." : "Something went wrong."}</b> {error.message}</div>
-      {retry && !denied && <button className="btn-secondary btn-sm" onClick={retry}>Try again</button>}
+      {retry && !denied && <button className="btn-secondary btn-sm" onClick={retry}>Retry</button>}
     </div>
   );
 }
 
-/** Empty state (8.13): says what to do next and offers the button to do it. */
+/** Empty state: what will appear here, how, and one small button to start. */
 export function Empty({ text, hint, action, icon: Icon = Inbox }: { text: string; hint?: ReactNode; action?: ReactNode; icon?: any }) {
   return (
-    <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-panel bg-brand-50 text-brand-600"><Icon size={20} aria-hidden="true" /></span>
-      <div className="mt-1 text-[15px] font-semibold text-ink-900">{text}</div>
-      {hint && <div className="max-w-[460px] text-[13.5px] text-slate-500">{hint}</div>}
+    <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sunken text-faint"><Icon size={18} aria-hidden="true" /></span>
+      <div className="mt-1 text-[14px] font-semibold text-ink">{text}</div>
+      {hint && <div className="max-w-[460px] text-[13px] text-muted">{hint}</div>}
       {action && <div className="mt-2 flex gap-2">{action}</div>}
     </div>
   );
 }
 
 const NOTE: Record<Tone, string> = {
-  amber: "border border-warn-500 bg-warn-100 text-warn-700",
-  red: "bg-danger-100 text-danger-700",
-  blue: "border border-info-500 bg-info-100 text-ink-700",
-  green: "bg-success-100 text-success-700",
-  neutral: "border border-line-200 bg-surface-50 text-slate-500",
-  violet: "border border-brand-100 bg-brand-50 text-ink-700",
-  brand: "border border-brand-100 bg-brand-50 text-ink-700",
+  amber: "border-warn-100 bg-warn-50 text-warn-700",
+  red: "border-danger-100 bg-danger-50 text-danger-700",
+  green: "border-success-100 bg-success-50 text-success-700",
+  blue: "border-line bg-raised text-ink",
+  neutral: "border-line bg-raised text-muted",
+  violet: "border-line bg-raised text-ink",
+  brand: "border-line bg-raised text-ink",
 };
 export function Banner({ tone = "amber", children }: { tone?: Tone; children: ReactNode }) {
-  return <div role={tone === "red" ? "alert" : undefined} className={`mb-4 rounded-tile px-4 py-3 text-[13.5px] ${NOTE[tone]}`}>{children}</div>;
+  return <div role={tone === "red" ? "alert" : undefined} className={`mb-4 rounded-control border px-4 py-3 text-[13.5px] ${NOTE[tone]}`}>{children}</div>;
 }
 
 export function Running({ text }: { text: string }) {
-  return <div role="status" className="flex items-center gap-3 rounded-tile border border-brand-100 bg-brand-50 px-4 py-3 text-[13.5px] text-ink-700"><span className="spinner !h-4 !w-4 !border-2" aria-hidden="true" /> {text}</div>;
+  return <div role="status" className="ai-note flex items-center gap-3"><span className="spinner !h-4 !w-4 !border-2" aria-hidden="true" /> {text}</div>;
 }
 
-/** Confidence bar (8.14): success from 70, warn 45 to 69, danger below 45. */
+/** Confidence meter: success from 70, warning 45 to 69, danger below 45. */
 export function ConfidenceRing({ value }: { value?: number | null }) {
-  if (value === null || value === undefined) return <span className="text-xs text-slate-400">no evidence</span>;
+  if (value === null || value === undefined) return <span className="text-xs text-faint">no evidence</span>;
   const pct = Math.round(value * 100);
   const fill = pct >= 70 ? "bg-success-500" : pct >= 45 ? "bg-warn-500" : "bg-danger-500";
   return (
     <span title={`Confidence ${pct}%`} className="inline-flex items-center gap-1.5 align-middle">
-      <span className="inline-block h-1.5 w-12 overflow-hidden rounded-full bg-line-200"><span className={`block h-full rounded-full ${fill}`} style={{ width: `${pct}%` }} /></span>
-      <span className="text-[11px] font-semibold text-slate-500 num">{pct}%</span>
+      <span className="inline-block h-1.5 w-12 overflow-hidden rounded-full bg-sunken"><span className={`block h-full rounded-full ${fill}`} style={{ width: `${pct}%` }} /></span>
+      <span className="text-[11px] font-medium text-muted num">{pct}%</span>
     </span>
   );
 }
 
-/** AI suggestion: the AI strip with its basis badge, confidence and the human decision. */
+/** AI note: sage rule and tint, the AI chip, its confidence and the human decision. Nothing is applied until a person acts. */
 export function AiCard({ title = "TIQ suggests", children, confidence, status, decidedBy, actions, evidence }: {
   title?: string; children: ReactNode; confidence?: number | null; status?: string; decidedBy?: string | null; actions?: ReactNode; evidence?: ReactNode;
 }) {
   return (
-    <div className="ai-strip">
+    <div className="ai-note">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[13.5px] font-medium text-ink-900"><Sparkles size={16} className="text-brand-600" aria-hidden="true" /> {title}</div>
+        <div className="flex items-center gap-2"><AiChip /><span className="text-[13.5px] font-medium text-ink">{title}</span></div>
         <div className="flex items-center gap-2">
-          <Chip tone="brand" title="Agents prepare, people decide. Nothing here is applied until you act.">AI model</Chip>
           {confidence !== undefined && <ConfidenceRing value={confidence} />}
           {status && status !== "proposed" && <Chip tone={status === "rejected" ? "red" : "green"}>{fmt.label(status)}{decidedBy ? ` by ${decidedBy.split("@")[0]}` : ""}</Chip>}
         </div>
       </div>
-      <div className="text-[13.5px] leading-relaxed text-ink-600">{children}</div>
-      {evidence && <div className="mt-2 text-xs text-slate-500">{evidence}</div>}
+      <div className="text-[13.5px] leading-relaxed text-ink">{children}</div>
+      {evidence && <div className="mt-2 text-xs text-muted">{evidence}</div>}
       {actions && <div className="mt-3 flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
 }
 
-/** Modal (8.12): scrim fades, dialog rises 8px; Escape and scrim click close it. */
+/** Modal: the scrim fades, the dialog rises 4px; Escape and a scrim click close it. */
 export function Modal({ title, children, onClose, footer, wide }: { title: string; children: ReactNode; onClose: () => void; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -218,11 +205,11 @@ export function Modal({ title, children, onClose, footer, wide }: { title: strin
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
   return (
-    <div className="anim-scrim fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(11,20,55,.45)" }} onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title} className={`anim-modal flex max-h-[calc(100vh-48px)] w-full flex-col rounded-modal bg-white shadow-raised ${wide ? "max-w-[860px]" : "max-w-[560px]"}`} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 pt-5"><h3 className="text-[17px] font-bold text-ink-900">{title}</h3><button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button></div>
-        <div className="overflow-auto px-6 py-4 text-sm">{children}</div>
-        {footer && <div className="flex justify-end gap-2 px-6 pb-5 pt-1">{footer}</div>}
+    <div className="anim-scrim scrim fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={title} className={`anim-modal flex max-h-[calc(100vh-48px)] w-full flex-col rounded-card border border-line bg-surface shadow-float ${wide ? "max-w-[860px]" : "max-w-[560px]"}`} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 pt-4"><h3 className="text-[16px] font-semibold text-ink">{title}</h3><button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button></div>
+        <div className="overflow-auto px-5 py-4 text-sm">{children}</div>
+        {footer && <div className="flex justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>}
       </div>
     </div>
   );
@@ -236,13 +223,13 @@ export function useConfirm() {
   const ask = (text: ReactNode, run: () => Promise<any>, danger = false) => { setErr(null); setState({ text, run, danger }); };
   const node = state ? (
     <Modal title="Please confirm" onClose={() => setState(null)} footer={<>
-      <button className="btn-secondary" onClick={() => setState(null)}>Cancel</button>
+      <button className="btn-ghost" onClick={() => setState(null)}>Cancel</button>
       <button className={state.danger ? "btn-danger" : "btn-primary"} disabled={busy} onClick={async () => {
         setBusy(true);
         try { await state.run(); setState(null); } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
       }}>{busy ? "Working" : "Confirm"}</button></>}>
-      <div className="text-[14px] leading-relaxed text-ink-700">{state.text}</div>
-      {err && <div role="alert" className="mt-3 rounded-tile bg-danger-100 px-3 py-2 text-[13.5px] text-danger-700">{err}</div>}
+      <div className="text-[14px] leading-relaxed text-ink">{state.text}</div>
+      {err && <div role="alert" className="mt-3 rounded-control border border-danger-100 bg-danger-50 px-3 py-2 text-[13.5px] text-danger-700">{err}</div>}
     </Modal>
   ) : null;
   return { ask, node };
@@ -256,40 +243,37 @@ export function useAction() {
     setBusy(true); setError(null);
     try { return await fn(); } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   };
-  const node = error ? <div role="alert" className="mb-4 flex items-center gap-2 rounded-tile bg-danger-100 px-4 py-3 text-[13.5px] text-danger-700"><AlertTriangle size={16} aria-hidden="true" /> {error}<button className="icon-btn ml-auto !h-7 !w-7 !text-danger-700" aria-label="Dismiss" onClick={() => setError(null)}><X size={14} /></button></div> : null;
+  const node = error ? <div role="alert" className="mb-4 flex items-center gap-2 rounded-control border border-danger-100 bg-danger-50 px-4 py-3 text-[13.5px] text-danger-700"><AlertTriangle size={16} aria-hidden="true" /> {error}<button className="icon-btn ml-auto !h-7 !w-7 !text-danger-700" aria-label="Dismiss" onClick={() => setError(null)}><X size={14} /></button></div> : null;
   return { busy, error, run, node };
 }
 
 export function GateIcon({ state }: { state: "closed" | "open" | "passed" }) {
   if (state === "passed") return <CheckCircle2 size={16} className="text-success-600" aria-label="Passed" />;
-  if (state === "open") return <LockOpen size={16} className="text-brand-600" aria-label="Open" />;
-  return <Lock size={16} className="text-slate-400" aria-label="Closed" />;
+  if (state === "open") return <LockOpen size={16} className="text-accent-600" aria-label="Open" />;
+  return <Lock size={16} className="text-faint" aria-label="Closed" />;
 }
 
 export function Delta({ v, d = 3 }: { v?: number | null; d?: number }) {
-  if (v === null || v === undefined) return <span className="text-slate-400">-</span>;
+  if (v === null || v === undefined) return <span className="text-faint">-</span>;
   const down = v < -1e-9, up = v > 1e-9;
   return (
-    <span className={`inline-flex items-center gap-0.5 num ${down ? "text-danger-700" : up ? "text-success-700" : "text-slate-500"}`}>
+    <span className={`inline-flex items-center gap-0.5 num ${down ? "text-danger-600" : up ? "text-success-600" : "text-muted"}`}>
       {down && <ArrowDownRight size={14} aria-hidden="true" />}{up && <ArrowUpRight size={14} aria-hidden="true" />}{fmt.delta(v, d)}
     </span>
   );
 }
 
-/** Text tabs (8.9): underline on an inset base line, no negative margins. */
+/** Tabs switch views: muted text, the active one full strength with a 2px graphite underline. */
 export function Tabs({ tabs, active, onChange }: { tabs: { id: string; label: ReactNode }[]; active: string; onChange: (id: string) => void }) {
   return (
-    <div role="tablist" className="mb-6 flex gap-1 overflow-x-auto" style={{ boxShadow: "inset 0 -1px 0 #E4E9EE" }}>
-      {tabs.map((t) => (
-        <button key={t.id} role="tab" aria-selected={active === t.id} onClick={() => onChange(t.id)}
-          className={`whitespace-nowrap border-b-2 px-3.5 py-2.5 text-sm transition-colors duration-150 ${active === t.id ? "border-brand-600 font-semibold text-ink-900" : "border-transparent font-medium text-slate-500 hover:text-ink-900"}`}>{t.label}</button>
-      ))}
+    <div role="tablist" className="tabs mb-6">
+      {tabs.map((t) => <button key={t.id} role="tab" aria-selected={active === t.id} onClick={() => onChange(t.id)} className="tab">{t.label}</button>)}
     </div>
   );
 }
 
 export const Field = ({ label, children, help }: { label: string; children: ReactNode; help?: ReactNode }) => (
-  <label className="flex flex-col gap-1.5"><span className="text-[13px] font-medium text-slate-500">{label}</span>{children}{help && <span className="text-xs text-slate-500">{help}</span>}</label>
+  <label className="flex flex-col gap-1.5"><span className="text-[13px] font-medium text-ink">{label}</span>{children}{help && <span className="text-xs text-muted">{help}</span>}</label>
 );
 
 /** AI provenance chip: sage tint and a sparkle. Marks anything an agent produced. */

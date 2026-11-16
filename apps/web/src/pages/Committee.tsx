@@ -35,7 +35,7 @@ function Agenda({ data, reload, pm, cycleId }: any) {
         <div className="mb-3 flex flex-wrap gap-2 text-xs">{data.tests.map((t: any) => <span key={t.code} className="flex items-center gap-1 rounded-lg bg-canvas-100 px-2 py-1">{t.label}{t.code === "mark_move_10pct" && ` (${(data.threshold.value * 100).toFixed(0)} percent)`}{t.tiq_addition ? <AssumedChip dq="TIQ addition" /> : <AssumedChip dq="DQ17" />}</span>)}</div>
         <table className="w-full"><thead><tr><th className="th">Loan</th><th className="th">Team</th>{data.tests.map((t: any) => <th key={t.code} className="th text-center">{t.label}</th>)}<th className="th">Move</th><th className="th">Agenda</th>{pm && <th className="th" />}</tr></thead>
           <tbody>{data.grid.map((g: any) => (
-            <tr key={g.cycle_loan_id} className={g.on_agenda ? "bg-info-100/40" : ""}><td className="td font-medium">{g.borrower}</td><td className="td text-xs">{g.team}</td>
+            <tr key={g.cycle_loan_id} className={g.on_agenda ? "bg-raised" : ""}><td className="td font-medium">{g.borrower}</td><td className="td text-xs">{g.team}</td>
               {data.tests.map((t: any) => <td key={t.code} className="td text-center">{g.tests[t.code] ? <span className="font-bold text-info-700">&#10003;</span> : <span className="text-slate-300">-</span>}</td>)}
               <td className="tdn text-xs">{g.inputs.move !== undefined && g.inputs.move !== null ? fmt.pct(g.inputs.move, 2) : ""}</td>
               <td className="td">{g.on_agenda ? <Chip tone="blue">On agenda</Chip> : ""}</td>
@@ -50,8 +50,8 @@ function Agenda({ data, reload, pm, cycleId }: any) {
             </Card>}
         </div>)}
       {data.agenda && (
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-8 space-y-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="xl:col-span-8 space-y-4">
             {pack?.stale && <Banner>A source changed after this pack was built. Rebuild before sending.</Banner>}
             <Card title={`Pack builder${pack ? ` (v${pack.version}${pack.sent ? ", sent" : ""})` : ""}`} actions={pm && <>
               <button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycleId}/pack`, { body: cover ? { cover_note: cover } : {} }); reload(); })}>Build pack</button>
@@ -63,7 +63,7 @@ function Agenda({ data, reload, pm, cycleId }: any) {
                   <div className="mt-2 text-xs"><b>Questions:</b> {s.questions.join(" ")}</div></AiCard>))}</div>
             </Card>
           </div>
-          <Card title={`Agenda v${data.agenda.version}, meeting ${data.agenda.meeting_date}`} className="col-span-4">
+          <Card title={`Agenda v${data.agenda.version}, meeting ${data.agenda.meeting_date}`} className="xl:col-span-4">
             {data.items.map((i: any) => <div key={i.id} className={`mb-2 rounded-lg border border-canvas-200 p-2 text-sm ${i.removed ? "opacity-40" : ""}`}><div className="flex justify-between font-medium"><span>{i.borrower}</span><StatusChip status={i.status} /></div>
               <div className="text-xs text-slate-500">{i.reasons.map(fmt.label).join(", ")}{i.manual_reason ? `: ${i.manual_reason}` : ""}</div>
               {pm && !i.removed && i.status === "pending" && <button className="text-xs text-danger-700" onClick={() => act.run(async () => { const reason = prompt("Reason to remove"); if (reason) { await api(`/agenda-items/${i.id}/remove`, { body: { reason } }); reload(); } })}>remove</button>}</div>)}
@@ -98,18 +98,18 @@ function Meeting({ data, reload, canDecide }: any) {
   return (
     <>
     {data.meeting ? <div className="mb-4"><MeetingCard m={data.meeting} compact /></div>
-      : <div className="mb-4 rounded-xl border border-dashed border-warn-300 bg-warn-100 px-4 py-2 text-sm text-warn-700">The meeting has not been organised yet. The PM Team organises it from the Agenda tab.</div>}
-    <div className="grid grid-cols-12 gap-6">
+      : <div className="mb-4 rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700">The meeting has not been organised yet. The PM Team organises it from the Agenda tab.</div>}
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
       {act.node}{confirm.node}
-      <div className="card col-span-2 p-2">{items.map((i: any) => <button key={i.id} onClick={() => { setSel(i.id); setF({ outcome: "", members_present: f.members_present }); }} className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${item.id === i.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}><div className="font-medium">{i.borrower}</div><StatusChip status={i.status} /></button>)}</div>
-      <div className="col-span-6 space-y-4">
+      <div className="card self-start p-2 xl:col-span-2">{items.map((i: any) => <button key={i.id} onClick={() => { setSel(i.id); setF({ outcome: "", members_present: f.members_present }); }} className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${item.id === i.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}><div className="font-medium">{i.borrower}</div><StatusChip status={i.status} /></button>)}</div>
+      <div className="xl:col-span-6 space-y-4">
         <Card title={item.borrower} actions={<><button className="btn-ghost btn-sm" onClick={() => openAsk(`Why is ${item.borrower.split(" ")[0]} on the agenda?`)}>Ask TIQ</button><button className="btn-ghost btn-sm" onClick={() => window.location.assign(`/loans/${item.cycle_loan_id}/cmr`)}>Open CMR</button></>}>
           {summary ? <div className="whitespace-pre-wrap text-sm">{summary.body.replace(/\*\*/g, "")}</div> : <div className="text-sm text-slate-400">Pack not built</div>}
           {summary && <div className="mt-3 rounded-lg bg-brand-50 p-3 text-sm"><b>Questions the pack raises:</b><ul className="ml-4 list-disc">{summary.questions.map((q: string) => <li key={q}>{q}</li>)}</ul></div>}
-          {item.decision && <div className="mt-3 rounded-lg bg-success-100 px-3 py-2 text-sm text-success-700">Decided: {item.decision.outcome} {fmt.mark(item.decision.decided_mark)}{item.decision.rationale ? `: ${item.decision.rationale}` : ""} ({item.decision.recorded_by}){v && item.decision.decided_mark ? `. Decided ${item.decision.decided_mark.toFixed(2)}, ${item.decision.decided_mark >= v.low && item.decision.decided_mark <= v.high ? "inside" : "outside"} Lincoln range ${v.low.toFixed(2)} to ${v.high.toFixed(2)}` : ""}</div>}
+          {item.decision && <div className="mt-3 rounded-control border border-success-100 bg-success-50 px-4 py-2.5 text-[13.5px] text-success-700">Decided: {item.decision.outcome} {fmt.mark(item.decision.decided_mark)}{item.decision.rationale ? `: ${item.decision.rationale}` : ""} ({item.decision.recorded_by}){v && item.decision.decided_mark ? `. Decided ${item.decision.decided_mark.toFixed(2)}, ${item.decision.decided_mark >= v.low && item.decision.decided_mark <= v.high ? "inside" : "outside"} Lincoln range ${v.low.toFixed(2)} to ${v.high.toFixed(2)}` : ""}</div>}
         </Card>
       </div>
-      <div className="col-span-4">
+      <div className="xl:col-span-4">
         <Card title="Gate G2 decision" actions={<AssumedChip dq="DQ18" what="committee outcome set" />}>
           {(item.history || []).length > 0 && <div className="mb-3 space-y-1">{item.history.map((h: any, k: number) => (
             <div key={k} className={`rounded-lg px-3 py-1.5 text-xs ${k === item.history.length - 1 ? "bg-leaf-50 text-leaf-700" : "bg-canvas-100 text-slate-400 line-through"}`}>

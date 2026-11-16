@@ -32,10 +32,10 @@ export function ProcessStrip({ process }: { process: any[] }) {
   return (
     <section className="mb-6" aria-label="Where the quarter stands">
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-[15px] font-semibold">Where the quarter stands</h2>
-        <span className="text-[12.5px] text-slate-500">{doneAll} of {process.length} steps done</span>
+        <h2 className="text-[16px] font-semibold">Where the quarter stands</h2>
+        <span className="text-[12px] text-muted num">{doneAll} of {process.length} steps done</span>
       </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
         {PHASE_STYLE.map((ph, i) => {
           const steps = process.filter((x) => ph.steps.includes(x.step));
           const done = steps.filter((x) => x.state === "done").length;
@@ -44,24 +44,24 @@ export function ProcessStrip({ process }: { process: any[] }) {
           const target = active || steps.find((x) => x.state !== "done") || steps[steps.length - 1];
           return (
             <button key={ph.name} onClick={() => target && nav(STEP_LINK[target.step])}
-              className={`flex min-h-[112px] flex-col rounded-card border px-4 py-3.5 text-left transition duration-150 hover:shadow-raised ${state === "active" ? "border-brand-600 bg-white ring-[3px] ring-brand-100" : state === "done" ? "border-line-200 bg-white hover:border-brand-300" : "border-line-200 bg-surface-50 hover:border-brand-300"}`}>
-              <div className="flex items-center gap-2">
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${state === "done" ? "bg-success-100 text-success-700" : state === "active" ? "bg-brand-600 text-white" : "bg-canvas-100 text-slate-400"}`}>
+              className={`card-hover flex min-h-[128px] flex-col rounded-card border p-4 text-left ${state === "active" ? "border-accent-300 bg-surface" : state === "done" ? "border-line bg-surface" : "border-line bg-raised"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className={`num flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${state === "done" ? "border-success-100 bg-success-50 text-success-600" : state === "active" ? "border-accent-300 bg-accent-50 text-accent-700" : "border-line text-faint"}`}>
                   {state === "done" ? <CheckCircle2 size={14} aria-hidden="true" /> : i + 1}
                 </span>
-                <span className={`text-[11px] font-medium uppercase tracking-[0.05em] ${state === "active" ? "text-brand-600" : state === "done" ? "text-success-700" : "text-slate-400"}`}>
+                <span className={`badge ${state === "done" ? "badge-green" : state === "active" ? "badge-amber" : "badge-gray"}`}>
                   {state === "done" ? "Done" : state === "active" ? "In progress" : "Not started"}
                 </span>
               </div>
-              <div className={`mt-2 text-[13.5px] font-medium leading-snug ${state === "todo" ? "text-slate-500" : "text-ink-900"}`}>{ph.name}</div>
-              <div className="mt-auto pt-3">
+              <div className={`mt-3 text-[14px] font-semibold leading-snug ${state === "todo" ? "text-muted" : "text-ink"}`}>{ph.name}</div>
+              <div className="mt-auto pt-4">
                 <div className="flex gap-1">
                   {steps.map((x) => (
                     <span key={x.step} title={`${x.step.replace("Q", "")}. ${x.name}: ${x.done} of ${x.total} loans past it`}
-                      className={`h-1.5 flex-1 rounded-full ${x.state === "done" ? (state === "done" ? "bg-success-500" : "bg-brand-600") : x.state === "active" ? "bg-brand-300" : "bg-line-200"}`} />
+                      className={`h-1.5 flex-1 rounded-full ${x.state === "done" ? "bg-brand-400" : x.state === "active" ? "bg-accent-500" : "bg-sunken"}`} />
                   ))}
                 </div>
-                <div className="mt-1.5 truncate text-xs text-slate-500">
+                <div className="mt-2 truncate text-xs text-muted">
                   {state === "active" && active ? `Now: ${active.name}` : `${done} of ${steps.length} steps`}
                 </div>
               </div>
@@ -91,31 +91,32 @@ export default function Work() {
         subtitle={`${ROLE_LABEL[user!.role]}${data.cycle ? ` · ${data.cycle.period}` : " · no cycle yet"} · ${actions.length} thing${actions.length === 1 ? "" : "s"} need you`} />
       <DemoControls />
       <ProcessStrip process={data.process} />
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-2">
-          <div className="flex items-center justify-between"><h2 className="text-[15px] font-semibold">Your next actions</h2><span className="text-xs text-slate-500">Worked out from the cycle, nothing to chase</span></div>
+          <div className="flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-[16px] font-semibold">Your next actions</h2><span className="text-xs text-muted">Worked out from the cycle, nothing to chase</span></div>
           {actions.length ? actions.map((i: any, k: number) => {
             return (
-              <button key={k} onClick={() => nav(i.link)} className="card card-hover flex w-full items-center gap-4 px-5 py-4 text-left">
-                <span className="tile bg-brand-100 text-[13px] font-bold text-brand-700">{String(i.step).replace("Q", "")}</span>
+              <button key={k} onClick={() => nav(i.link)} className="card card-hover flex w-full items-center gap-4 p-5 text-left">
+                <span className="tile num border border-line bg-raised text-[13px] font-semibold text-muted">{String(i.step).replace("Q", "")}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-slate-500">{i.step_name}</div>
-                  <div className="text-[15px] font-semibold text-ink-900">{i.title}</div>
-                  <div className="text-[13.5px] text-slate-500">{i.detail}</div>
+                  <div className="text-xs font-medium text-muted">Step {String(i.step).replace("Q", "")} · {i.step_name}</div>
+                  <div className="mt-0.5 text-[14px] font-semibold text-ink">{i.title}</div>
+                  <div className="mt-0.5 text-[13px] leading-relaxed text-muted">{i.detail}</div>
                 </div>
-                <span className="btn-secondary btn-sm">Go <ArrowRight size={14} aria-hidden="true" /></span>
+                <span className="btn-secondary btn-sm shrink-0">Open <ArrowRight size={14} aria-hidden="true" /></span>
               </button>);
           }) : <div className="card"><Empty text={data.cycle?.status === "closed" ? "The cycle is closed. Nothing left to do." : "Nothing needs you right now"} /></div>}
           {waiting.length > 0 && <>
-            <h3 className="pt-2 text-[13px] font-semibold text-slate-500">Waiting on others</h3>
-            {waiting.map((i: any, k: number) => <button key={k} onClick={() => nav(i.link)} className="flex w-full items-center gap-3 rounded-panel border border-dashed border-line-200 bg-surface-50 px-4 py-2.5 text-left text-[13.5px] transition-colors duration-150 hover:border-brand-300"><Hourglass size={16} className="text-slate-400" aria-hidden="true" /><span className="font-medium text-ink-900">{i.title}</span><span className="text-slate-500">{i.detail}</span></button>)}
+            <h3 className="pt-4 text-[13px] font-semibold text-muted">Waiting on others</h3>
+            {waiting.map((i: any, k: number) => <button key={k} onClick={() => nav(i.link)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-card border border-dashed border-strong bg-raised px-4 py-3 text-left text-[13px] transition-colors duration-150 hover:bg-sunken"><Hourglass size={16} className="text-faint" aria-hidden="true" /><span className="font-medium text-ink">{i.title}</span><span className="text-muted">{i.detail}</span></button>)}
           </>}
         </div>
-        <div className="space-y-6">
+        <div className="space-y-4">
           {data.cycle && <DeadlinesCard />}
-          <Card title={<span className="flex items-center gap-2"><MessagesSquare size={18} className="text-brand-600" aria-hidden="true" /> Messages</span>} subtitle="Internal communication, inside TIQ" actions={<button className="btn-ghost btn-sm" onClick={() => nav("/messages")}>Open</button>}>
-            {inbox.length ? inbox.map((m) => <button key={m.id} onClick={() => nav(m.link || "/messages")} className={`mb-2 block w-full rounded-tile border px-3 py-2 text-left transition-colors duration-150 hover:border-brand-300 ${m.read ? "border-line-200 bg-white" : "border-info-100 bg-info-100"}`}>
-              <div className="text-[13.5px] font-medium text-ink-900">{m.subject}</div><div className="text-xs text-slate-500">from {m.from} · {fmt.date(m.at)}</div></button>)
+          <Card title={<span className="flex items-center gap-2"><MessagesSquare size={18} className="text-muted" aria-hidden="true" /> Messages</span>} subtitle="Internal communication, inside TIQ" actions={<button className="btn-ghost btn-sm" onClick={() => nav("/messages")}>Open</button>}>
+            {inbox.length ? inbox.map((m) => <button key={m.id} onClick={() => nav(m.link || "/messages")} className="mb-1 flex w-full items-start gap-2.5 rounded-control px-2 py-2 text-left transition-colors duration-150 hover:bg-sunken">
+              <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${m.read ? "bg-transparent" : "bg-accent-500"}`} aria-hidden="true" />
+              <span className="min-w-0"><span className={`block text-[13px] text-ink ${m.read ? "" : "font-semibold"}`}>{m.subject}</span><span className="block text-xs text-muted">from {m.from.split("@")[0]} · {fmt.date(m.at)}</span></span></button>)
               : <Empty text="No messages yet" hint="Kickoff, impact notes and the committee pack arrive here." />}
           </Card>
         </div>

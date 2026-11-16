@@ -33,18 +33,18 @@ export default function Messages() {
       <PageHeader title="Messages" subtitle="Everything inside AllianceBernstein happens here. Email is only for borrowers and Lincoln."
         actions={<button className="btn-primary" onClick={() => setCompose(true)}><Send size={14} /> New message</button>} />
       {act.node}
-      <div className="grid grid-cols-12 gap-6">
-        <div className="card col-span-4 overflow-hidden">
-          <div className="flex border-b border-canvas-200">{(["in", "sent"] as const).map((b) => <button key={b} onClick={() => setBox(b)} className={`flex-1 py-2.5 text-sm font-semibold ${box === b ? "border-b-2 border-brand-600 text-brand-700" : "text-slate-400"}`}>{b === "in" ? `Inbox (${data!.filter((x) => !x.sent && !x.read).length} new)` : "Sent"}</button>)}</div>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="card xl:col-span-4 overflow-hidden">
+          <div className="flex border-b border-line">{(["in", "sent"] as const).map((b) => <button key={b} onClick={() => setBox(b)} className={`-mb-px flex-1 border-b-2 py-2.5 text-[13px] font-medium ${box === b ? "border-brand-600 text-ink" : "border-transparent text-muted hover:text-ink"}`}>{b === "in" ? `Inbox (${data!.filter((x) => !x.sent && !x.read).length} new)` : "Sent"}</button>)}</div>
           <div className="max-h-[70vh] overflow-y-auto p-2">
             {list.length ? list.map((x) => (
               <button key={x.id} onClick={() => open(x)} className={`mb-1 w-full rounded-xl px-3 py-2.5 text-left ${m?.id === x.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}>
-                <div className="flex items-center justify-between gap-2"><span className={`truncate text-sm ${x.read || x.sent ? "" : "font-bold"}`}>{x.subject}</span>{!x.read && !x.sent && <span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" />}</div>
+                <div className="flex items-center justify-between gap-2"><span className={`truncate text-sm ${x.read || x.sent ? "" : "font-bold"}`}>{x.subject}</span>{!x.read && !x.sent && <span className="h-2 w-2 shrink-0 rounded-full bg-accent-500" aria-label="Unread" />}</div>
                 <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400"><Chip tone="blue">{KIND[x.kind] || x.kind}</Chip>{box === "sent" ? `to ${x.to.length} people` : x.from}{x.day !== null && ` · day ${x.day}`}</div>
               </button>)) : <Empty text="No messages" />}
           </div>
         </div>
-        <div className="card col-span-8 p-6">
+        <div className="card xl:col-span-8 p-6">
           {m ? <>
             <div className="flex items-start justify-between gap-4">
               <div><div className="text-xl font-bold text-navy-900">{m.subject}</div>

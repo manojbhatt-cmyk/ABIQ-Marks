@@ -41,7 +41,7 @@ function ReadView({ data, borrower }: { data: any; borrower?: string }) {
             <div className="pl-8"><Sources cites={s.citations} /></div>
           </section>);
       })}
-      <section className="grid gap-6 px-8 py-6 md:grid-cols-2">
+      <section className="grid gap-4 px-8 py-6 md:grid-cols-2">
         <div className="rounded-panel border border-line p-4">
           <div className="text-xs font-medium text-muted">Recommendation</div>
           <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13.5px]">
