@@ -20,7 +20,19 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const { setUser, refreshCycles } = useApp();
   const nav = useNavigate();
-  useEffect(() => { api<User[]>("/auth/demo-users").then(setUsers).catch(() => setErr("TIQ cannot reach its server. Start the API, then reload this page.")); }, []);
+  const [resetting, setResetting] = useState(false);
+  // Load the demo people; while the demo data is being reset (503), say so and try again every few seconds.
+  useEffect(() => {
+    let stop = false, timer: any;
+    const load = () => api<User[]>("/auth/demo-users").then((u) => { if (stop) return; setResetting(false); setUsers(u); if (!u.length) timer = setTimeout(load, 4000); })
+      .catch((e: any) => {
+        if (stop) return;
+        if (e.status === 503) { setResetting(true); timer = setTimeout(load, 4000); }
+        else setErr("TIQ cannot reach its server. Start the API, then reload this page.");
+      });
+    load();
+    return () => { stop = true; clearTimeout(timer); };
+  }, []);
   const login = async (e?: string) => {
     setBusy(true); setErr(null);
     try {
@@ -29,7 +41,7 @@ export default function Login() {
       setUser(r.user);
       await refreshCycles();
       nav(homeFor(r.user.role));
-    } catch (x: any) { setErr(x.message); } finally { setBusy(false); }
+    } catch (x: any) { if (x.status === 503) setResetting(true); else setErr(x.message); } finally { setBusy(false); }
   };
   return (
     <div className="grid min-h-full grid-cols-1 min-[960px]:grid-cols-[1.1fr_1fr]">
@@ -53,9 +65,11 @@ export default function Login() {
             <label className="flex flex-col gap-1.5"><span className="text-[13px] font-medium text-slate-500">Email</span>
               <input className="input" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
             <label className="flex flex-col gap-1.5"><span className="text-[13px] font-medium text-slate-500">Password</span>
-              <input className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+              <input className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <span className="text-xs text-muted">Every demo person's password is <span className="mono">demo</span>.</span></label>
+            {resetting && <div role="status" className="flex items-center gap-2 rounded-control border border-line bg-raised px-3 py-2 text-[13.5px] text-ink"><span className="spinner !h-4 !w-4 !border-2" aria-hidden="true" />TIQ is resetting the demo data. Sign-in opens again in about a minute.</div>}
             {err && <div role="alert" className="rounded-control border border-danger-100 bg-danger-50 px-3 py-2 text-[13.5px] text-danger-700">{err}</div>}
-            <button className="btn-primary btn-lg w-full" disabled={busy}>{busy ? "Signing in" : "Sign in"}</button>
+            <button className="btn-primary btn-lg w-full" disabled={busy || resetting}>{busy ? "Signing in" : "Sign in"}</button>
           </form>
           <div className="my-4 h-px bg-line" />
           <p className="text-[13px] text-slate-500">Demo people. Click one to sign in as them.</p>

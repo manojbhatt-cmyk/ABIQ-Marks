@@ -41,7 +41,7 @@ export default function DemoControls() {
       await api("/admin/synth/reset", { body: { until: "Q0" } });
       for (let i = 0; i < 120; i++) {
         await new Promise((r) => setTimeout(r, 2000));
-        const s = await api("/admin/synth");
+        const s = await api("/admin/synth").catch(() => ({ running: true }));
         if (!s.running) {
           if (s.error) throw new Error(s.error);
           break;

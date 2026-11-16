@@ -51,11 +51,13 @@ def clear_objects() -> None:
 def reset(target: str = "duckdb", until: str | None = None, log=print, reset_account: bool = False) -> None:
     from synth import generator, loader, seed_app
 
-    migrate(drop=True)
-    clear_objects()
+    # The warehouse load is the slow part (about a minute on Snowflake), so it runs first while the app keeps its
+    # tables; the app schema is then dropped and rebuilt in a couple of seconds.
     loader.write_ddl_file()
     loader.load(target, reset_account=reset_account, log=lambda m: None)
     log(f"warehouse loaded ({target})")
+    migrate(drop=True)
+    clear_objects()
     with session_scope() as s:
         log(f"app seeded: {seed_app.seed(s)}")
         if not until or until.upper() == "Q0":

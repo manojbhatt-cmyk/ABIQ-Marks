@@ -28,6 +28,16 @@ app = FastAPI(title="TIQ Marks API", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
+@app.middleware("http")
+async def _while_resetting(request: Request, call_next):
+    """While the demo data is being reset the app tables are rebuilt: answer 503 (try again) instead of failing or
+    signing people out. The reset's own status and the health check stay available."""
+    if SYNTH["running"] and request.url.path.startswith("/api/") and request.url.path not in ("/api/admin/synth", "/api/health"):
+        return JSONResponse({"detail": "TIQ is resetting the demo data. This takes about a minute.", "kind": "resetting"},
+                            status_code=503, headers={"Retry-After": "5"})
+    return await call_next(request)
+
+
 @app.exception_handler(Forbidden)
 def _forbidden(_: Request, exc: Forbidden):
     return JSONResponse({"detail": str(exc), "kind": "permission_denied"}, status_code=403)
@@ -1053,7 +1063,10 @@ def synth_action(action: str, body: dict = Body(default={}), a: Actor = A):
             from synth.play import play
 
             if action == "reset":
-                reset(until=until, log=SYNTH["log"].append)
+                from domain.config import settings
+
+                # Reload the warehouse the app reads (Snowflake in the demo), so no write-backs from a previous run remain.
+                reset(target=settings.warehouse, until=until, log=SYNTH["log"].append)
             elif action == "play":
                 play(until, SYNTH["log"].append)
             SYNTH["log"].append("done")
@@ -1067,7 +1080,8 @@ def synth_action(action: str, body: dict = Body(default={}), a: Actor = A):
 
 
 @app.get("/api/admin/synth")
-def synth_status(a: Actor = A):
+def synth_status():
+    """Progress of a demo reset. Needs no database, so it answers while the app tables are being rebuilt."""
     return SYNTH
 
 
