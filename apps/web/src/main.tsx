@@ -9,7 +9,6 @@ import { installDisplayFilter } from "./display";
 import "./index.css";
 import Admin from "./pages/Admin";
 import Approvals from "./pages/Approvals";
-import Ask from "./pages/Ask";
 import Committee from "./pages/Committee";
 import Dashboard from "./pages/Dashboard";
 import Distribution from "./pages/Distribution";
@@ -59,7 +58,7 @@ function Protected() {
         <Route path="/approvals" element={<Approvals />} />
         <Route path="/distribution" element={<Distribution />} />
         <Route path="/monthly" element={<Monthly />} />
-        <Route path="/ask" element={<Ask />} />
+        <Route path="/ask" element={<Navigate to="/work" replace />} />
         <Route path="/lineage" element={<Lineage />} />
         <Route path="/lineage/:id" element={<Lineage />} />
         <Route path="/inbox" element={<Inbox />} />

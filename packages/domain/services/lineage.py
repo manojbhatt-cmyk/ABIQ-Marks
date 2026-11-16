@@ -90,14 +90,16 @@ def audit_events(session: Session, cycle_id: str | None = None, cycle_loan_id: s
 
 # ---------------- A9 Ask TIQ ----------------
 
-def ask(session: Session, actor: Actor, cycle_id: str, question: str) -> dict:
-    """Read-only answers with citations built by code from the records used. TIQ cannot take actions."""
+def ask(session: Session, actor: Actor, cycle_id: str, question: str, cycle_loan_id: str | None = None) -> dict:
+    """Read-only answers with citations built by code from the records used. TIQ cannot take actions.
+    `cycle_loan_id` is the loan on the screen the question was asked from; a loan named in the question wins."""
     q = question.lower()
     if re.search(r"\b(approve|send back|change the mark|set the rating|sign off|email)\b", q) and q.startswith(("please", "can you", "approve", "send")):
         return {"answer": "TIQ cannot take actions. Use the Pricing Panel (S10), the Committee screen (S13) or "
                           "Approvals (S15) to do this.", "citations": []}
     loans = session.query(CycleLoan).filter_by(cycle_id=cycle_id).all()
-    cl = next((c for c in loans if c.borrower and c.borrower.split()[0].lower() in q), None)
+    cl = next((c for c in loans if c.borrower and c.borrower.split()[0].lower() in q), None) or next(
+        (c for c in loans if c.id == cycle_loan_id), None)
     with agent_run(session, "A9", "ask_tiq", cycle_id=cycle_id, cycle_loan_id=cl.id if cl else None,
                    input_summary=question) as run:
         citations: list[dict] = []

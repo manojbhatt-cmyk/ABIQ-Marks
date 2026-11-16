@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, fmt, openFile, useApi } from "../api";
-import { AskBody } from "../components/AskPanel";
+import { openAsk } from "../components/AskPanel";
 import { AiCard, AssumedChip, Banner, Card, Chip, Empty, ErrorState, Field, Loading, PageHeader, StatusChip, Tabs, useAction, useConfirm } from "../components/ui";
 import { MeetingCard, OrganiseMeeting } from "../components/MeetingPanel";
 import { useApp } from "../context";
@@ -103,12 +103,11 @@ function Meeting({ data, reload, canDecide }: any) {
       {act.node}{confirm.node}
       <div className="card col-span-2 p-2">{items.map((i: any) => <button key={i.id} onClick={() => { setSel(i.id); setF({ outcome: "", members_present: f.members_present }); }} className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${item.id === i.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}><div className="font-medium">{i.borrower}</div><StatusChip status={i.status} /></button>)}</div>
       <div className="col-span-6 space-y-4">
-        <Card title={item.borrower} actions={<button className="btn-ghost" onClick={() => window.location.assign(`/loans/${item.cycle_loan_id}/cmr`)}>Open CMR</button>}>
+        <Card title={item.borrower} actions={<><button className="btn-ghost btn-sm" onClick={() => openAsk(`Why is ${item.borrower.split(" ")[0]} on the agenda?`)}>Ask TIQ</button><button className="btn-ghost btn-sm" onClick={() => window.location.assign(`/loans/${item.cycle_loan_id}/cmr`)}>Open CMR</button></>}>
           {summary ? <div className="whitespace-pre-wrap text-sm">{summary.body.replace(/\*\*/g, "")}</div> : <div className="text-sm text-slate-400">Pack not built</div>}
           {summary && <div className="mt-3 rounded-lg bg-brand-50 p-3 text-sm"><b>Questions the pack raises:</b><ul className="ml-4 list-disc">{summary.questions.map((q: string) => <li key={q}>{q}</li>)}</ul></div>}
           {item.decision && <div className="mt-3 rounded-lg bg-success-100 px-3 py-2 text-sm text-success-700">Decided: {item.decision.outcome} {fmt.mark(item.decision.decided_mark)}{item.decision.rationale ? `: ${item.decision.rationale}` : ""} ({item.decision.recorded_by}){v && item.decision.decided_mark ? `. Decided ${item.decision.decided_mark.toFixed(2)}, ${item.decision.decided_mark >= v.low && item.decision.decided_mark <= v.high ? "inside" : "outside"} Lincoln range ${v.low.toFixed(2)} to ${v.high.toFixed(2)}` : ""}</div>}
         </Card>
-        <Card title="Ask TIQ" ai><div className="h-80"><AskBody /></div></Card>
       </div>
       <div className="col-span-4">
         <Card title="Gate G2 decision" actions={<AssumedChip dq="DQ18" what="committee outcome set" />}>

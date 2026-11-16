@@ -822,7 +822,8 @@ def get_audit(cycle_id: str | None = None, cycle_loan_id: str | None = None, ent
 
 @app.post("/api/ask")
 def ask(body: dict = Body(...), a: Actor = A, s: Session = S):
-    return lineage.ask(s, a, quarterly_cycle(s, body.get("cycle_id")).id, body.get("question", ""))
+    return lineage.ask(s, a, quarterly_cycle(s, body.get("cycle_id")).id, body.get("question", ""),
+                       body.get("cycle_loan_id"))
 
 
 @app.post("/api/suggestions/{suggestion_id}")

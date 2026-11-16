@@ -6,7 +6,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { api, fmt, ROLE_LABEL, useApi } from "../api";
 import { useApp } from "../context";
-import AskPanel from "./AskPanel";
+import AskLauncher from "./AskPanel";
 import HelpPanel from "./HelpPanel";
 import Logo from "./Logo";
 
@@ -34,7 +34,6 @@ const GROUPS: [string, Item[]][] = [
     { to: "/monthly", label: "Monthly", icon: Repeat, roles: ["pm_team", "deal_analyst", "deal_lead", "committee_member", "committee_chair", "admin"] },
   ]],
   ["Platform", [
-    { to: "/ask", label: "Ask TIQ", icon: MessageSquareText, roles: ALL },
     { to: "/lineage", label: "Lineage", icon: GitBranch, roles: ALL.filter((r) => r !== "lincoln") },
     { to: "/inbox", label: "External mail", icon: BookOpenCheck, roles: ["pm_team", "deal_analyst", "deal_lead", "admin", "lincoln"] },
     { to: "/admin", label: "Admin", icon: Settings, roles: ["admin"] },
@@ -52,13 +51,13 @@ export default function Shell({ children }: { children: ReactNode }) {
   const nav = useNavigate();
   const loc = useLocation();
   useEffect(() => { refreshCycles(); }, [loc.pathname]);
-  const [ask, setAsk] = useState<string | null>(null);
-  const [q, setQ] = useState("");
   const [help, setHelp] = useState(false);
   const [bell, setBell] = useState(false);
   const notes = useApi<any[]>(user ? "/notifications" : null, [user?.email, cycle?.day]);
   if (!user) return null;
   const unread = (notes.data || []).filter((n) => !n.read).length;
+  const crumbItem = GROUPS.flatMap(([g, items]) => items.map((i) => [g, i] as const)).find(([, i]) => loc.pathname.startsWith(i.to));
+  const crumb = crumbItem ? `${crumbItem[0]} / ${crumbItem[1].label}` : "";
   const st = cycle?.stage_step ?? 1;
   const phase = cycle ? (cycle.status === "closed" ? "Closed" : cycle.status === "draft" ? "Kickoff pending" : STAGES.find(([a, b]) => st >= a && st <= b)?.[2] || "Finalise and distribute") : "";
   const initials = user.name.split(/[ -]/).filter(Boolean).map((p) => p[0]).slice(0, 2).join("");
@@ -97,11 +96,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <main className="ml-[248px] min-w-0 flex-1">
         <header className="sticky top-0 z-10 flex h-[60px] items-center gap-4 border-b border-line-200 bg-white px-8">
-          <form className="relative max-w-[520px] flex-1" onSubmit={(e) => { e.preventDefault(); setAsk(q || ""); setQ(""); }}>
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input aria-label="Ask TIQ about this cycle" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask TIQ about this cycle, a loan or a mark"
-              className="h-[38px] w-full rounded-tile border border-transparent bg-canvas-100 pl-9 pr-3 text-sm text-ink-900 placeholder:text-slate-400 transition duration-150 focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-brand-100" />
-          </form>
+          <div className="min-w-0 truncate text-[13px] font-medium text-muted">{crumb}</div>
           <div className="ml-auto flex items-center gap-2">
             {cycle && (
               <>
@@ -134,7 +129,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </header>
         <div key={loc.pathname} className="anim-page mx-auto max-w-content px-8 pb-12 pt-6">{children}</div>
       </main>
-      {ask !== null && <AskPanel initial={ask || undefined} onClose={() => setAsk(null)} />}
+      <AskLauncher />
       {help && <HelpPanel path={loc.pathname} onClose={() => setHelp(false)} />}
     </div>
   );
