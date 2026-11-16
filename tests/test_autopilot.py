@@ -2,7 +2,7 @@
 import pytest
 
 from domain.db import session_scope
-from domain.models import AuditEvent, CycleLoan, ValuationCycle
+from domain.models import AuditEvent, CycleLoan, LincolnPackage, ValuationCycle
 from domain.services import cmrs, lincoln, spreads
 from synth import autopilot, world
 from synth.play import pm
@@ -19,30 +19,34 @@ def cycle_at_q1():
         return s.query(ValuationCycle).filter_by(cycle_type="quarterly").one().id
 
 
-def test_autopilot_leaves_harbor_and_moves_the_rest(cycle_at_q1):
+def _others(s):
+    return s.query(CycleLoan).filter(CycleLoan.facility_id != "F-0002", CycleLoan.in_scope.is_(True)).all()
+
+
+def test_autopilot_keeps_pace_with_harbor_and_never_runs_ahead(cycle_at_q1):
     with session_scope() as s:
         autopilot.set_setting(s, ["F-0002"])
     with session_scope() as s:
-        world.advance(s, pm(s), cycle_at_q1, 20)  # packages in; autopilot shares, spreads, drafts, reviews, files
-    with session_scope() as s:
-        world.advance(s, pm(s), cycle_at_q1, 21)  # Lincoln drafts only once Harbor is shared too
+        world.advance(s, pm(s), cycle_at_q1, 21)  # every package in; Harbor waits at "share with Lincoln"
     with session_scope() as s:
         harbor = s.query(CycleLoan).filter_by(facility_id="F-0002").one()
-        assert spreads.current_spread(s, harbor.id) is None and cmrs.latest_cmr(s, harbor.id) is None
-        others = s.query(CycleLoan).filter(CycleLoan.facility_id != "F-0002", CycleLoan.in_scope.is_(True)).all()
-        assert all(cmrs.latest_cmr(s, cl.id).status in ("filed", "agreed") for cl in others)
-        # Lincoln waits for Harbor's package: nothing is valued yet
-        assert all(lincoln.latest_valuation(s, cl.id) is None for cl in others)
+        assert harbor.package_status == "complete" and spreads.current_spread(s, harbor.id) is None
+        # the others went as far as Harbor (shared), no further: no spread, no CMR, no valuation
+        for cl in _others(s):
+            assert s.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first() is not None
+            assert spreads.current_spread(s, cl.id) is None and cmrs.latest_cmr(s, cl.id) is None
+        assert all(lincoln.latest_valuation(s, cl.id) is None for cl in _others(s))
         lincoln.share_package(s, pm(s), harbor.id)  # the presenter shares Harbor
+        autopilot.follow(s, cycle_at_q1)
     with session_scope() as s:
-        world.advance(s, pm(s), cycle_at_q1, 22)
+        world.advance(s, pm(s), cycle_at_q1, 22)  # Lincoln drafts for every loan
     with session_scope() as s:
-        others = s.query(CycleLoan).filter(CycleLoan.facility_id != "F-0002", CycleLoan.in_scope.is_(True)).all()
-        assert all(cl.status == "approved" for cl in others), [(cl.facility_id, cl.status) for cl in others]
-        roles = {e.actor_role for e in s.query(AuditEvent).filter(AuditEvent.action.like("valuation_decision%"))}
-        assert roles == {"deal_lead"}
         harbor = s.query(CycleLoan).filter_by(facility_id="F-0002").one()
-        assert harbor.status != "approved"
+        for cl in _others(s):  # caught up with Harbor's spread step, not past it; no Gate 1 before Harbor's
+            assert spreads.current_spread(s, cl.id).status == "approved"
+            assert cmrs.latest_cmr(s, cl.id) is None, cl.facility_id
+            assert cl.status != "approved"
+        assert not s.query(AuditEvent).filter(AuditEvent.action.like("valuation_decision%")).count()
         autopilot.set_setting(s, None)
 
 

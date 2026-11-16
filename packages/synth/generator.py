@@ -23,7 +23,18 @@ def _sponsor(br) -> str:
     return dict((s[0], s[1]) for s in SPONSORS)[br.sponsor]
 
 
+_PACKAGES: dict[str, list[tuple[str, bytes, str]]] = {}
+
+
 def package_files(br) -> list[tuple[str, bytes, str]]:
+    """The borrower's quarterly package. The files are deterministic, so each is built once per process: the mail
+    schedule asks for them on every clock move, and rebuilding the PDFs took seconds per click."""
+    if br.borrower_id not in _PACKAGES:
+        _PACKAGES[br.borrower_id] = _build_package(br)
+    return list(_PACKAGES[br.borrower_id])
+
+
+def _build_package(br) -> list[tuple[str, bytes, str]]:
     fac = next(f for f in br.facilities if f.in_scope)
     files = []
     if br.family == "A":

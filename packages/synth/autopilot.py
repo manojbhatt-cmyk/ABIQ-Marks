@@ -6,6 +6,10 @@ committee chair), so the audit trail reads exactly as if those people had done i
 what the clock allows: no valuation before Lincoln's drafts arrive, no committee decision before the
 pack is sent. Cycle-wide PM actions (impact note, agenda, pack, reconciliation, approvals) are left
 to the presenter.
+
+Pacing: the other loans keep pace with the loan being presented and never run ahead of it. A loan does a
+step only once the presented loan has reached that step, and decides Gate 1 only after the presented loan's
+Gate 1 decision. When the presenter acts, `follow` lets the others catch up straight away.
 """
 from __future__ import annotations
 
@@ -15,6 +19,7 @@ from domain.models import (AgentSuggestion, CmrRecommendation, CmrReview, CmrSec
                            CommitteeDecision, CommitteePack, CycleLoan, LincolnPackage, RuleConfig, ValuationCycle,
                            ValuationDecision)
 from domain.services import cmrs, committee, intake, lincoln, spreads, valuation
+from domain.services.cycle import step_index
 from synth.play import FACS, actor, pm
 from synth.portfolio import SUNRISE_COMMITTEE
 
@@ -49,27 +54,64 @@ def run(session: Session, cycle_id: str, except_fids: list[str]) -> list[str]:
     def did(what: str):
         done[what] = done.get(what, 0) + 1
 
-    loans = [cl for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).order_by(CycleLoan.facility_id)
-             if cl.facility_id not in except_fids]
-    for cl in loans:
-        _loan(session, cl, did)
+    every = session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).order_by(CycleLoan.facility_id).all()
+    pace = _pace(session, [cl for cl in every if cl.facility_id in except_fids])
+    for cl in every:
+        if cl.facility_id not in except_fids:
+            _loan(session, cl, did, pace)
     _committee(session, cycle_id, except_fids, did)
     for k, v in done.items():
         log.append(f"Autopilot: {k} for {v} loan(s)")
     return log
 
 
-def _loan(session: Session, cl: CycleLoan, did) -> None:
+class _Pace:
+    """How far the presented loans have got: the others may do a step once every presented loan has reached it."""
+
+    def __init__(self, dt: int, lincoln_: int, g1_decided: bool):
+        self.dt, self.lincoln, self.g1_decided = dt, lincoln_, g1_decided
+
+    def dt_allows(self, step: str) -> bool:
+        return self.dt >= step_index(step)
+
+    def lincoln_allows(self, step: str) -> bool:
+        return self.lincoln >= step_index(step)
+
+
+def _pace(session: Session, presented: list[CycleLoan]) -> _Pace:
+    if not presented:
+        return _Pace(10_000, 10_000, True)
+    dt = min(step_index(cl.dt_step or "Q1") for cl in presented)
+    ln = min(step_index(cl.lincoln_step or "Q1") for cl in presented)
+    g1 = all(session.query(ValuationDecision).filter(ValuationDecision.cycle_loan_id == cl.id,
+                                                     ValuationDecision.outcome != "sent_back").first()
+             for cl in presented)
+    if g1:  # past Gate 1 both tracks are done
+        dt = ln = 10_000
+    return _Pace(dt, ln, g1)
+
+
+def follow(session: Session, cycle_id: str) -> list[str]:
+    """Called after the presenter acts on a presented loan: the other loans catch up to it."""
+    keep = setting(session)
+    return run(session, cycle_id, keep) if keep is not None else []
+
+
+def _loan(session: Session, cl: CycleLoan, did, pace: _Pace) -> None:
     pm_a = pm(session)
     analyst, lead = actor(session, cl.analyst_email), actor(session, cl.lead_email)
     # Q2: documents the borrower already sent but nobody confirmed yet
     if cl.package_status != "complete":
         return
     # Q3: share with Lincoln
+    if not pace.dt_allows("Q3"):
+        return
     if (cl.valuation_method or "Lincoln") == "Lincoln" and not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
         lincoln.share_package(session, pm_a, cl.id)
         did("package shared with Lincoln")
     # Q4: spread
+    if not pace.dt_allows("Q4"):
+        return
     sp = spreads.current_spread(session, cl.id)
     if sp is None:
         sp = spreads.run_spreading(session, analyst, cl.id)
@@ -87,6 +129,8 @@ def _loan(session: Session, cl: CycleLoan, did) -> None:
         did("spread approved")
     # Q5: CMR
     cmr = cmrs.latest_cmr(session, cl.id)
+    if (cmr is None or (cmr.status == "draft" and not cmr.submitted_at)) and not pace.dt_allows("Q5"):
+        return
     if cmr is None or (cmr.status == "draft" and not cmr.submitted_at):
         cmr = cmrs.get_or_create_cmr(session, analyst, cl.id)
         if not any(s.draft_body_markdown for s in session.query(CmrSection).filter_by(cmr_id=cmr.id)):
@@ -104,8 +148,11 @@ def _loan(session: Session, cl: CycleLoan, did) -> None:
         cmrs.submit(session, analyst, cmr.id, acknowledge_warnings=True)
         did("CMR drafted and submitted")
     # Q6 to Q9: reviews and filing
+    stage_step = {"ac_manager": "Q6", "pm_team": "Q7", "file": "Q8", "sct": "Q9"}
     for _ in range(4):
         stage = cmr.current_stage
+        if stage in stage_step and not pace.dt_allows(stage_step[stage]):
+            break
         rv = cmrs.open_review(session, cmr)
         if stage == "ac_manager" and rv:
             cmrs.decide_review(session, actor(session, cl.ac_manager_email), rv.id, "passed")
@@ -126,16 +173,16 @@ def _loan(session: Session, cl: CycleLoan, did) -> None:
         cmr = cmrs.latest_cmr(session, cl.id)
     # Q12, Q13: this loan's Lincoln draft into Everest and SharePoint
     lv = lincoln.latest_valuation(session, cl.id)
-    if lv and not lv.loaded_to_everest:
+    if lv and not lv.loaded_to_everest and pace.lincoln_allows("Q12"):
         lincoln.load_to_everest(session, pm_a, cl.cycle_id, only=[cl.id])
         did("Lincoln draft loaded to Everest")
-    if lv and lv.report_document_id and not lv.sharepoint_copy_path:
+    if lv and lv.report_document_id and not lv.sharepoint_copy_path and pace.lincoln_allows("Q13"):
         lincoln.copy_to_sharepoint(session, pm_a, cl.cycle_id, only=[cl.id])
     # Q14: Gate 1 by the loan's Deal Team lead
     decided = session.query(ValuationDecision).filter(ValuationDecision.cycle_loan_id == cl.id,
                                                       ValuationDecision.outcome != "sent_back").first()
     if lv and lv.loaded_to_everest and cmr and cmr.status in ("filed", "agreed") and not decided \
-            and cl.status not in ("waiting_on_lincoln",):
+            and cl.status not in ("waiting_on_lincoln",) and pace.g1_decided:
         _, f = FACS[cl.facility_id]
         if f.g1_mark is not None:
             valuation.decide_g1(session, lead, cl.id, "approved_different_mark", mark=f.g1_mark, rationale=f.g1_rationale)
@@ -170,4 +217,4 @@ def _committee(session: Session, cycle_id: str, except_fids: list[str], did) -> 
         did("committee decision recorded")
 
 
-__all__ = ["run", "setting", "set_setting", "CmrReview"]
+__all__ = ["run", "follow", "setting", "set_setting", "CmrReview"]

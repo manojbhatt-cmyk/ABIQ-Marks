@@ -24,9 +24,16 @@ from domain.services.core import now
 PROMPT_VERSION = "2026-11-04.1"
 
 
+_KEY_REJECTED_UNTIL = 0.0  # after OpenAI rejects the key, stop calling it for a while (see _complete)
+
+
 def llm_enabled() -> bool:
-    """The model is used whenever an OpenAI key is configured, unless LLM_ENABLED=false (the tests set it)."""
-    return os.environ.get("LLM_ENABLED", "auto").lower() != "false" and bool(settings.openai_api_key)
+    """The model is used whenever an OpenAI key is configured, unless LLM_ENABLED=false (the tests set it), and
+    not for 10 minutes after OpenAI rejected the key, so a bad key costs one failed call, not one per step."""
+    import time
+
+    return (os.environ.get("LLM_ENABLED", "auto").lower() != "false" and bool(settings.openai_api_key)
+            and time.time() >= _KEY_REJECTED_UNTIL)
 
 
 def _complete(run: AgentRun, messages: list[dict], heavy: bool = False, temperature: float = 0.2) -> str:
@@ -35,6 +42,11 @@ def _complete(run: AgentRun, messages: list[dict], heavy: bool = False, temperat
     resp = httpx.post("https://api.openai.com/v1/chat/completions", timeout=30,
                       headers={"Authorization": f"Bearer {settings.openai_api_key}"},
                       json={"model": model, "temperature": temperature, "messages": messages})
+    if resp.status_code in (401, 403):
+        import time
+
+        global _KEY_REJECTED_UNTIL
+        _KEY_REJECTED_UNTIL = time.time() + 600
     resp.raise_for_status()
     data = resp.json()
     usage = data.get("usage", {})
@@ -99,29 +111,14 @@ def rewrite(run: AgentRun, draft: str, instruction: str, heavy: bool = False, so
     With `sources`, the model may add facts, but only ones found in those sources, cited as [file p.N]."""
     if not llm_enabled():
         return draft
-    model = settings.model_heavy if heavy else settings.model_light
+    system = ("You edit credit memo text for a private credit valuation team. Keep every number, name and citation "
+              "marker exactly. Do not add facts. Never use em dashes. " + instruction) if not sources else (
+        "You edit credit memo text for a private credit valuation team. Keep every number, name and citation marker "
+        "exactly. Add facts only from SOURCES, cite each as [file p.N], and return only the section text. Never use "
+        "em dashes. " + instruction)
+    user = draft if not sources else f"CURRENT TEXT:\n{draft}\n\nSOURCES:\n{sources}"
     try:
-        resp = httpx.post("https://api.openai.com/v1/chat/completions", timeout=30,
-                          headers={"Authorization": f"Bearer {settings.openai_api_key}"},
-                          json={"model": model, "temperature": 0.2, "messages": [
-                              {"role": "system", "content": "You edit credit memo text for a private credit "
-                               "valuation team. Keep every number, name and citation marker exactly. Do not add "
-                               "facts. Never use em dashes. " + instruction if not sources else
-                               "You edit credit memo text for a private credit valuation team. Keep every number, "
-                               "name and citation marker exactly. Add facts only from SOURCES, cite each as "
-                               "[file p.N], and return only the section text. Never use em dashes. " + instruction},
-                              {"role": "user", "content": draft if not sources else
-                               f"CURRENT TEXT:\n{draft}\n\nSOURCES:\n{sources}"}]})
-        resp.raise_for_status()
-        data = resp.json()
-        usage = data.get("usage", {})
-        pin, pout = usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
-        run.prompt_tokens = (run.prompt_tokens or 0) + pin
-        run.completion_tokens = (run.completion_tokens or 0) + pout
-        price_in, price_out = MODEL_PRICES.get(model, (0.15, 0.60))
-        run.cost_usd = (run.cost_usd or 0) + (pin * price_in + pout * price_out) / 1_000_000
-        step(run, "llm_rewrite", {"model": model, "prompt_tokens": pin, "completion_tokens": pout})
-        text = data["choices"][0]["message"]["content"].strip()
+        text = _complete(run, [{"role": "system", "content": system}, {"role": "user", "content": user}], heavy=heavy)
         return text.replace("—", ", ") or draft
     except Exception as exc:  # the deterministic draft stands
         step(run, "llm_rewrite_failed", str(exc)[:200])

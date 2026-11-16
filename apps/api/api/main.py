@@ -345,14 +345,32 @@ def lincoln_view(cycle_id: str, a: Actor = A, s: Session = S):
     return {"loans": out, "exceptions": exceptions, "box": get_store().list("box", quarterly_cycle(s, cycle_id).period)}
 
 
+def _follow(s: Session, cycle_id: str | None = None, cycle_loan_id: str | None = None) -> None:
+    """Demo autofill: after the presenter acts, the other loans catch up to the presented loan (never past it).
+    Runs in a savepoint, so a problem in autofill never undoes the presenter's own action."""
+    from synth import autopilot
+
+    cycle_id = cycle_id or (s.get(CycleLoan, cycle_loan_id).cycle_id if cycle_loan_id else None)
+    if not cycle_id:
+        return
+    try:
+        with s.begin_nested():
+            autopilot.follow(s, cycle_id)
+    except Exception as exc:  # the presenter's action stands
+        print(f"autofill follow-up failed: {exc}")
+
+
 @app.post("/api/cycles/{cycle_id}/lincoln/share-all")
 def share_all(cycle_id: str, a: Actor = A, s: Session = S):
-    return {"shared": len(lincoln.share_all_complete(s, a, cycle_id))}
+    n = len(lincoln.share_all_complete(s, a, cycle_id))
+    _follow(s, cycle_id)
+    return {"shared": n}
 
 
 @app.post("/api/loans/{cycle_loan_id}/share")
 def share(cycle_loan_id: str, a: Actor = A, s: Session = S):
     p = lincoln.share_package(s, a, cycle_loan_id)
+    _follow(s, cycle_loan_id=cycle_loan_id)
     return {"version": p.version, "manifest": p.manifest_path}
 
 
@@ -364,12 +382,16 @@ def ingest(cycle_id: str, a: Actor = A, s: Session = S):
 
 @app.post("/api/cycles/{cycle_id}/lincoln/load-everest")
 def load_everest(cycle_id: str, a: Actor = A, s: Session = S):
-    return {"loaded": lincoln.load_to_everest(s, a, cycle_id)}
+    n = lincoln.load_to_everest(s, a, cycle_id)
+    _follow(s, cycle_id)
+    return {"loaded": n}
 
 
 @app.post("/api/cycles/{cycle_id}/lincoln/copy-sharepoint")
 def copy_sp(cycle_id: str, a: Actor = A, s: Session = S):
-    return {"copied": lincoln.copy_to_sharepoint(s, a, cycle_id)}
+    n = lincoln.copy_to_sharepoint(s, a, cycle_id)
+    _follow(s, cycle_id)
+    return {"copied": n}
 
 
 @app.post("/api/lincoln/upload")
@@ -437,6 +459,7 @@ def decide_adj(adjustment_id: str, body: dict = Body(...), a: Actor = A, s: Sess
 @app.post("/api/spreads/{spread_id}/approve")
 def approve_spread(spread_id: str, a: Actor = A, s: Session = S):
     sp = spreads.approve_spread(s, a, spread_id)
+    _follow(s, cycle_loan_id=sp.cycle_loan_id)
     return {"id": sp.id, "status": sp.status, "everest": sp.written_back_spread_id}
 
 
@@ -498,12 +521,19 @@ def add_evidence(cmr_id: str, body: dict = Body(...), a: Actor = A, s: Session =
 
 @app.post("/api/cmr/{cmr_id}/submit")
 def submit_cmr(cmr_id: str, body: dict = Body(default={}), a: Actor = A, s: Session = S):
-    return cmrs.submit(s, a, cmr_id, bool(body.get("acknowledge", False)))
+    from domain.models import Cmr
+
+    r = cmrs.submit(s, a, cmr_id, bool(body.get("acknowledge", False)))
+    _follow(s, cycle_loan_id=s.get(Cmr, cmr_id).cycle_loan_id)
+    return r
 
 
 @app.post("/api/cmr/{cmr_id}/file")
 def file_cmr(cmr_id: str, a: Actor = A, s: Session = S):
+    from domain.models import Cmr
+
     f = cmrs.file_cmr(s, a, cmr_id)
+    _follow(s, cycle_loan_id=s.get(Cmr, cmr_id).cycle_loan_id)
     return {"version": f.version, "path": f.pdf_path}
 
 
@@ -528,7 +558,10 @@ def comment(review_id: str, body: dict = Body(...), a: Actor = A, s: Session = S
 
 @app.post("/api/reviews/{review_id}/decide")
 def decide_review(review_id: str, body: dict = Body(...), a: Actor = A, s: Session = S):
+    from domain.models import Cmr
+
     rv = cmrs.decide_review(s, a, review_id, body["outcome"], body.get("checklist"))
+    _follow(s, cycle_loan_id=s.get(Cmr, rv.cmr_id).cycle_loan_id)
     return {"id": rv.id, "outcome": rv.outcome}
 
 
@@ -563,6 +596,7 @@ def g1(cycle_loan_id: str, body: dict = Body(...), a: Actor = A, s: Session = S)
                             reason_category=body.get("reason_category"), note=body.get("note", ""),
                             evidence=body.get("evidence"), used_tiq_draft=bool(body.get("used_tiq_draft")),
                             co_decided_by=body.get("co_decided_by"))
+    _follow(s, cycle_loan_id=cycle_loan_id)
     return {"id": d.id, "outcome": d.outcome, "mark": d.approved_mark}
 
 
