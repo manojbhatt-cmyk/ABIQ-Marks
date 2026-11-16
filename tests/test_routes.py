@@ -29,7 +29,7 @@ def test_valuation_routes_end_to_end(at_q1):
 
     with session_scope() as s:
         c = s.query(ValuationCycle).filter_by(cycle_type="quarterly").one()
-        for fid, method in (("F-0010", "Cost"), ("F-0018", "AB proposal"), ("F-0024", "Sponsor value")):
+        for fid, method in (("F-0015", "Cost"), ("F-0013", "AB proposal"), ("F-0001", "Sponsor value")):
             cyc_svc.set_valuation_method(s, pm(s), _loan(s, fid).id, method, "test route")
         world.advance(s, pm(s), c.id, 12)
         for cl in s.query(CycleLoan).filter_by(cycle_id=c.id, in_scope=True):
@@ -41,21 +41,21 @@ def test_valuation_routes_end_to_end(at_q1):
                 if not s.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
                     lincoln.share_package(s, pm(s), cl.id)
         with pytest.raises(BusinessRuleError):
-            lincoln.share_package(s, pm(s), _loan(s, "F-0010").id)
+            lincoln.share_package(s, pm(s), _loan(s, "F-0015").id)
         titles = [i["title"] for i in work.my_work(s, pm(s), c.id)["items"]]
-        assert any("cost mark" in t and "Pinecrest" in t for t in titles)
+        assert any("cost mark" in t and "Kestrel" in t for t in titles)
         world.advance(s, pm(s), c.id, 20)
         lincoln_rows = s.query(LincolnValuation).filter_by(source="lincoln").count()
-        assert lincoln_rows == 21
-        cost = valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0010").id, None, "")
+        assert lincoln_rows == 2  # Harbor and Sunrise; the other three are valued in TIQ
+        cost = valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0015").id, None, "")
         assert cost.point_estimate == pytest.approx(98.0)
-        sponsor = valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0024").id, 97.5, "Sponsor NAV statement Q3")
+        sponsor = valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0001").id, 97.5, "Sponsor NAV statement Q3")
         assert sponsor.source == "sponsor_value"
-        lead = Actor("team.green.lead@ab-poc.local", "deal_lead", deal_team_id="DT-GREEN")
-        ab = valuation.record_internal_valuation(s, lead, _loan(s, "F-0018").id, 98.5, "Comparable recent repricing")
+        lead = Actor("team.amber.lead@ab-poc.local", "deal_lead", deal_team_id="DT-AMBER")
+        ab = valuation.record_internal_valuation(s, lead, _loan(s, "F-0013").id, 98.5, "Comparable recent repricing")
         assert ab.source == "ab_proposal"
         with pytest.raises(Exception):
-            valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0018").id, 99.0, "pm cannot propose for the deal team")
+            valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0013").id, 99.0, "pm cannot propose for the deal team")
 
 
 def test_universe_refresh_is_idempotent(at_q1):
@@ -67,12 +67,12 @@ def test_universe_refresh_is_idempotent(at_q1):
 
 def test_sct_deferral_creates_follow_up(at_q1):
     with session_scope() as s:
-        cl = _loan(s, "F-0004")
+        cl = _loan(s, "F-0015")
         target = sct.defer_to_follow_up(s, cl)
-        assert target == "DIS #1 Follow Up"
+        assert target == "DIS #2 Follow Up"
         assert s.query(SctSession).filter_by(cycle_id=cl.cycle_id, session_name=target).count() == 1
         plan = {p["session"]: p for p in sct.plan(s, cl.cycle_id)}
-        assert any(x.get("facility_id") == "F-0004" for x in plan[target]["slots"])
+        assert any(x.get("facility_id") == "F-0015" for x in plan[target]["slots"])
 
 
 def test_fccr_and_liquidity():

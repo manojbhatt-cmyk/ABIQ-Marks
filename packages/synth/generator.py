@@ -104,7 +104,7 @@ def write_ground_truth() -> Path:
     (out / "spreads.json").write_text(json.dumps(data, indent=2))
     (out / "expected.json").write_text(json.dumps({
         "agenda": {"F-0002": ["watchlist", "downgrade"], "F-0003": ["watchlist", "mark_move_10pct"],
-                   "F-0013": ["watchlist"], "F-0014": ["outside_lincoln_range"]},
+                   "F-0013": ["watchlist"]},
         "reconciliation_mismatches": [{"facility_id": "F-0003", "check": "mark_tracker_vs_everest",
                                        "tracker": 88.5, "everest": 89.0}],
         "portfolio_delta": {"lincoln_v1": -3.95, "after_g1": -3.05, "final": -3.175},

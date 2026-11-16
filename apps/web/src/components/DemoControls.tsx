@@ -1,18 +1,18 @@
-import { Eraser, Loader2, Send, Wand2 } from "lucide-react";
+import { Eraser, Loader2, Send } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, useApi } from "../api";
 import { useApp } from "../context";
 import { Modal } from "./ui";
 
-/** Demo only: clear the cycle (start again from kickoff) and autofill every loan except Harbor Logistics. */
+/** Demo only: clear the cycle (start again from kickoff) and play what the outside world does next.
+ * Every loan except Harbor Logistics fills in by itself as the clock moves (decision D23), so there is no autofill button. */
 export default function DemoControls() {
   const { user, cycle, refreshCycles } = useApp();
   const nav = useNavigate();
-  const [busy, setBusy] = useState<"" | "clear" | "autofill" | "event">("");
+  const [busy, setBusy] = useState<"" | "clear" | "event">("");
   const [ask, setAsk] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const auto = useApi<any>(cycle ? `/cycles/${cycle.id}/autopilot` : null, [cycle?.id]);
   const ev = useApi<any>(cycle && cycle.status !== "draft" ? `/cycles/${cycle.id}/next-event` : null, [cycle?.id, cycle?.day, cycle?.status]);
   if (!user || !["pm_team", "admin"].includes(user.role)) return null;
   const next = ev.data?.event;
@@ -32,7 +32,6 @@ export default function DemoControls() {
       setBusy("");
     }
   };
-  const autoOn = !!auto.data?.except;
 
   const clear = async () => {
     setAsk(false);
@@ -59,36 +58,15 @@ export default function DemoControls() {
     }
   };
 
-  const autofill = async () => {
-    if (!cycle) return;
-    setBusy("autofill");
-    setMsg("Autofilling every loan except Harbor Logistics...");
-    try {
-      const r = await api(`/cycles/${cycle.id}/autopilot`, { body: { except: ["F-0002"] } });
-      setMsg(r.log.join(" · "));
-      await auto.reload();
-      await refreshCycles();
-    } catch (e: any) {
-      setMsg(`Autofill stopped: ${e.message}`);
-    } finally {
-      setBusy("");
-    }
-  };
-
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3 rounded-panel border border-dashed border-brand-300 bg-brand-50 px-4 py-3 text-[13.5px]">
       <span className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-slate-500">Demo controls</span>
       <button className="btn-danger" disabled={!!busy} onClick={() => setAsk(true)}>
         {busy === "clear" ? <Loader2 size={16} className="animate-spin" /> : <Eraser size={14} />} Clear cycle
       </button>
-      <button className="btn-secondary" disabled={!!busy || !cycle || cycle.status === "draft"} onClick={autofill}
-        title={cycle?.status === "draft" ? "Send the kickoff first" : "Complete the routine steps for every loan except Harbor Logistics"}>
-        {busy === "autofill" ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={14} />} Autofill other loans
-      </button>
       {next && (next.to_day ? <button className="btn-primary" disabled={!!busy} onClick={outside} title={next.detail}>
           {busy === "event" ? <Loader2 size={16} className="animate-spin" /> : <Send size={14} />} {next.label}
         </button> : <span className="badge bg-warn-100 text-warn-700" title={next.detail}>{next.label}</span>)}
-      {autoOn && <span className="badge bg-success-100 text-success-700"><span className="h-[7px] w-[7px] rounded-full bg-current" aria-hidden="true" />Autofill on: other loans keep up whenever something arrives</span>}
       {msg && <span className="text-xs text-slate-600">{msg}</span>}
       {ask && (
         <Modal title="Clear the cycle?" onClose={() => setAsk(false)} footer={<>

@@ -57,7 +57,7 @@ def test_reconciliation_found_only_sunrise(played):
 def test_agenda(played):
     with session_scope() as s:
         on = sorted(cl.facility_id for cl in s.query(CycleLoan).filter_by(on_agenda=True))
-        assert on == ["F-0002", "F-0003", "F-0013", "F-0014"]
+        assert on == ["F-0002", "F-0003", "F-0013"]
 
 
 def test_no_decision_by_an_agent(played):

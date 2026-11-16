@@ -11,7 +11,7 @@ cd apps/web && npm run dev                # web
 
 1. Sign in as `pm.analyst@ab-poc.local`.
 2. Click **Clear cycle** (top bar) and wait until it reaches Q0.
-3. Turn on **Autofill**: every loan except Harbor (F-0002) moves on by itself, so the demo shows only Harbor.
+3. Nothing to switch on: after a clear, every loan except Harbor (F-0002) moves on by itself as the clock moves, so the demo shows only Harbor.
 
 | Who | Login |
 |---|---|
@@ -24,7 +24,7 @@ cd apps/web && npm run dev                # web
 
 ## 1. Kickoff and intake (Q1 to Q3): PM Team
 
-1. **Q1 Kickoff:** create the cycle from Snowflake (24 loans), check the calendar, preview the message for each team, then **send the kickoff inside TIQ**. Internal communication never uses email.
+1. **Q1 Kickoff:** create the cycle from Snowflake (5 loans), check the calendar, preview the message for each team, then **send the kickoff inside TIQ**. Internal communication never uses email.
 2. **Outside world:** in Demo controls, click **Borrowers send their packages**, then **Late borrowers reply to the reminders**. Borrowers email their financials to the deal teams, with the PM Team copied. (There is no clock on screen; this one button always names what borrowers or Lincoln do next.)
 3. **Q2 Intake:** in **External mail** (Inbox), TIQ has pulled out each attachment and classified it. It also tracks each package and drafts reminders to borrowers who are late.
 4. **Q3 Share with Lincoln:** **Share all complete packages** sends them to Lincoln in one click (no manual download and upload).
@@ -49,13 +49,13 @@ cd apps/web && npm run dev                # web
 
 ## 4. Valuation Committee, Gate 2 (Q15 to Q18)
 
-17. **Q16 Agenda** (`pm.analyst`): TIQ builds it from the rules: **Harbor, Sunrise, Orchard, Granite**.
+17. **Q16 Agenda** (`pm.analyst`): TIQ builds it from the rules: **Harbor, Sunrise, Orchard**.
 18. **Q17 Pack:** build the committee pack and send it in TIQ.
 19. **Organise meeting:** TIQ drafts the date, time slots and attendees. Edit if needed, then **Send invitation in TIQ**. Attendees get the message, a calendar file (.ics) and the pack.
 20. **Q18 Meeting** (`vc.chair`, Committee → Meeting tab):
     - Harbor: **Approve 88.0**
     - Sunrise: **Change the mark** from 89.0 to **88.5** and enter a rationale. The screen shows the value impact and the Lincoln range.
-    - Orchard and Granite: **Approve**
+    - Orchard: **Approve**
     - If a decision is recorded wrongly, use **Revise decision** with a reason. The earlier decision is kept and audited.
 
 ## 5. Close (Q19 to Q22)

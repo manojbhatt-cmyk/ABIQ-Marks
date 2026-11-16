@@ -39,8 +39,6 @@ def test_autopilot_leaves_harbor_and_moves_the_rest(cycle_at_q1):
     with session_scope() as s:
         others = s.query(CycleLoan).filter(CycleLoan.facility_id != "F-0002", CycleLoan.in_scope.is_(True)).all()
         assert all(cl.status == "approved" for cl in others), [(cl.facility_id, cl.status) for cl in others]
-        granite = s.query(CycleLoan).filter_by(facility_id="F-0014").one()
-        assert granite.status == "approved"
         roles = {e.actor_role for e in s.query(AuditEvent).filter(AuditEvent.action.like("valuation_decision%"))}
         assert roles == {"deal_lead"}
         harbor = s.query(CycleLoan).filter_by(facility_id="F-0002").one()

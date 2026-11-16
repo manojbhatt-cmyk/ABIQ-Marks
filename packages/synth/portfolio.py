@@ -1,13 +1,13 @@
 """The synthetic portfolio (Transorg Data Spec.md section 7).
 
-22 borrowers, 26 facilities (24 in scope: 20 term loans, 2 DDTL, 2 second-lien term
-loans; 2 revolvers out of scope), 8 sponsors, 6 deal teams. Maple, Harbor and
-Sunrise carry the worked example numbers exactly (section 7.2). The other 21 loans are
-set so their value deltas net to zero at every checkpoint (Lincoln v1, after G1,
-after committee), so the portfolio change equals the three-loan change (-3.95, -3.05,
--3.175). Team Grey approves 0.5 below Lincoln's range (agenda test 4 fires); Team
-Violet's Atlas approves inside the range above the point by exactly the offsetting
-amount (recorded as a decision in the tracker).
+The Data Spec's full universe is defined below: 22 borrowers, 26 facilities. The demo
+uses five of them (decision D22), one term loan each: Maple, Harbor and Sunrise carry
+the worked example numbers exactly (section 7.2); Orchard (Team Amber, on the watchlist,
+so it joins the committee agenda) and Kestrel (Team Grey, routine) are marked at
+Lincoln's point with no change, so the portfolio change still equals the three-loan
+change at every checkpoint (-3.95, -3.05, -3.175). Restore the full universe by adding
+borrower IDs to DEMO_BORROWERS: the remaining loans are set so their value deltas net to
+zero only as a whole (for example Granite's below-range mark is offset by Atlas).
 """
 from __future__ import annotations
 
@@ -19,6 +19,8 @@ PREV_PERIOD = "2026-Q2"
 DAY0 = date(2026, 9, 30)
 MONTHLY_PERIOD = "2026-10"
 DOMAIN = "ab-poc.local"
+# Decision D22: five loans in the demo. Maple, Harbor, Sunrise, Orchard, Kestrel.
+DEMO_BORROWERS = {"B-0001", "B-0002", "B-0003", "B-0009", "B-0011"}
 
 SPONSORS = [
     ("SP-001", "Northgate Capital", "deals@northgatecap.example"),
@@ -245,6 +247,7 @@ def borrowers() -> list[Borrower]:
                  "Janitorial and facilities services for commercial real estate.",
                  [_f("F-0026", "term_loan", 21, 21, 0.1050, date(2030, 3, 31), 96.5, 96.5)], family="B", arrival_day=11),
     ]
+    b = [br for br in b if br.borrower_id in DEMO_BORROWERS]
     for br in b:
         br.fin = financials(br)
     return b

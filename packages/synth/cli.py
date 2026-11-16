@@ -58,6 +58,12 @@ def reset(target: str = "duckdb", until: str | None = None, log=print, reset_acc
     log(f"warehouse loaded ({target})")
     with session_scope() as s:
         log(f"app seeded: {seed_app.seed(s)}")
+        if not until or until.upper() == "Q0":
+            # Live demo (decision D23): every loan except Harbor keeps up by itself as the clock moves.
+            # A scripted play drives every loan itself, so it starts with autofill off.
+            from synth import autopilot
+
+            autopilot.set_setting(s, ["F-0002"])
     generator.write_ground_truth()
     if until and until.upper() != "Q0":
         from synth.play import play
