@@ -31,9 +31,9 @@ def test_autopilot_keeps_pace_with_harbor_and_never_runs_ahead(cycle_at_q1):
     with session_scope() as s:
         harbor = s.query(CycleLoan).filter_by(facility_id="F-0002").one()
         assert harbor.package_status == "complete" and spreads.current_spread(s, harbor.id) is None
-        # the others went as far as Harbor (shared), no further: no spread, no CMR, no valuation
+        # Harbor has not been shared yet, so neither have the others: they never run ahead of Harbor
         for cl in _others(s):
-            assert s.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first() is not None
+            assert s.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first() is None
             assert spreads.current_spread(s, cl.id) is None and cmrs.latest_cmr(s, cl.id) is None
         assert all(lincoln.latest_valuation(s, cl.id) is None for cl in _others(s))
         lincoln.share_package(s, pm(s), harbor.id)  # the presenter shares Harbor
@@ -42,9 +42,9 @@ def test_autopilot_keeps_pace_with_harbor_and_never_runs_ahead(cycle_at_q1):
         world.advance(s, pm(s), cycle_at_q1, 22)  # Lincoln drafts for every loan
     with session_scope() as s:
         harbor = s.query(CycleLoan).filter_by(facility_id="F-0002").one()
-        for cl in _others(s):  # caught up with Harbor's spread step, not past it; no Gate 1 before Harbor's
-            assert spreads.current_spread(s, cl.id).status == "approved"
-            assert cmrs.latest_cmr(s, cl.id) is None, cl.facility_id
+        for cl in _others(s):  # caught up with Harbor's sharing, nothing past it; no Gate 1 before Harbor's
+            assert s.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first() is not None
+            assert spreads.current_spread(s, cl.id) is None and cmrs.latest_cmr(s, cl.id) is None, cl.facility_id
             assert cl.status != "approved"
         assert not s.query(AuditEvent).filter(AuditEvent.action.like("valuation_decision%")).count()
         autopilot.set_setting(s, None)

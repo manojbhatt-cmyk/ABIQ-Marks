@@ -7,9 +7,9 @@ what the clock allows: no valuation before Lincoln's drafts arrive, no committee
 pack is sent. Cycle-wide PM actions (impact note, agenda, pack, reconciliation, approvals) are left
 to the presenter.
 
-Pacing: the other loans keep pace with the loan being presented and never run ahead of it. A loan does a
-step only once the presented loan has reached that step, and decides Gate 1 only after the presented loan's
-Gate 1 decision. When the presenter acts, `follow` lets the others catch up straight away.
+Pacing: the other loans follow the loan being presented and never run ahead of it. A loan completes a step
+only after the presented loan has finished that step, and decides Gate 1 only after the presented loan's Gate 1
+decision. When the presenter finishes a step, `follow` lets the others catch up straight away.
 """
 from __future__ import annotations
 
@@ -66,16 +66,16 @@ def run(session: Session, cycle_id: str, except_fids: list[str]) -> list[str]:
 
 
 class _Pace:
-    """How far the presented loans have got: the others may do a step once every presented loan has reached it."""
+    """How far the presented loans have got: the others may complete a step once every presented loan finished it."""
 
     def __init__(self, dt: int, lincoln_: int, g1_decided: bool):
         self.dt, self.lincoln, self.g1_decided = dt, lincoln_, g1_decided
 
     def dt_allows(self, step: str) -> bool:
-        return self.dt >= step_index(step)
+        return self.dt > step_index(step)  # the presented loan's current step is past this one
 
     def lincoln_allows(self, step: str) -> bool:
-        return self.lincoln >= step_index(step)
+        return self.lincoln > step_index(step)
 
 
 def _pace(session: Session, presented: list[CycleLoan]) -> _Pace:
