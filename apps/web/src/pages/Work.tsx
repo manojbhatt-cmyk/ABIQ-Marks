@@ -58,7 +58,7 @@ export function ProcessStrip({ process }: { process: any[] }) {
                 <div className="flex gap-1">
                   {steps.map((x) => (
                     <span key={x.step} title={`${x.step.replace("Q", "")}. ${x.name}: ${x.done} of ${x.total} loans past it`}
-                      className={`h-1.5 flex-1 rounded-full ${x.state === "done" ? "bg-brand-400" : x.state === "active" ? "bg-accent-500" : "bg-sunken"}`} />
+                      className={`h-1.5 flex-1 rounded-full ${x.state === "done" ? "bg-success-500" : x.state === "active" ? "bg-brand-300" : "bg-sunken"}`} />
                   ))}
                 </div>
                 <div className="mt-2 truncate text-xs text-muted">
