@@ -27,7 +27,7 @@ export function RemindButton({ row, onSent }: { row: DeadlineRow; onSent?: () =>
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   if (!cycle || !(user?.role === "pm_team" || user?.role === "admin")) return null;
-  const what = `${row.step} ${row.step_name}${row.loan ? ` for ${row.loan}` : ""}`;
+  const what = `${row.step_name}${row.loan ? ` for ${row.loan}` : ""}`;
   const send = async () => {
     setBusy(true); setMsg(null);
     try {
@@ -74,11 +74,11 @@ export function DeadlinesCard({ loanId, limit = 8 }: { loanId?: string; limit?: 
       {rows.length ? <ul className="divide-y divide-line-200">{rows.slice(0, limit).map((r) => (
         <li key={`${r.step}-${r.cycle_loan_id}`} className="flex items-center gap-3 py-2.5">
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[13.5px] font-medium text-ink-900">{r.step} {r.step_name}{r.loan ? `: ${r.loan}` : ""}</div>
+            <div className="truncate text-[13.5px] font-medium text-ink-900" title={`Step ${String(r.step).replace("Q", "")} of 22: ${r.step_name}`}>{r.loan ? `${r.loan}: ` : ""}{r.step_name}</div>
             <div className="truncate text-xs text-slate-500">{r.owners.map(who).join(", ")} · Day {r.due_day}</div>
           </div>
           <DueChip days={r.days_left} />
-          <RemindButton row={r} onSent={() => { setSent(`Reminder sent: ${r.step} ${r.step_name}${r.loan ? ` for ${r.loan}` : ""}.`); reload(); }} />
+          <RemindButton row={r} onSent={() => { setSent(`Reminder sent: ${r.step_name}${r.loan ? ` for ${r.loan}` : ""}.`); reload(); }} />
         </li>))}</ul>
         : <Empty text="No open deadlines" hint="Steps appear here once the cycle is running." />}
       {rows.length > limit && <div className="pt-2 text-xs text-slate-500">and {rows.length - limit} more</div>}
