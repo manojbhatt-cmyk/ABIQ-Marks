@@ -935,6 +935,7 @@ def work(cycle_id: str | None = None, a: Actor = A, s: Session = S):
         cycle_type="quarterly").order_by(ValuationCycle.day0_date.desc()).first()
     out = work_svc.my_work(s, a, c.id if c else None)
     out["process"] = work_svc.process_map(s, c.id) if c else []
+    out["loans"] = work_svc.loan_stages(s, c.id) if c and c.status != "draft" and a.role in ("pm_team", "admin") else []
     return out
 
 

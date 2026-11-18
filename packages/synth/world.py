@@ -93,47 +93,41 @@ def next_event(session: Session, cycle_id: str) -> dict | None:
     if cyc is None or cyc.status != "open" or cyc.cycle_type != "quarterly":
         return None
     day = cyc.current_day
-    mail_days = sorted(d for d in generator.mail_schedule() if d > day)
-    if mail_days and mail_days[0] <= 10:
-        return {"key": "borrowers", "to_day": 10, "label": "Borrowers send their packages",
-                "detail": "Borrowers email their quarterly packages to the deal teams, PM Team copied. "
-                          "ABIQ drafts reminders for anything missing."}
-    if mail_days:
-        return {"key": "chased", "to_day": max(mail_days[-1], day + 1), "label": "Late borrowers reply to the reminders",
-                "detail": "The remaining documents arrive by email."}
-    events = []
-    due = _lincoln_due(session, cycle_id)
-    if due:
-        first = min(d for _, d in due)
-        names = sorted(cl.borrower for cl, d in due if d == first)
-        events.append({"key": "lincoln", "to_day": max(first, day + 1), "label": "Lincoln sends draft marks",
-                       "detail": f"Lincoln's draft for {', '.join(names)} arrives in Box; ABIQ ingests it."})
-    pending = [d for d in session.query(ValuationDecision).join(CycleLoan, CycleLoan.id == ValuationDecision.cycle_loan_id).filter(
-        CycleLoan.cycle_id == cycle_id, ValuationDecision.outcome == "sent_back") if
-        session.get(CycleLoan, d.cycle_loan_id).status == "waiting_on_lincoln"]
-    if pending:
-        names = sorted({session.get(CycleLoan, d.cycle_loan_id).borrower for d in pending})
-        events.append({"key": "revision", "to_day": max(min((d.decided_day or 0) + 2 for d in pending), day + 1),
-                       "label": "Lincoln sends the revised valuation",
-                       "detail": f"Lincoln answers the send-back for {', '.join(names)}."})
     from synth import autopilot
 
-    fixing = autopilot.waiting(session, cycle_id) if autopilot.setting(session) is not None else []
-    if fixing:
-        events.append({"key": "cmr_revision", "to_day": max(min(d for _, d in fixing), day + 1),
-                       "label": "Analysts send the revised CMRs",
-                       "detail": f"The Deal Team fixes the comments for {', '.join(sorted(b for b, _ in fixing))} "
-                                 "and resubmits."})
-    # Stop at the next kickoff deadline; everything due before it (Lincoln's drafts, revisions, the other loans'
-    # work) happens on its own day on the way, so the presenter clicks once per deadline, not once per event.
+    # Everything that happens on a known day: (day, sentence). The button stops at the earliest such day, so the
+    # presenter sees the quarter unfold day by day: packages arriving, teams starting, CMRs going in, Lincoln's
+    # drafts landing loan by loan, send-backs coming back, Gate 1 decisions.
+    events: list[tuple[int, str]] = []
+    names = {cl.borrower_id: cl.borrower for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True)}
+    for d, items in generator.mail_schedule().items():
+        who = sorted({names[bid] for bid, _ in items if bid in names})
+        if d > day and who:
+            events.append((d, f"{_join(who)} send{'s' if len(who) == 1 else ''} "
+                              f"{'its' if len(who) == 1 else 'their'} financials"))
+    for cl, d in _lincoln_due(session, cycle_id):
+        events.append((max(d, day + 1), f"Lincoln sends its draft mark for {cl.borrower}"))
+    for d in session.query(ValuationDecision).join(CycleLoan, CycleLoan.id == ValuationDecision.cycle_loan_id).filter(
+            CycleLoan.cycle_id == cycle_id, ValuationDecision.outcome == "sent_back"):
+        cl = session.get(CycleLoan, d.cycle_loan_id)
+        if cl.status == "waiting_on_lincoln":
+            events.append((max((d.decided_day or 0) + 2, day + 1), f"Lincoln sends a revised valuation for {cl.borrower}"))
+    events += [(max(d, day + 1), what) for d, what in autopilot.upcoming(session, cycle_id)]
+    if events:
+        first = min(d for d, _ in events)
+        today = list(dict.fromkeys(w for d, w in events if d == first))
+        return {"key": "event", "to_day": first, "label": today[0] + (f" (+{len(today) - 1} more)" if len(today) > 1 else ""),
+                "detail": "; ".join(today) + "."}
+    # nothing scheduled from outside or on the other loans: move to the next kickoff date
     nxt = min(((d, step) for step, d in autopilot.deadlines(session, cycle_id).items() if d > day), default=None)
     if nxt:
-        on_way = [e["label"] for e in sorted(events, key=lambda e: e["to_day"]) if e["to_day"] <= nxt[0]]
-        label = on_way[0] if on_way else NEXT_LABEL.get(nxt[1], "The teams keep working")
-        return {"key": "deadline", "to_day": nxt[0], "label": label,
-                "detail": "; ".join(dict.fromkeys(on_way + [NEXT_LABEL.get(nxt[1], "")])).strip("; ")
-                + ". The other loans keep working, each at its own pace."}
-    return min(events, key=lambda e: e["to_day"]) if events else None
+        return {"key": "deadline", "to_day": nxt[0], "label": NEXT_LABEL.get(nxt[1], "The teams keep working"),
+                "detail": "Nothing else is scheduled before this kickoff date."}
+    return None
+
+
+def _join(xs: list[str]) -> str:
+    return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
 
 
 # What the teams deliver by each kickoff date, in plain words for the next-event button.

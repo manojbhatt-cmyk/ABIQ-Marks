@@ -309,3 +309,57 @@ def cycle_stage(session: Session, cycle_id: str) -> tuple[int, float]:
         step = int(next((p["step"] for p in steps if p["state"] != "done"), "Q15")[1:])
         step = min(step, 15)
     return step, round((step - 1) / 22, 3)
+
+
+def loan_stages(session: Session, cycle_id: str) -> list[dict]:
+    """Where every loan is right now, for the PM Team: the step, who it waits on and for how long, Lincoln's side,
+    the loops so far and the mark-move flag. Derived from the records on every request."""
+    from domain.models import AuditEvent, MarksTrackerRow
+    from domain.services import mark_moves
+    from domain.services.cycle import step_index
+
+    cyc = session.get(ValuationCycle, cycle_id)
+    out = []
+    for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).order_by(CycleLoan.facility_id):
+        cmr = session.query(Cmr).filter_by(cycle_loan_id=cl.id).order_by(Cmr.version.desc()).first()
+        sp = session.query(FinancialSpread).filter_by(cycle_loan_id=cl.id).order_by(FinancialSpread.version.desc()).first()
+        lv = session.query(LincolnValuation).filter_by(cycle_loan_id=cl.id).order_by(LincolnValuation.version.desc()).first()
+        shared = session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first()
+        g1 = session.query(ValuationDecision).filter(ValuationDecision.cycle_loan_id == cl.id,
+                                                     ValuationDecision.outcome != "sent_back").first()
+        stage = {"ac_manager": "A/C Manager", "pm_team": "PM Team", "sct": "SCT", "file": "PM Team (filing)"}
+        if cl.package_status != "complete":
+            now_, waiting = "Borrower financials", "Borrower" + (
+                f" (missing {', '.join(m.replace('_', ' ') for m in cl.package_missing)})" if cl.package_missing else "")
+        elif cl.status == "sent_back":
+            now_, waiting = "CMR sent back", "Analyst, fixing the reviewer's comments"
+        elif cl.status == "waiting_on_lincoln":
+            now_, waiting = "Mark sent back to Lincoln", "Lincoln, revising the valuation"
+        elif not sp or sp.status != "approved":
+            now_, waiting = "Spread", "Analyst"
+        elif not cmr or (cmr.status == "draft"):
+            now_, waiting = "CMR draft", "Analyst"
+        elif cmr.current_stage in stage:
+            now_, waiting = f"CMR review: {stage[cmr.current_stage]}", stage[cmr.current_stage]
+        elif g1:
+            now_ = STEP_NAMES.get(cl.current_step, cl.current_step)
+            waiting = "Committee" if cl.on_agenda and cl.status == "on_agenda" else (
+                "Done until the committee stage" if step_index(cl.current_step) < step_index("Q19") else "PM Team")
+        elif not lv:
+            now_, waiting = "CMR filed, waiting for Lincoln", "Lincoln" if shared else "PM Team (share with Lincoln)"
+        elif not lv.loaded_to_everest:
+            now_, waiting = "Lincoln draft in", "PM Team (load to Everest)"
+        else:
+            now_, waiting = "Gate 1", "Deal Team lead"
+        lincoln_state = ("Not shared" if not shared else "Drafting" if not lv else
+                         f"Revising v{lv.version}" if cl.status == "waiting_on_lincoln" else
+                         f"Draft v{lv.version}: {lv.point_estimate:.2f}")
+        last = session.query(AuditEvent).filter_by(cycle_loan_id=cl.id).order_by(AuditEvent.occurred_at.desc()).first()
+        since = last.cycle_day if last and last.cycle_day is not None else None
+        tr = session.query(MarksTrackerRow).filter_by(cycle_loan_id=cl.id).first()
+        out.append({"id": cl.id, "borrower": cl.borrower, "facility_id": cl.facility_id, "team": cl.team_name,
+                    "step": cl.current_step, "now": now_, "waiting_on": waiting, "lincoln": lincoln_state,
+                    "since_day": since, "days": (cyc.current_day - since) if since is not None else None,
+                    "loops": cl.loop_counts_json or {}, "status": cl.status,
+                    "move": mark_moves.current(session, tr) if tr else None})
+    return out

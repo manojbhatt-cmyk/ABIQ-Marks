@@ -2,7 +2,7 @@ import { ArrowRight, CheckCircle2, Clock, FastForward, Hourglass, MessagesSquare
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, fmt, ROLE_LABEL, useApi } from "../api";
-import { Card, Empty, ErrorState, Loading, PageHeader } from "../components/ui";
+import { Card, Chip, Empty, ErrorState, Loading, MoveChip, PageHeader } from "../components/ui";
 import DemoControls from "../components/DemoControls";
 import { DeadlinesCard } from "../components/Reminders";
 import { useApp } from "../context";
@@ -73,6 +73,29 @@ export function ProcessStrip({ process }: { process: any[] }) {
   );
 }
 
+const LOOP_LABEL: Record<string, string> = { QA: "sent back to Lincoln", QB: "CMR sent back", QC: "Lincoln revised", QF: "committee sent back" };
+
+/** PM Team view: every loan's current stage, who it waits on and for how long. */
+function LoanStages({ loans }: { loans: any[] }) {
+  const nav = useNavigate();
+  return (
+    <Card title="Where each loan is" subtitle="Each loan moves on its own. Click a loan to open it.">
+      <div className="-mx-1 overflow-x-auto">
+        <table className="w-full min-w-[640px]">
+          <thead><tr><th className="th">Loan</th><th className="th">Now</th><th className="th">Waiting on</th><th className="th">Lincoln</th><th className="th">Flags</th></tr></thead>
+          <tbody>{loans.map((l) => (
+            <tr key={l.id} className="cursor-pointer hover:bg-sunken" onClick={() => nav(`/loans/${l.id}`)}>
+              <td className="td"><div className="font-medium text-ink">{l.borrower}</div><div className="text-xs text-muted">{l.team}</div></td>
+              <td className="td"><div className="text-[13px] text-ink">{l.now}</div><div className="text-xs text-muted">Step {String(l.step || "").replace("Q", "")}</div></td>
+              <td className="td"><div className="text-[13px]">{l.waiting_on}</div>{l.days != null && <div className={`text-xs ${l.days >= 3 ? "text-warn-700" : "text-muted"}`}>{l.days === 0 ? "since today" : `for ${l.days} day${l.days === 1 ? "" : "s"}`}</div>}</td>
+              <td className="td text-[13px] text-muted">{l.lincoln}</td>
+              <td className="td"><div className="flex flex-wrap gap-1">{Object.entries(l.loops || {}).filter(([, n]) => (n as number) > 0).map(([k, n]) => <Chip key={k} tone="amber">{LOOP_LABEL[k] || k}{(n as number) > 1 ? ` x${n}` : ""}</Chip>)}<MoveChip move={l.move} quiet /></div></td>
+            </tr>))}</tbody>
+        </table>
+      </div>
+    </Card>);
+}
+
 export default function Work() {
   const { user, cycle } = useApp();
   const { data, error, loading, reload } = useApi<any>(`/work${cycle ? `?cycle_id=${cycle.id}` : ""}`, [cycle?.id, cycle?.day]);
@@ -93,6 +116,7 @@ export default function Work() {
       <ProcessStrip process={data.process} />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-2">
+          {(data.loans || []).length > 0 && <LoanStages loans={data.loans} />}
           <div className="flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-[16px] font-semibold">Your next actions</h2><span className="text-xs text-muted">Worked out from the cycle, nothing to chase</span></div>
           {actions.length ? actions.map((i: any, k: number) => {
             return (

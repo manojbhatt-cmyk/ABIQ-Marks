@@ -52,7 +52,7 @@ def test_next_event_names_what_the_outside_world_does(cycle_at_q1):
     with ss() as s:
         ev = world.next_event(s, cycle_at_q1)
         # this module's earlier test already moved past intake and Lincoln v1
-        assert ev is None or ev["key"] in ("revision", "lincoln", "deadline", "cmr_revision")
+        assert ev is None or ev["key"] in ("event", "deadline")
 
 
 def test_acting_on_a_loan_by_hand_takes_it_over(cycle_at_q1):

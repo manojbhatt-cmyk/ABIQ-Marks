@@ -6,9 +6,8 @@ trail reads as if those people had done it. Cycle-wide PM actions (impact note, 
 approvals) are left to the presenter.
 
 Pacing (decision D34): as in AllianceBernstein's process, every loan moves on its own until Gate 1. Nothing waits
-for the presented loan. Each step is worked towards its kickoff deadline: a team does it on the deadline day plus
-its own OFFSET (some teams are early, some on the day), at most one step a day, so on any day the loans sit at
-different stages. The PM Team loads and copies Lincoln's draft for a loan the day after it arrives. A loan sent
+for the presented loan. A team starts the day after its borrower's package is complete and then takes its own
+number of days per step (GAP; reviewers REVIEW_DAYS), so on any day the loans sit at different stages. The PM Team loads and copies Lincoln's draft for a loan the day after it arrives. A loan sent
 back needs a few days before it comes back. Steps 16 to 22 are cycle-wide and stay with the presenter.
 
 Send-backs shown on purpose (SCRIPTED, G1_SEND_BACK): the PM Team returns Sunrise's CMR (2 days to fix) and
@@ -30,8 +29,9 @@ from synth.portfolio import SUNRISE_COMMITTEE
 
 SETTING = "demo.autopilot_except"
 
-# Days before (negative) or after each kickoff deadline a team does the step: each team works at its own speed.
-OFFSET = {"F-0001": -2, "F-0003": 0, "F-0013": -1, "F-0015": -3}
+# Days an analyst or lead takes for each of their steps on a loan: each team works at its own speed.
+GAP = {"F-0001": 3, "F-0003": 3, "F-0013": 3, "F-0015": 2}
+REVIEW_DAYS = 2  # a reviewer (A/C Manager, PM Team, SCT) takes two days
 FIX_DAYS = 2  # days to answer a send-back that is not scripted (for example one the presenter makes)
 
 # Review send-backs: stage, days the analyst needs, the reviewer's comments and the fix.
@@ -145,31 +145,81 @@ def deadlines(session: Session, cycle_id: str) -> dict[str, int]:
     return {d.step_code: d.due_day for d in session.query(Deadline).filter_by(cycle_id=cycle_id)}
 
 
-def waiting(session: Session, cycle_id: str) -> list[tuple[str, int]]:
-    """CMRs sent back and still being fixed by an autopilot loan: (borrower, day the revised CMR comes back)."""
-    keep = setting(session) or []
-    out = []
-    for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True, status="sent_back"):
+def _complete_day(session: Session, cl: CycleLoan) -> int | None:
+    ev = session.query(AuditEvent).filter_by(cycle_loan_id=cl.id, action="package.completeness_changed").order_by(
+        AuditEvent.occurred_at.desc()).first()
+    return ev.cycle_day if ev and ev.cycle_day is not None else None
+
+
+# The Deal Team steps in order: (key, what it is called, days after the loan's previous step).
+STEPS = {"propose": "the Spreading Agent proposes the spread", "spread": "the analyst approves the spread",
+         "cmr": "the analyst submits the CMR", "fix": "the analyst resubmits the CMR after the send-back",
+         "ac_manager": "the A/C Manager reviews the CMR", "pm_team": "the PM Team reviews the CMR",
+         "file": "the CMR is filed", "sct": "SCT reviews the CMR", "g1": "the Deal Team decides on Lincoln's mark"}
+MILESTONES = tuple(STEPS)  # every Deal Team step is a stop for the next-event button
+
+
+def plan(session: Session, cl: CycleLoan) -> tuple[str, int] | None:
+    """The loan's next Deal Team step and the earliest day it happens; None when it waits on someone else."""
+    if cl.package_status != "complete":
+        return None
+    start = _complete_day(session, cl)
+    if start is None:
+        return None
+    last = max(_last(session, cl, "dt"), start)
+    gap = GAP.get(cl.facility_id, 3)
+    sp = spreads.current_spread(session, cl.id)
+    if sp is None:
+        return "propose", start + 1  # the team starts the day after the package is complete
+    if sp.status != "approved":
+        return "spread", last + gap
+    cmr = cmrs.latest_cmr(session, cl.id)
+    if cmr is None or (cmr.status == "draft" and not cmr.submitted_at):
+        return "cmr", last + gap
+    if cmr.status == "draft":
         sb = _sent_back(session, cl)
-        if sb and cl.facility_id not in keep:
-            out.append((cl.borrower, sb[0] + sb[1]))
+        return ("fix", sb[0] + sb[1]) if sb else None
+    if cmr.current_stage in ("ac_manager", "pm_team", "sct"):
+        return cmr.current_stage, last + REVIEW_DAYS
+    if cmr.current_stage == "file":
+        return "file", last + 1
+    lv = lincoln.latest_valuation(session, cl.id)
+    decided = session.query(ValuationDecision).filter(ValuationDecision.cycle_loan_id == cl.id,
+                                                      ValuationDecision.outcome != "sent_back").first()
+    if decided or not lv or not lv.loaded_to_everest or cl.status == "waiting_on_lincoln" \
+            or cmr.status not in ("filed", "agreed"):
+        return None
+    loaded = max(_last(session, cl, "lincoln"), last)
+    return "g1", loaded + gap
+
+
+def upcoming(session: Session, cycle_id: str) -> list[tuple[int, str]]:
+    """(day, sentence) for each autopilot loan's next milestone, for the next-event button."""
+    keep = setting(session)
+    if keep is None:
+        return []
+    out = []
+    for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True):
+        p = None if cl.facility_id in keep else plan(session, cl)
+        if p and p[0] in MILESTONES:
+            out.append((p[1], f"{cl.borrower}: {STEPS[p[0]]}"))
     return out
 
 
 # ---------------- one loan ----------------
 def _loan(session: Session, cl: CycleLoan, did, day: int) -> None:
-    """At most one Deal Team step and one Lincoln-track step per loan per day, each not before its deadline day
-    plus the team's offset."""
+    """At most one Deal Team step and one Lincoln-track step per loan per day, when the plan says it is due."""
     if cl.package_status != "complete":
         return
-    due = deadlines(session, cl.cycle_id)
-    off = OFFSET.get(cl.facility_id, 0)
-
-    def ready(step: str) -> bool:
-        return day >= due.get(step, 0) + off
     pm_a = pm(session)
     analyst, lead = actor(session, cl.analyst_email), actor(session, cl.lead_email)
-    # Lincoln track: the PM Team loads Lincoln's draft to Everest, then copies the report to SharePoint
+    # Q3 (PM Team): share the package with Lincoln the day after it is complete
+    start = _complete_day(session, cl)
+    if (cl.valuation_method or "Lincoln") == "Lincoln" and start is not None and day >= start + 1 \
+            and not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
+        lincoln.share_package(session, pm_a, cl.id)
+        _mark(session, cl, "pm", "package shared with Lincoln", did)
+    # Q12, Q13 (PM Team): load Lincoln's draft to Everest, then copy the report to SharePoint
     lv = lincoln.latest_valuation(session, cl.id)
     if lv and day >= _last(session, cl, "lincoln") + 1:
         if not lv.loaded_to_everest:
@@ -178,20 +228,15 @@ def _loan(session: Session, cl: CycleLoan, did, day: int) -> None:
         elif lv.report_document_id and not lv.sharepoint_copy_path:
             lincoln.copy_to_sharepoint(session, pm_a, cl.cycle_id, only=[cl.id])
             _mark(session, cl, "lincoln", "Lincoln report copied to SharePoint", did)
-    if day < _last(session, cl, "dt") + 1:
+    p = plan(session, cl)
+    if not p or day < p[1] or day < _last(session, cl, "dt") + 1:
         return
-    # Q3: share with Lincoln
-    if (cl.valuation_method or "Lincoln") == "Lincoln" and not session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first():
-        if not ready("Q3"):
-            return
-        lincoln.share_package(session, pm_a, cl.id)
-        return _mark(session, cl, "dt", "package shared with Lincoln", did)
-    # Q4: spread
-    sp = spreads.current_spread(session, cl.id)
-    if sp is None or sp.status != "approved":
-        if not ready("Q4"):
-            return
-        sp = sp or spreads.run_spreading(session, analyst, cl.id)
+    step_, cmr = p[0], cmrs.latest_cmr(session, cl.id)
+    if step_ == "propose":
+        spreads.run_spreading(session, analyst, cl.id)
+        return _mark(session, cl, "dt", "spreading started", did)
+    if step_ == "spread":
+        sp = spreads.current_spread(session, cl.id)
         b, _ = FACS[cl.facility_id]
         for code in sp.not_found_lines or []:
             if isinstance(b.fin.get(code), list):
@@ -202,11 +247,7 @@ def _loan(session: Session, cl: CycleLoan, did, day: int) -> None:
                 spreads.add_line(session, analyst, sp.id, code, "quarter", b.fin[code], "keyed from the scanned pack")
         spreads.approve_spread(session, analyst, sp.id)
         return _mark(session, cl, "dt", "spread approved", did)
-    # Q5: CMR
-    cmr = cmrs.latest_cmr(session, cl.id)
-    if cmr is None or (cmr.status == "draft" and not cmr.submitted_at):
-        if not ready("Q5"):
-            return
+    if step_ == "cmr":
         cmr = cmrs.get_or_create_cmr(session, analyst, cl.id)
         if not any(s.draft_body_markdown for s in session.query(CmrSection).filter_by(cmr_id=cmr.id)):
             cmrs.draft_sections(session, analyst, cmr.id)
@@ -222,37 +263,25 @@ def _loan(session: Session, cl: CycleLoan, did, day: int) -> None:
             cmrs.attach_evidence(session, analyst, cmr.id, d.id, "recommendation")
         cmrs.submit(session, analyst, cmr.id, acknowledge_warnings=True)
         return _mark(session, cl, "dt", "CMR drafted and submitted", did)
-    # sent back: the analyst needs a few days before resubmitting
-    if cmr.status == "draft" and cmr.submitted_at:
-        sb = _sent_back(session, cl)
-        if sb and day >= sb[0] + sb[1]:
-            _revise(session, cl, cmr, analyst)
-            _mark(session, cl, "dt", "CMR revised and resubmitted", did)
-        return
-    # Q6 to Q9: one review or the filing
-    stage = cmr.current_stage
-    if stage and not ready({"ac_manager": "Q6", "pm_team": "Q7", "file": "Q8", "sct": "Q9"}.get(stage, "Q9")):
-        return
+    if step_ == "fix":
+        _revise(session, cl, cmr, analyst)
+        return _mark(session, cl, "dt", "CMR revised and resubmitted", did)
     rv = cmrs.open_review(session, cmr)
-    if stage in ("ac_manager", "pm_team") and rv:
-        reviewer = actor(session, cl.ac_manager_email) if stage == "ac_manager" else pm_a
+    if step_ in ("ac_manager", "pm_team") and rv:
+        reviewer = actor(session, cl.ac_manager_email) if step_ == "ac_manager" else pm_a
         if _script_send_back(session, cl, rv, reviewer, did):
             return
-        if stage == "pm_team" and any(c.get("result") == "fail" for c in rv.checklist_results_json or []):
+        if step_ == "pm_team" and any(c.get("result") == "fail" for c in rv.checklist_results_json or []):
             cmrs.add_comment(session, pm_a, rv.id, "summary", "Checked; acceptable for this quarter.")
         cmrs.decide_review(session, reviewer, rv.id, "passed")
-        return _mark(session, cl, "dt", f"{'A/C Manager' if stage == 'ac_manager' else 'PM Team'} review passed", did)
-    if stage == "file":
+        return _mark(session, cl, "dt", f"{'A/C Manager' if step_ == 'ac_manager' else 'PM Team'} review passed", did)
+    if step_ == "file":
         cmrs.file_cmr(session, pm_a, cmr.id)
         return _mark(session, cl, "dt", "CMR filed", did)
-    if stage == "sct" and rv:
+    if step_ == "sct" and rv:
         cmrs.decide_review(session, actor(session, "sct.reviewer@ab-poc.local"), rv.id, "passed")
         return _mark(session, cl, "dt", "SCT review passed", did)
-    # Q14: Gate 1 by the loan's Deal Team lead, once Lincoln's draft is in Everest and the CMR is filed
-    decided = session.query(ValuationDecision).filter(ValuationDecision.cycle_loan_id == cl.id,
-                                                      ValuationDecision.outcome != "sent_back").first()
-    if lv and lv.loaded_to_everest and cmr.status in ("filed", "agreed") and not decided \
-            and cl.status != "waiting_on_lincoln" and (ready("Q14") or (cl.loop_counts_json or {}).get("QA")):
+    if step_ == "g1":
         _, f = FACS[cl.facility_id]
         if cl.facility_id in G1_SEND_BACK and not (cl.loop_counts_json or {}).get("QA"):
             valuation.decide_g1(session, lead, cl.id, "sent_back", reason_category="new_information",
@@ -322,4 +351,4 @@ def _committee(session: Session, cycle_id: str, except_fids: list[str], did) -> 
         did("committee decision recorded")
 
 
-__all__ = ["run", "follow", "setting", "set_setting", "waiting", "deadlines", "CmrReview"]
+__all__ = ["run", "follow", "setting", "set_setting", "deadlines", "plan", "upcoming", "CmrReview"]
