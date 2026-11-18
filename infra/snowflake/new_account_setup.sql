@@ -1,4 +1,4 @@
--- TIQ Marks: full setup for a NEW Snowflake account. Run once in Snowsight as ACCOUNTADMIN
+-- ABIQ Marks: full setup for a NEW Snowflake account. Run once in Snowsight as ACCOUNTADMIN
 -- (select All, then Run). It creates everything the app needs; the data is loaded afterwards by
 -- python -m synth.cli load --target snowflake
 -- The public key below is this project's existing key, so the private key in .secrets keeps working.
@@ -23,7 +23,7 @@ CREATE USER IF NOT EXISTS TIQ_SERVICE
   DEFAULT_ROLE = GEN_LOADER
   DEFAULT_WAREHOUSE = TIQ_XS
   DEFAULT_NAMESPACE = TIQ_POC
-  COMMENT = 'TIQ Marks app';
+  COMMENT = 'ABIQ Marks app';
 ALTER USER TIQ_SERVICE SET RSA_PUBLIC_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz8Jdpt3FgpUozIgnUcqHyfEnda6sVbwMuM5+2weBBO2x9mBg6DfwsR0b6H78tZ5rsXN7QLpQHWpVFO5yRdcnvDYdpnB329grEpbqX7PitUEDotkpk8irovrAWTJK2sPeZQ4Zi5bfgypqur3ClBK3cx9xc/ISc0mqWpVTIHg4w3R7A13XEe/aMXmr3YXjTJr12n5D+I5yY0Re1xcrhHlW0N0dspIixQWM7bq6D2GtnqGLGA38ni3mkZ9F8BrR9TYvDObxaCJq9aiqVJ8Yhhq63R4zsslL5jzj9yEV5JrMgkrE7JJyhQS2JDFKODYk6rrin609IMKiHygHW/jMXXthJQIDAQAB';
 GRANT ROLE GEN_LOADER TO USER TIQ_SERVICE;
 

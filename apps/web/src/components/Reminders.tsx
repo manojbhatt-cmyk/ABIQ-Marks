@@ -18,7 +18,7 @@ export function DueChip({ days }: { days: number }) {
   return <Chip dot>{days} days left</Chip>;
 }
 
-/** PM Team only: remind the owners of a step (or one person) with an editable note. Sent inside TIQ and audited. */
+/** PM Team only: remind the owners of a step (or one person) with an editable note. Sent inside ABIQ and audited. */
 export function RemindButton({ row, onSent }: { row: DeadlineRow; onSent?: () => void }) {
   const { user, cycle } = useApp();
   const [open, setOpen] = useState(false);
@@ -50,7 +50,7 @@ export function RemindButton({ row, onSent }: { row: DeadlineRow; onSent?: () =>
               <input type="checkbox" checked={to.includes(e)} onChange={() => setTo(to.includes(e) ? to.filter((x) => x !== e) : [...to, e])} />{e}
             </label>))}</div>
         </Field>
-        <Field label="Message" help="Optional. Sent inside TIQ as a message with a notification. The deadline is added at the end.">
+        <Field label="Message" help="Optional. Sent inside ABIQ as a message with a notification. The deadline is added at the end.">
           <textarea className="input h-28" value={note} placeholder={`A reminder to complete ${what}.`} onChange={(e) => setNote(e.target.value)} />
         </Field>
         {msg && <div role="alert" className="rounded-tile bg-danger-100 px-3 py-2 text-[13.5px] text-danger-700">{msg}</div>}
@@ -69,7 +69,7 @@ export function DeadlinesCard({ loanId, limit = 8 }: { loanId?: string; limit?: 
   const rows = (data || []).filter((r) => (loanId ? r.cycle_loan_id === loanId : true) && (pm || r.owners.includes(user.email)));
   return (
     <Card title={<span className="flex items-center gap-2"><CalendarClock size={18} className="text-slate-500" aria-hidden="true" /> Deadlines</span>}
-      subtitle={pm ? "Open steps across the cycle. TIQ reminds owners 2 days before, on the day and when overdue." : "Your open steps. TIQ reminds you 2 days before, on the day and when overdue."}>
+      subtitle={pm ? "Open steps across the cycle. ABIQ reminds owners 2 days before, on the day and when overdue." : "Your open steps. ABIQ reminds you 2 days before, on the day and when overdue."}>
       {sent && <div role="status" className="mb-3 rounded-tile border border-line-200 px-3 py-2 text-[13px] text-ink-700">{sent}</div>}
       {rows.length ? <ul className="divide-y divide-line-200">{rows.slice(0, limit).map((r) => (
         <li key={`${r.step}-${r.cycle_loan_id}`} className="flex items-center gap-3 py-2.5">

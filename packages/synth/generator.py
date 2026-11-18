@@ -109,6 +109,26 @@ def deliver_lincoln(version: int) -> str:
     return key
 
 
+def deliver_lincoln_loan(facility_id: str) -> str:
+    """Lincoln's first draft for one loan. Lincoln works loan by loan and sends drafts every few days, so in the live
+    demo each loan's draft arrives on its own day after its package was shared (decision D34)."""
+    store = get_store()
+    from domain.services.lincoln import slug
+
+    for br in borrowers():
+        for fac in br.facilities:
+            if fac.facility_id != facility_id:
+                continue
+            row = D.lincoln_row(br, fac, 1)
+            folder = f"{PERIOD}/lincoln-out/{row['valuation_date']}-{facility_id}"
+            store.put("box", f"{folder}/{slug(br.name)}-{facility_id}-v1.pdf",
+                      D.lincoln_report_pdf(br, fac, row, fac.prev_mark, _sponsor(br)))
+            key = f"{folder}/lincoln-marks-{PERIOD}-{facility_id}-v1.xlsx"
+            store.put("box", key, D.lincoln_marks_xlsx([row]))
+            return key
+    raise ValueError(facility_id)
+
+
 def write_ground_truth() -> Path:
     out = REPO_ROOT / "local-data" / "ground_truth"
     out.mkdir(parents=True, exist_ok=True)

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, fmt, useApi } from "../api";
-import { AiCard, Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, PageHeader, StatusChip, useAction, useConfirm } from "../components/ui";
+import { AiCard, Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, MoveChip, PageHeader, StatusChip, useAction, useConfirm } from "../components/ui";
 import { useApp } from "../context";
 import { DeadlinesCard } from "../components/Reminders";
 
-const ALL_COLS = ["borrower", "facility", "team", "funded", "previous", "lincoln", "range", "deal_team", "committee", "final", "prev_value", "cur_value", "delta", "prev_rating", "rating", "watchlist", "waiver", "status", "agenda"];
+const ALL_COLS = ["borrower", "facility", "team", "funded", "previous", "lincoln", "move", "range", "deal_team", "committee", "final", "prev_value", "cur_value", "delta", "prev_rating", "rating", "watchlist", "waiver", "status", "agenda"];
 
 export default function Tracker() {
   const { cycle, user } = useApp();
@@ -33,8 +33,8 @@ export default function Tracker() {
       {act.node}{confirm.node}
       {user?.role === "finance_ir" && cycle.status !== "closed" && <div className="mb-4 rounded-control border border-warn-100 bg-warn-50 px-4 py-2.5 text-[13.5px] text-warn-700">Draft marks: final only after governance sign-off.</div>}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <Kpi label="Previous portfolio value" value={fmt.m(k.previous)} sub={`story loans ${fmt.m(k.story_previous)}`} />
-        <Kpi label="Current value" value={fmt.m(k.current)} sub={`story loans ${fmt.m(k.story_current)}`} />
+        <Kpi label="Previous portfolio value" value={fmt.m(k.previous)} sub={`all ${data.rows.length} loans`} />
+        <Kpi label="Current value" value={fmt.m(k.current)} sub={`${data.rows.filter((r: any) => r.move?.level).length} flagged for a big mark move`} />
         <Kpi label="Delta" value={<Delta v={k.delta} />} tone={k.delta < 0 ? "red" : "green"} />
         <Kpi label="Loans with draft marks" value={k.draft_marks} />
         <Kpi label="Loans on agenda" value={k.on_agenda} />
@@ -56,6 +56,7 @@ export default function Tracker() {
                   {show("borrower") && <td className="td font-medium">{r.borrower}</td>}{show("facility") && <td className="td">{r.facility_id}</td>}{show("team") && <td className="td">{r.deal_team}</td>}
                   {show("funded") && <td className="tdn">{fmt.num(r.funded_amount)}</td>}{show("previous") && <td className="tdn">{fmt.mark(r.previous_mark)}</td>}
                   {show("lincoln") && <td className="tdn">{fmt.mark(r.lincoln_draft_mark)}{r.lincoln_version > 1 && <span className="ml-1 text-[11px] text-brand-700">v{r.lincoln_version}</span>}</td>}
+                  {show("move") && <td className="td"><MoveChip move={r.move} /></td>}
                   {show("range") && <td className="tdn text-xs">{r.lincoln_range_low ? `${fmt.mark(r.lincoln_range_low)} to ${fmt.mark(r.lincoln_range_high)}` : "-"}</td>}
                   {show("deal_team") && <td className="tdn">{fmt.mark(r.deal_team_mark)}</td>}{show("committee") && <td className="tdn">{fmt.mark(r.committee_mark)}</td>}{show("final") && <td className="tdn font-semibold">{fmt.mark(r.final_mark)}</td>}
                   {show("prev_value") && <td className="tdn">{fmt.num(r.previous_value, 3)}</td>}{show("cur_value") && <td className="tdn">{fmt.num(r.current_value, 3)}</td>}

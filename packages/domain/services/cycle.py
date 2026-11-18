@@ -143,7 +143,7 @@ def kickoff_preview(session: Session, cycle_id: str) -> list[dict]:
     teams: dict[str, list[CycleLoan]] = {}
     for cl in loans:
         teams.setdefault(cl.deal_team_id, []).append(cl)
-    date_lines = "\n".join(f"- {d.label}: Day {d.due_day}, {d.due_date:%a %d %b %Y}{' (assumed)' if d.assumed else ''}"
+    date_lines = "\n".join(f"- {d.label}: Day {d.due_day}, {d.due_date:%a %d %b %Y}"
                            for d in sorted(dl.values(), key=lambda x: (x.due_day, step_index(x.step_code)))
                            if d.step_code in ("Q2", "Q5", "Q9", "Q10", "Q14", "Q18", "Q21"))
     out = []
@@ -331,12 +331,23 @@ def dashboard(session: Session, cycle_id: str) -> dict:
                     "steps": c.step_codes, "assumed": c.assumed} for c in cal],
         "deadlines": [{"step": d.step_code, "label": d.label, "day": d.due_day, "date": d.due_date.isoformat(),
                        "assumed": d.assumed} for d in sorted(dl.values(), key=lambda x: x.due_day)],
-        "loans": [loan_card(cl, tracker.get(cl.id)) for cl in sorted(loans, key=lambda c: c.facility_id)],
+        "loans": [{**loan_card(cl, tracker.get(cl.id)), **_values(session, tracker.get(cl.id))}
+                  for cl in sorted(loans, key=lambda c: c.facility_id)],
         "attention": [{"kind": "overdue", "title": t.title, "day": t.due_day, "cycle_loan_id": t.cycle_loan_id}
                       for t in overdue][:20],
         "loops": loops,
         "calendar_rule": rule_meta(session, "cycle.length_days"),
     }
+
+
+def _values(session: Session, tr: MarksTrackerRow | None) -> dict:
+    """A loan's value this quarter against last, and how far its mark moved (Mark Move Monitor levels)."""
+    from domain.services import mark_moves
+
+    if tr is None:
+        return {"previous_value": None, "current_value": None, "move": None}
+    return {"previous_value": tr.previous_value, "move": mark_moves.current(session, tr),
+            "current_value": tr.current_value if tr.current_value is not None else tr.previous_value}
 
 
 def loan_card(cl: CycleLoan, tr: MarksTrackerRow | None = None) -> dict:

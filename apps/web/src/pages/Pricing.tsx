@@ -51,6 +51,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
   return (
     <>
       {act.node}{confirm.node}
+      {data.loan.move?.level && <Banner tone={data.loan.move.level === "alert" ? "red" : "amber"}>Mark Move Monitor: the mark is {data.loan.move.mark.toFixed(2)} against {data.loan.move.previous.toFixed(2)} last quarter ({(data.loan.move.move * 100).toFixed(1)} percent). {data.loan.move.level === "alert" ? `That is ${(data.loan.move.alert * 100).toFixed(0)} percent or more, so the loan is likely to go to the Valuation Committee.` : `That is above the ${(data.loan.move.warn * 100).toFixed(0)} percent warning level.`} Check the drivers before deciding.</Banner>}
       {data.committee_note && <Banner tone="red">The committee sent this loan back (loop QF): {data.committee_note.rationale}</Banner>}
       {waiting && <Banner tone="amber">Waiting on Lincoln, loop QA x{qa}. The send-back note is in Box; the revised valuation appears here when received.</Banner>}
       <div className="mb-4 flex items-center gap-3">
@@ -89,7 +90,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
           <div className="space-y-4 xl:col-span-4">
             {data.reunderwriting && (
               <Card title="Reunderwriting guidance (1 Sep 2026)">
-                <div className="text-sm">{data.reunderwriting.security}, EBITDA band {data.reunderwriting.band} (${data.reunderwriting.band_range[0]}M to ${data.reunderwriting.band_range[1]}M, assumed)</div>
+                <div className="text-sm">{data.reunderwriting.security}, EBITDA band {data.reunderwriting.band} (${data.reunderwriting.band_range[0]}M to ${data.reunderwriting.band_range[1]}M)</div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-control bg-sunken p-3"><div className="label">Market spread</div><div className="num font-bold">S+{data.reunderwriting.spread_bps}</div><div className="text-[11px] text-slate-500">May S+{data.reunderwriting.may_spread_bps}</div></div>
                   <div className="rounded-control bg-sunken p-3"><div className="label">Max leverage</div><div className="num font-bold">{fmt.x(data.reunderwriting.max_leverage)}</div><div className="text-[11px] text-slate-500">May {fmt.x(data.reunderwriting.may_max_leverage)}</div></div>
@@ -115,7 +116,7 @@ export default function Pricing({ loanId, onChange }: { loanId: string; onChange
                   {outcome === "sent_back" && <>
                     <Field label="Reason category"><select className="input" value={reason} onChange={(e) => setReason(e.target.value)}>{["new_information", "factual_error", "methodology_question", "other"].map((x) => <option key={x} value={x}>{fmt.label(x)}</option>)}</select></Field>
                     <Field label="Note to Lincoln"><textarea className="input h-28" value={note} onChange={(e) => { setNote(e.target.value); }} /></Field>
-                    {ch?.draft_note && <button className="btn-ghost btn-sm" onClick={() => { setNote(ch.draft_note); setUsedDraft(true); }}>Use TIQ's draft</button>}</>}
+                    {ch?.draft_note && <button className="btn-ghost btn-sm" onClick={() => { setNote(ch.draft_note); setUsedDraft(true); }}>Use ABIQ's draft</button>}</>}
                   <button className="btn-primary w-full justify-center" disabled={!outcome} onClick={() => confirm.ask(words, async () => {
                     await api(`/loans/${loanId}/g1`, { body: { outcome, mark: mark ? Number(mark) : null, rationale, reason_category: reason, note, used_tiq_draft: usedDraft, evidence: outcome === "sent_back" ? ch?.evidence : undefined } }); refresh();
                   }, outcome === "sent_back")}>Decide</button>

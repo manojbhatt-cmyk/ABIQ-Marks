@@ -5,7 +5,7 @@ import { api, useApi } from "../api";
 import { AssumedChip, Card, Chip, Field, PageHeader, useAction, useConfirm } from "../components/ui";
 import { useApp } from "../context";
 
-const STEPS = ["Period and quarter end", "Calendar", "Loan universe", "Ownership", "Message preview", "Send in TIQ"];
+const STEPS = ["Period and quarter end", "Calendar", "Loan universe", "Ownership", "Message preview", "Send in ABIQ"];
 
 export default function Kickoff() {
   const { cycle, refreshCycles, setCycleId } = useApp();
@@ -23,7 +23,7 @@ export default function Kickoff() {
   const inScope = (loans.data || []).filter((l) => l.in_scope);
   return (
     <>
-      <PageHeader title="Kickoff" subtitle="Create the cycle, check the calendar and send the kickoff to every deal team in TIQ. Every assumed date is marked." />
+      <PageHeader title="Kickoff" subtitle="Create the cycle, check the calendar and send the kickoff to every deal team in ABIQ." />
       {act.node}{confirm.node}
       <div className="mb-6 flex gap-2">
         {STEPS.map((s, i) => (
@@ -53,7 +53,7 @@ export default function Kickoff() {
                 <td className="td w-44"><input className="input num" type="date" defaultValue={d.date} disabled={!!sent} onBlur={(e) => {
                   const day = cycle.day0 && e.target.value ? Math.round((Date.parse(e.target.value) - Date.parse(cycle.day0)) / 86400000) : d.day;
                   if (day !== d.day) act.run(async () => { await api(`/cycles/${cycle.id}/deadlines/${d.step}`, { method: "PUT", body: { day } }); dl.reload(); });
-                }} /></td><td className="td text-xs text-slate-500">{d.source}</td><td className="td">{d.assumed ? <AssumedChip dq="DQ1" what="interpolated deadline" /> : <Chip tone="green">source note</Chip>}</td></tr>))}</tbody></table>
+                }} /></td><td className="td text-xs text-slate-500">{d.source}</td><td className="td">{d.assumed ? <Chip tone="neutral">calendar</Chip> : <Chip tone="green">source note</Chip>}</td></tr>))}</tbody></table>
         </Card>
       )}
       {step === 2 && cycle && (
@@ -72,20 +72,20 @@ export default function Kickoff() {
         </Card>
       )}
       {step === 4 && cycle && (
-        <Card title="5. Kickoff message per deal team (sent inside TIQ, no email)" actions={<button className="btn-primary" onClick={() => setStep(5)}>Next</button>}>
+        <Card title="5. Kickoff message per deal team (sent inside ABIQ, no email)" actions={<button className="btn-primary" onClick={() => setStep(5)}>Next</button>}>
           <div className="space-y-4">{(preview.data || []).map((p) => (
             <div key={p.deal_team_id} className="rounded-lg border border-canvas-200 p-3">
-              <div className="mb-1 text-xs text-slate-500">To {p.team_name} in TIQ: {p.to.join(", ")}. Each person also gets their loans and deadlines in My Work.</div>
+              <div className="mb-1 text-xs text-slate-500">To {p.team_name} in ABIQ: {p.to.join(", ")}. Each person also gets their loans and deadlines in My Work.</div>
               <input className="input mb-2 font-medium" defaultValue={p.subject} onChange={(e) => setEdits({ ...edits, [p.deal_team_id]: { subject: e.target.value, body: edits[p.deal_team_id]?.body ?? p.body } })} />
               <textarea className="input h-48 font-mono text-xs" defaultValue={p.body} onChange={(e) => setEdits({ ...edits, [p.deal_team_id]: { subject: edits[p.deal_team_id]?.subject ?? p.subject, body: e.target.value } })} />
             </div>))}</div>
         </Card>
       )}
       {step === 5 && cycle && (
-        <Card title="6. Send in TIQ">
-          <div className="text-sm">{(preview.data || []).length} in-platform messages, one per deal team. Sending starts the cycle, creates the per-loan tasks and deadlines, and puts the next actions in each team's My Work. Deal teams ask their borrowers for the package; borrowers reply by email (third party), which TIQ picks up.</div>
-          <button className="btn-primary mt-4" disabled={!!sent} onClick={() => confirm.ask(<>You are sending the {cycle.period} kickoff inside TIQ to {(preview.data || []).length} deal teams: {(preview.data || []).map((p) => p.team_name).join(", ")}.</>,
-            async () => { await api(`/cycles/${cycle.id}/kickoff`, { body: { edits } }); await refreshCycles(); nav("/work"); })}>{sent ? "Kickoff sent" : "Send kickoff in TIQ"}</button>
+        <Card title="6. Send in ABIQ">
+          <div className="text-sm">{(preview.data || []).length} in-platform messages, one per deal team. Sending starts the cycle, creates the per-loan tasks and deadlines, and puts the next actions in each team's My Work. Deal teams ask their borrowers for the package; borrowers reply by email (third party), which ABIQ picks up.</div>
+          <button className="btn-primary mt-4" disabled={!!sent} onClick={() => confirm.ask(<>You are sending the {cycle.period} kickoff inside ABIQ to {(preview.data || []).length} deal teams: {(preview.data || []).map((p) => p.team_name).join(", ")}.</>,
+            async () => { await api(`/cycles/${cycle.id}/kickoff`, { body: { edits } }); await refreshCycles(); nav("/work"); })}>{sent ? "Kickoff sent" : "Send kickoff in ABIQ"}</button>
         </Card>
       )}
     </>

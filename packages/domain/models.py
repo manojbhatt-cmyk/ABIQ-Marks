@@ -602,7 +602,7 @@ class CommitteePack(Entity):
 
 
 class CommitteeMeeting(Entity):
-    """The committee meeting the PM Team organises in TIQ (Q17 to Q18). Each update is a new version."""
+    """The committee meeting the PM Team organises in ABIQ (Q17 to Q18). Each update is a new version."""
     __tablename__ = "committee_meeting"
     cycle_id = fk("valuation_cycle", False)
     agenda_id = fk("committee_agenda", False)

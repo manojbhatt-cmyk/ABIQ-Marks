@@ -1,8 +1,8 @@
-"""Valuation Committee meeting (Q17 to Q18): the PM Team organises it in TIQ.
+"""Valuation Committee meeting (Q17 to Q18): the PM Team organises it in ABIQ.
 
-TIQ drafts the meeting from the agenda (date from the calendar, a slot per agenda loan, the
+ABIQ drafts the meeting from the agenda (date from the calendar, a slot per agenda loan, the
 attendees who must be there) and the organiser can change any of it before sending. Sending posts
-the invitation inside TIQ to every attendee, with a calendar file (.ics) they can add to Outlook.
+the invitation inside ABIQ to every attendee, with a calendar file (.ics) they can add to Outlook.
 The meeting itself happens on the call; decisions are recorded on the Committee Meeting screen.
 The online link is a placeholder until a Microsoft Teams connector is configured.
 """
@@ -35,7 +35,7 @@ def current(session: Session, cycle_id: str) -> CommitteeMeeting | None:
 
 
 def draft(session: Session, cycle_id: str) -> dict:
-    """What TIQ proposes: the organiser reviews and edits it before sending."""
+    """What ABIQ proposes: the organiser reviews and edits it before sending."""
     ag = _agenda(session, cycle_id)
     cyc = session.get(ValuationCycle, cycle_id)
     items = session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, removed=False).order_by(
@@ -58,13 +58,13 @@ def draft(session: Session, cycle_id: str) -> dict:
     attendees = ([{"email": e, "role": "required", "why": "Valuation Committee"} for e in committee]
                  + [{"email": e, "role": "required", "why": "Presenting deal team"} for e in dict.fromkeys(presenters)]
                  + [{"email": e, "role": "organiser", "why": "PM Team"} for e in pm])
-    pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc()).first()
+    pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc(), CommitteePack.built_at.desc()).first()
     return {"title": f"{cyc.period} Valuation Committee", "date": ag.meeting_date.isoformat(), "start": DEFAULT_TIME,
             "timezone": TIMEZONE, "duration_minutes": total, "mode": "online",
             "join_link": f"https://teams.microsoft.com/l/meetup-join/tiq-{cyc.period.lower()}-vc (placeholder)",
             "location": "", "attendees": attendees, "slots": slots,
             "pack": {"version": pack.version, "path": pack.pdf_path, "sent": bool(pack.sent_email_message_id)} if pack else None,
-            "note": "Please review the committee pack before the call. Decisions are recorded in TIQ during the meeting."}
+            "note": "Please review the committee pack before the call. Decisions are recorded in ABIQ during the meeting."}
 
 
 def _ics(m: dict, uid: str, organiser: str, sequence: int) -> bytes:
@@ -73,7 +73,7 @@ def _ics(m: dict, uid: str, organiser: str, sequence: int) -> bytes:
     fmt = "%Y%m%dT%H%M%S"
     where = m["join_link"] if m["mode"] == "online" else (m.get("location") or "")
     agenda = "\\n".join(f"{s['time']} {s['title']} ({s['minutes']} min)" for s in m["slots"])
-    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//TransOrg//TIQ Marks//EN", "METHOD:REQUEST", "BEGIN:VEVENT",
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//TransOrg//ABIQ Marks//EN", "METHOD:REQUEST", "BEGIN:VEVENT",
              f"UID:{uid}", f"SEQUENCE:{sequence}", f"DTSTAMP:{datetime.now(timezone.utc).strftime(fmt)}Z",
              f"DTSTART;TZID={m['timezone']}:{start.strftime(fmt)}", f"DTEND;TZID={m['timezone']}:{end.strftime(fmt)}",
              f"SUMMARY:{m['title']}", f"LOCATION:{where}", f"DESCRIPTION:{m.get('note', '')}\\n\\nAgenda:\\n{agenda}",
@@ -85,7 +85,7 @@ def _ics(m: dict, uid: str, organiser: str, sequence: int) -> bytes:
 
 
 def organise(session: Session, actor: Actor, cycle_id: str, data: dict | None = None) -> CommitteeMeeting:
-    """Send (or update) the meeting invitation inside TIQ, with a calendar file attached."""
+    """Send (or update) the meeting invitation inside ABIQ, with a calendar file attached."""
     require(actor, "agenda.manage")
     ag = _agenda(session, cycle_id)
     cyc = session.get(ValuationCycle, cycle_id)
@@ -119,12 +119,12 @@ def organise(session: Session, actor: Actor, cycle_id: str, data: dict | None = 
                        for s in m["slots"])
     body = (f"{'Updated invitation' if prev else 'Invitation'}: {m['title']}\n\nWhen: {when}, {m['start']} "
             f"({m['timezone'].split('/')[-1].replace('_', ' ')} time), {m['duration_minutes']} minutes\nWhere: {where}\n\n"
-            f"Agenda:\n{agenda}\n\n{m.get('note') or ''}\n\nOpen the Committee Meeting screen in TIQ to follow the agenda and "
+            f"Agenda:\n{agenda}\n\n{m.get('note') or ''}\n\nOpen the Committee Meeting screen in ABIQ to follow the agenda and "
             f"record decisions. The calendar file is attached.")
     from domain.services.messaging import post
 
     attachments = [{"store": "sharepoint", "path": path, "name": "committee-meeting.ics"}]
-    pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc()).first()
+    pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc(), CommitteePack.built_at.desc()).first()
     if pack and pack.pdf_path:
         attachments.append({"store": "sharepoint", "path": pack.pdf_path, "name": f"committee-pack-v{pack.version}.pdf"})
     msg = post(session, actor, [a["email"] for a in m["attendees"] if a["email"] != actor.email],

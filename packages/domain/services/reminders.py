@@ -1,4 +1,4 @@
-"""Deadline reminders inside TIQ (decision D26).
+"""Deadline reminders inside ABIQ (decision D26).
 
 Automatic: when the demo clock moves, every open step whose deadline is within `reminder.lead_days`
 sends its owner one notification per threshold (days left, due today, overdue), so nobody is spammed.

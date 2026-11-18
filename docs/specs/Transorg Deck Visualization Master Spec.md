@@ -1,6 +1,6 @@
-# TIQ Marks POC: Master Specification
+# ABIQ Marks POC: Master Specification
 
-**Product:** TransorgIQ Private Credit, Marks Module (working name "TIQ Marks")
+**Product:** TransorgIQ Private Credit, Marks Module (working name "ABIQ Marks")
 **Client context:** AllianceBernstein Private Credit, monthly and quarterly marks (valuation approval) process
 **Document set version:** 1.0, 8 October 2026
 **Audience:** the TransOrg build team. This is the entry document; read it first, then the numbered documents it points to.
@@ -18,7 +18,7 @@
 | Agentic AI Spec - Transorg Deck.md | [Agentic AI Spec](Agentic%20AI%20Spec%20-%20Transorg%20Deck.md) | As-is process without agents, agency map, architecture decision, HLD and LLD per agent, LangGraph layout, HITL, evaluation | Building any agent or LLM feature |
 | Transorg UI UX Spec.md | [UI/UX Screens Spec](Transorg%20UI%20UX%20Spec.md) | Shell, navigation, every screen per role, utilities on each screen, components and states | Building the front end |
 | Build Plan Transorg Deck.md | [Build Plan](Build%20Plan%20Transorg%20Deck.md) | Phases, milestones, environments, testing, demo script, definition of done | Planning sprints |
-| XLSX | `TIQ Marks POC Feature Roadmap.xlsx` | Every feature in build order, with section, sub-section, status chip, dependencies and the spec reference | Tracking progress |
+| XLSX | `ABIQ Marks POC Feature Roadmap.xlsx` | Every feature in build order, with section, sub-section, status chip, dependencies and the spec reference | Tracking progress |
 
 Conventions used across all documents:
 
@@ -52,7 +52,7 @@ The demo follows the three loans from the source notes (Maple Dental, Harbor Log
 2. Harbor's CMR drafted with AI assistance, reviewed by the A/C Manager, PM Team and SCT, with the review comments from the source notes resolved (equity letter attached, truck appraisal date added, customer concentration sentence added).
 3. Lincoln's draft marks ingested from a report and a spreadsheet (Maple 99.25, Harbor 86.5, Sunrise 89.0) and the early impact summary (**-$3.95M**) produced for the finance leads.
 4. Harbor sent back at Gate 1 with an evidence-backed challenge (the $5M sponsor equity), Lincoln's revised 88.0 ingested, and the revised impact (**-$3.05M**) produced.
-5. The agenda tests run by the rules engine (the client's four plus TIQ's `g1_unresolved`): Maple off the agenda, Harbor and Sunrise on it.
+5. The agenda tests run by the rules engine (the client's four plus ABIQ's `g1_unresolved`): Maple off the agenda, Harbor and Sunrise on it.
 6. Committee decisions captured: Harbor 88.0, Sunrise reduced from 89.0 to **88.5** with the rationale.
 7. Reconciliation catching the Sunrise mismatch (Everest 89.0 vs committee 88.5) and the correction recorded.
 8. Written approval (Gate 2) and governance sign-off (Gate 3) recorded with evidence, final CMRs distributed to Finance, Investor Relations and the Deal Teams.
@@ -81,7 +81,7 @@ The demo follows the three loans from the source notes (Maple Dental, Harbor Log
 - All three approval gates and all eight rework loops.
 - A loan universe read from DealCloud and Everest data in Snowflake, Sentry funded amounts in Snowflake (assumed, see open items), and documents from simulated Box, SharePoint, OneDrive and Outlook.
 - Synthetic data generator for every source, including borrower financial packages in varied formats, Lincoln reports, and emails.
-- Agentic AI assistance where it earns its place: spreading, CMR drafting, review pre-checks, Lincoln output extraction, the Gate 1 challenge, impact and pack narratives, reconciliation explanations, chasing, and an Ask TIQ assistant over the cycle.
+- Agentic AI assistance where it earns its place: spreading, CMR drafting, review pre-checks, Lincoln output extraction, the Gate 1 challenge, impact and pack narratives, reconciliation explanations, chasing, and an Ask ABIQ assistant over the cycle.
 - Role-based web UI for the PM Team, Deal Teams, reviewers (A/C Manager, SCT), the Valuation Committee, the Governance Panel, Finance and IR recipients, and an admin.
 - Rules engine with every threshold configurable and flagged as confirmed or assumed.
 - Full audit trail and mark lineage.
@@ -114,12 +114,12 @@ The discovery questionnaire has 20 open questions. Until AllianceBernstein answe
 ## 4. Design principles
 
 1. **Agents prepare, people decide.** No agent sets a mark, a rating, a watchlist flag, an approval or a send-back. Agents produce suggestions with evidence and confidence; a named person accepts, edits or rejects, and the audit log records which.
-2. **Process first.** The system mirrors the client's 22 and 6 steps exactly. We change how a step is done (faster, with help, in one place), not what the step is or who owns it. The TIQ step numbering equals the client's step numbering.
-3. **Systems of record stay where they are.** DealCloud, Everest and Sentry remain the record for their data. TIQ holds workflow state, the marks tracker, approvals, decisions and the audit trail. Writes to a client system go through a write-back adapter that, in the POC, writes to the synthetic schema, and in production would either call the client API or queue a change for a person to apply (Ingestion Integration Spec - Transorg.md section 6).
+2. **Process first.** The system mirrors the client's 22 and 6 steps exactly. We change how a step is done (faster, with help, in one place), not what the step is or who owns it. The ABIQ step numbering equals the client's step numbering.
+3. **Systems of record stay where they are.** DealCloud, Everest and Sentry remain the record for their data. ABIQ holds workflow state, the marks tracker, approvals, decisions and the audit trail. Writes to a client system go through a write-back adapter that, in the POC, writes to the synthetic schema, and in production would either call the client API or queue a change for a person to apply (Ingestion Integration Spec - Transorg.md section 6).
 4. **Confirmed vs assumed.** Every business rule lives in configuration with a `confirmed_by_client` flag. Assumed rules show an "assumed" chip in the UI. Nothing from the discovery questionnaire is hard-coded.
 5. **Evidence over narrative.** Every AI suggestion links to the document page, table cell or prior record it came from. A suggestion with no evidence is shown as such.
 6. **Traceability.** A final mark can be traced back through every version and decision in one screen (S21).
-7. **Least agency that works.** Deterministic steps stay code. One LLM call is preferred to a chain; a chain to an agent. Agents are used only where the number and order of steps depend on what is found (spreading, challenge analysis, Ask TIQ). See Agentic AI Spec - Transorg Deck.md section 3.
+7. **Least agency that works.** Deterministic steps stay code. One LLM call is preferred to a chain; a chain to an agent. Agents are used only where the number and order of steps depend on what is found (spreading, challenge analysis, Ask ABIQ). See Agentic AI Spec - Transorg Deck.md section 3.
 8. **Synthetic only.** No client data enters the POC. The generator produces everything, including the worked example.
 
 ## 5. System overview
@@ -143,7 +143,7 @@ flowchart TB
     WB[Write-back adapter<br/>synthetic write or change queue]
   end
 
-  subgraph CORE[TIQ Marks core]
+  subgraph CORE[ABIQ Marks core]
     DB[(Postgres<br/>workflow, tracker, approvals, audit)]
     VEC[(pgvector<br/>document and CMR index)]
     RULES[Rules engine<br/>agenda tests, chase, reconciliation, checklist]
@@ -160,7 +160,7 @@ flowchart TB
     A6[Impact and Pack Narrator]
     A7[Reconciliation Explainer]
     A8[Chaser]
-    A9[Ask TIQ]
+    A9[Ask ABIQ]
     A10[Monthly Mark Assistant]
     A11[Covenant Certificate Checker]
     CK[(Checkpointer and store)]
@@ -217,22 +217,22 @@ docker compose up
 
 ## 6. Process at a glance
 
-The quarterly cycle, with where TIQ helps. Full detail per step is in document 01.
+The quarterly cycle, with where ABIQ helps. Full detail per step is in document 01.
 
-| Phase | Days (sample calendar) | Steps | Owner | TIQ does | AI assists |
+| Phase | Days (sample calendar) | Steps | Owner | ABIQ does | AI assists |
 | --- | --- | --- | --- | --- | --- |
 | 1 Kickoff and intake | 1 to 9 | Q1 to Q3 | PM Team, Borrower | Builds the cycle from the DealCloud loan list, generates and sends the kickoff email, receives and classifies borrower documents, tracks completeness, shares the package with Lincoln through Box | Document classification, completeness checks, chase drafting |
 | 2 Modelling and CMR | 10 to 26 | Q4 to Q9 | Deal Team, A/C Manager, PM Team, SCT | Spreads financials into the standard model, computes metrics and covenant tests, hosts the CMR editor, routes reviews in order, files the CMR PDF to SharePoint | **Spreading Agent**, CMR Drafting Assistant, Review Checker |
-| 3 Lincoln draft marks | 18 to 30 (assumed: Lincoln's own work is Days 18 to 20 in the notes and runs alongside Phase 2; the sample calendar starts Phase 3 on Day 26 and TIQ interpolates Q10 to Q13 processing onto Days 26 to 30) | Q10 to Q13 | Lincoln, PM Team | Receives Lincoln's report and marks from Box, extracts them into the tracker, computes value impact, drafts the early impact note, copies the report to SharePoint | Lincoln Output Extractor, Impact Narrator |
+| 3 Lincoln draft marks | 18 to 30 (assumed: Lincoln's own work is Days 18 to 20 in the notes and runs alongside Phase 2; the sample calendar starts Phase 3 on Day 26 and ABIQ interpolates Q10 to Q13 processing onto Days 26 to 30) | Q10 to Q13 | Lincoln, PM Team | Receives Lincoln's report and marks from Box, extracts them into the tracker, computes value impact, drafts the early impact note, copies the report to SharePoint | Lincoln Output Extractor, Impact Narrator |
 | 4 Deal Team approval | 27 to 31 | Q14 to Q15 | Deal Team, Lincoln | Pricing panel with approve or send back (G1), challenge note with evidence, revised valuation ingestion, mark attached to the CMR | **Challenge Assistant**, valuation cross-check |
-| 5 Valuation Committee | 36 to 43 | Q16 to Q18 | PM Team, Valuation Committee | Runs the agenda tests, builds and sends the committee pack, captures decisions and rationale (G2 decision) | Pack Narrator, Ask TIQ during the meeting |
+| 5 Valuation Committee | 36 to 43 | Q16 to Q18 | PM Team, Valuation Committee | Runs the agenda tests, builds and sends the committee pack, captures decisions and rationale (G2 decision) | Pack Narrator, Ask ABIQ during the meeting |
 | 6 Finalise and distribute | 44 to 45 | Q19 to Q22 | PM Team, Committee, Governance Panel | Reconciles tracker, Everest, CMR and Sentry; requests and records written approval (G2); records governance sign-off (G3); distributes final CMRs | Reconciliation Explainer |
 
 The monthly cycle (M1 to M6) runs the same way at a smaller scale: build the update file from the pacing file, Sigma and watchlist calls, email the deal teams, collect proposed marks with commentary, rebalance DDTL positions, aggregate, and send to the Valuation Committee for approval.
 
 ## 7. Roles and permissions
 
-| Role | Who at the client | What they do in TIQ | Cannot |
+| Role | Who at the client | What they do in ABIQ | Cannot |
 | --- | --- | --- | --- |
 | **PM Team** | Portfolio management analysts, the process owners | Run the cycle: kickoff, intake, Lincoln exchange, tracker, agenda, pack, reconciliation, approval requests, distribution | Approve a mark at G1, decide at G2, sign at G3 |
 | **Deal Team Analyst** | Analyst on a deal team (for example Team Blue for Harbor) | Spread, write the CMR, respond to review comments, challenge or approve Lincoln's mark (G1) | Edit another team's loans; change a committee decision |
@@ -280,16 +280,16 @@ The generator adds 21 more in-scope facilities (24 in all, from 22 borrowers) so
 | Risk rating | Internal 1 to 5 scale; 5 is the riskiest in the source notes |
 | Required yield | The return a buyer would demand for this loan today; higher yield means lower price |
 | Point estimate and range | Lincoln's best single price and the band it considers reasonable |
-| Marks tracker | The scoreboard of old mark, draft mark, approved mark, value impact per loan (an Excel file today, a TIQ screen in the POC) |
+| Marks tracker | The scoreboard of old mark, draft mark, approved mark, value impact per loan (an Excel file today, a ABIQ screen in the POC) |
 | Unrealised loss or gain | Change in value of loans still held |
 | Pricing panel | The Everest screen where the Deal Team approves or sends back a Lincoln mark |
-| Agenda tests | The four client rules (watchlist, downgrade, 10 percent move, outside Lincoln range) plus one TIQ rule (unresolved G1 loop) that decide which loans the Valuation Committee discusses |
+| Agenda tests | The four client rules (watchlist, downgrade, 10 percent move, outside Lincoln range) plus one ABIQ rule (unresolved G1 loop) that decide which loans the Valuation Committee discusses |
 | Committee pack | The documents sent to the committee: CMRs, Lincoln reports, proposed marks, tracker |
 | Reconciliation | Checking that the tracker, Everest, CMR and Sentry hold the same final numbers |
 | Governance sign-off | The formal record in Everest of what was approved, by whom and when |
 | DDTL | Delayed-draw term loan; funded and unfunded amounts must be rebalanced monthly |
 | Pacing file, Sigma dashboard | Inputs to the monthly update file: a finance pacing file and the Sigma BI dashboard on Snowflake |
-| Agent | A model that calls tools in a loop until a task is complete; in TIQ an agent only ever proposes |
+| Agent | A model that calls tools in a loop until a task is complete; in ABIQ an agent only ever proposes |
 | Gate | A point where a named person must act before the cycle continues |
 
 ## 10. Open items (to resolve with the client or by decision)
@@ -297,7 +297,7 @@ The generator adds 21 more in-scope facilities (24 in all, from 22 borrowers) so
 | # | Item | Impact if unresolved | POC handling |
 | --- | --- | --- | --- |
 | 1 | Where Sentry funded amounts live (Snowflake assumed) | Reconciliation source | Sentry schema in synthetic Snowflake |
-| 2 | Everest API or export format for write-back of marks, ratings and governance sign-off | Whether TIQ can write or must queue | Write-back adapter in queue mode by default (Ingestion Integration Spec - Transorg.md section 6) |
+| 2 | Everest API or export format for write-back of marks, ratings and governance sign-off | Whether ABIQ can write or must queue | Write-back adapter in queue mode by default (Ingestion Integration Spec - Transorg.md section 6) |
 | 3 | Lincoln's exact output schema | Extractor accuracy | Extractor is schema-tolerant; fields in Transorg Data Spec.md section 3.3 are assumed |
 | 4 | Pacing file format for the monthly cycle | Monthly update file builder | Assumed Excel layout in Transorg Data Spec.md section 3.6 |
 | 5 | Add-back policy (which adjustments are allowed) | Spreading Agent flags | Configurable allow-list, every add-back flagged for review |

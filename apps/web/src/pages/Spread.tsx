@@ -130,7 +130,7 @@ export default function Spread({ loanId, onChange }: { loanId: string; onChange:
             <div><div className="label">Source</div><div className="text-sm">{evidence.evidence.file}, page {evidence.evidence.page}{evidence.evidence.row ? `, row "${evidence.evidence.row}"` : ""}</div>
               <div className="mt-2 rounded bg-warn-100 p-3 font-mono text-xs">{evidence.evidence.text}</div>
               <button className="btn-secondary mt-3" onClick={() => api(`/documents/${evidence.evidence.doc_id}`).then((d) => openFile(d.url))}>Open the document</button></div>
-            <div><div className="label">TIQ field</div><div className="text-sm">{evidence.line_code || "add-back"} {evidence.period_type || ""}: <b className="num">{evidence.value ?? ""}</b></div><div className="mt-2 text-xs text-slate-500">{evidence.source_label}</div></div>
+            <div><div className="label">ABIQ field</div><div className="text-sm">{evidence.line_code || "add-back"} {evidence.period_type || ""}: <b className="num">{evidence.value ?? ""}</b></div><div className="mt-2 text-xs text-slate-500">{evidence.source_label}</div></div>
           </div>
         </Modal>
       )}

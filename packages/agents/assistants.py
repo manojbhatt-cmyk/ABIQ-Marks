@@ -26,17 +26,17 @@ def a11_check_certificate(cert_text: str, tiq_leverage: float | None, tolerance:
     reported = float(m.group(1))
     if tiq_leverage is None:
         return {"status": "cannot_check", "reported": reported, "tiq": None,
-                "finding": f"Borrower certificate reports leverage {reported:.2f}x; TIQ leverage is not available "
+                "finding": f"Borrower certificate reports leverage {reported:.2f}x; ABIQ leverage is not available "
                            f"until the spread lines are complete."}
     diff = None if tiq_leverage is None else round(reported - tiq_leverage, 2)
     ok = diff is not None and abs(diff) <= tolerance
     borrower_says = "in compliance" if reported < threshold else "not in compliance"
     tiq_says = "in compliance" if tiq_leverage is not None and tiq_leverage < threshold else "not in compliance"
-    finding = (f"Borrower certificate reports leverage {reported:.2f}x ({borrower_says}); TIQ computes "
+    finding = (f"Borrower certificate reports leverage {reported:.2f}x ({borrower_says}); ABIQ computes "
                f"{tiq_leverage:.2f}x ({tiq_says}). Difference {diff:+.2f}x "
                f"{'within' if ok else 'outside'} the {tolerance:.2f}x tolerance.")
     if not ok and borrower_says != tiq_says:
-        finding += " The certificate's compliance conclusion differs from TIQ's calculation."
+        finding += " The certificate's compliance conclusion differs from ABIQ's calculation."
     return {"status": "match" if ok else "mismatch", "reported": reported, "tiq": tiq_leverage, "difference": diff,
             "finding": finding}
 
@@ -293,7 +293,7 @@ def a7_explain(item: dict, history: list[dict]) -> str:
                     f"{last.get('actor')}; the Everest pricing panel still shows the Deal Team's G1 mark "
                     f"{item['value_b']}, written before the committee. Everest was not updated after the "
                     f"committee change. Suggested action: correct Everest.")
-        return (f"Tracker {item['value_a']} differs from Everest {item['value_b']}; no TIQ decision explains the "
+        return (f"Tracker {item['value_a']} differs from Everest {item['value_b']}; no ABIQ decision explains the "
                 f"Everest value. Suggested action: check the Everest change history.")
     return f"{item['source_a']} {item['value_a']} differs from {item['source_b']} {item['value_b']}."
 

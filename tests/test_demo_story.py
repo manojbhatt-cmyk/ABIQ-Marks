@@ -108,7 +108,7 @@ def test_internal_communication_stays_in_platform(played):
 
 
 def test_organise_committee_meeting(played):
-    """The PM Team organises the meeting in TIQ: drafted from the agenda, sent as a message with an .ics."""
+    """The PM Team organises the meeting in ABIQ: drafted from the agenda, sent as a message with an .ics."""
     from connectors.object_store import get_store
     from domain.models import Message
     from domain.services import meeting
@@ -129,6 +129,21 @@ def test_organise_committee_meeting(played):
         assert m2.version == 2 and m2.uid == m1.uid and s.get(Message, m2.message_id).subject.startswith("Updated")
         with pytest.raises(Forbidden):
             meeting.organise(s, Actor("team.blue.analyst@ab-poc.local", "deal_analyst", deal_team_id="DT-BLUE"), c.id)
+
+
+def test_agenda_cannot_be_rebuilt_after_decisions_and_strip_moves_on(played):
+    """Rebuilding the agenda after the committee decided would undo the decisions, so it is refused; and loans
+    that skipped the committee count as past the agenda, so the process strip does not stall at Q16."""
+    from domain.services import committee, work
+
+    with session_scope() as s:
+        cyc = _q(s)
+        with pytest.raises(BusinessRuleError):
+            committee.build_agenda(s, Actor("pm.analyst@ab-poc.local", "pm_team"), cyc.id)
+        s.rollback()
+    with session_scope() as s:
+        steps = {p["step"]: p["state"] for p in work.process_map(s, _q(s).id)}
+        assert all(steps[q] == "done" for q in ("Q15", "Q16", "Q17", "Q18")), steps
 
 
 def test_revise_committee_decision(played):

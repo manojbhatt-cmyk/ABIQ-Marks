@@ -44,9 +44,9 @@ def test_valuation_routes_end_to_end(at_q1):
             lincoln.share_package(s, pm(s), _loan(s, "F-0015").id)
         titles = [i["title"] for i in work.my_work(s, pm(s), c.id)["items"]]
         assert any("cost mark" in t and "Kestrel" in t for t in titles)
-        world.advance(s, pm(s), c.id, 20)
+        world.advance(s, pm(s), c.id, 24)  # Lincoln drafts loan by loan around its deadline (day 20): by day 23
         lincoln_rows = s.query(LincolnValuation).filter_by(source="lincoln").count()
-        assert lincoln_rows == 2  # Harbor and Sunrise; the other three are valued in TIQ
+        assert lincoln_rows == 2  # Harbor and Sunrise; the other three are valued in ABIQ
         cost = valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0015").id, None, "")
         assert cost.point_estimate == pytest.approx(98.0)
         sponsor = valuation.record_internal_valuation(s, pm(s), _loan(s, "F-0001").id, 97.5, "Sponsor NAV statement Q3")

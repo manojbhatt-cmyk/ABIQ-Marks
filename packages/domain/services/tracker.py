@@ -14,6 +14,7 @@ from domain.models import (AgendaTestResult, AgentSuggestion, Cmr, CmrRecommenda
                            CommitteeDecision, CycleLoan, EmailMessage, ImpactSummary, LincolnValuation,
                            MarksTrackerRow, ValuationCycle, ValuationDecision)
 from domain.services.core import SYSTEM, Actor, BusinessRuleError, audit, now, require, rule
+from domain.services import mark_moves
 
 
 def _latest(session, model, cycle_loan_id, order):
@@ -94,7 +95,7 @@ def tracker_view(session: Session, cycle_id: str) -> dict:
                  "story_previous": round(sum(r.previous_value or 0 for r in story), 4),
                  "story_current": round(sum((r.current_value if r.current_value is not None else r.previous_value or 0)
                                             for r in story), 4)},
-        "rows": [row_dict(r) for r in rows],
+        "rows": [{**row_dict(r), "move": mark_moves.current(session, r)} for r in rows],
         "impacts": [{"id": i.id, "version": i.version, "delta": i.delta, "previous": i.portfolio_previous_value,
                      "current": i.portfolio_current_value, "body": i.body_text, "sent_to": i.sent_to,
                      "sent_at": i.sent_at.isoformat() if i.sent_at else None, "drivers": i.drivers_json}

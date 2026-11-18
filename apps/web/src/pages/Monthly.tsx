@@ -67,8 +67,8 @@ function Proposals({ data, go, canPropose }: any) {
         {canPropose && (!row.proposal || row.status === "pushed_back" || row.status === "requested") && (
           <Card title="Proposal">
             <Field label="Proposed mark"><input className="input num" value={mark} onChange={(e) => setMark(e.target.value)} /></Field>
-            <button className="btn-secondary mt-2" disabled={!mark} onClick={async () => { const d = await api(`/monthly/${data.cycle.id}/draft-rationale`, { body: { facility_id: row.facility_id, proposed_mark: Number(mark) } }); setDraft(d); }}>Draft rationale with TIQ (A10)</button>
-            {!mark && <div className="mt-1 text-xs text-slate-400">TIQ drafts a rationale only after you enter a mark.</div>}
+            <button className="btn-secondary mt-2" disabled={!mark} onClick={async () => { const d = await api(`/monthly/${data.cycle.id}/draft-rationale`, { body: { facility_id: row.facility_id, proposed_mark: Number(mark) } }); setDraft(d); }}>Draft rationale with ABIQ (A10)</button>
+            {!mark && <div className="mt-1 text-xs text-slate-400">ABIQ drafts a rationale only after you enter a mark.</div>}
             {draft && <div className="mt-3"><AiCard confidence={0.8} actions={<button className="btn-secondary" onClick={() => setText(draft.rationale)}>Use draft</button>}>{draft.rationale}</AiCard></div>}
             <Field label="Commentary and rationale"><textarea className="input mt-2 h-24" value={text} onChange={(e) => setText(e.target.value)} /></Field>
             <button className="btn-primary mt-2" disabled={!mark || !text} onClick={() => go("propose", { facility_id: row.facility_id, proposed_mark: Number(mark), rationale: text, suggestion_id: draft?.suggestion_id })}>Submit</button>

@@ -1,4 +1,4 @@
-"""TIQ Marks API: REST over the domain services. Every write goes through a service that checks the role and
+"""ABIQ Marks API: REST over the domain services. Every write goes through a service that checks the role and
 writes the audit event; this layer only shapes requests and responses."""
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from domain.services import (closing, cmrs, committee, cycle as cyc_svc, intake,
                              tracker, valuation)
 from domain.services.core import Actor, BusinessRuleError, Forbidden, audit, now, require, rule_meta, set_rule
 
-app = FastAPI(title="TIQ Marks API", version="0.1.0")
+app = FastAPI(title="ABIQ Marks API", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -33,7 +33,7 @@ async def _while_resetting(request: Request, call_next):
     """While the demo data is being reset the app tables are rebuilt: answer 503 (try again) instead of failing or
     signing people out. The reset's own status and the health check stay available."""
     if SYNTH["running"] and request.url.path.startswith("/api/") and request.url.path not in ("/api/admin/synth", "/api/health"):
-        return JSONResponse({"detail": "TIQ is resetting the demo data. This takes about a minute.", "kind": "resetting"},
+        return JSONResponse({"detail": "ABIQ is resetting the demo data. This takes about a minute.", "kind": "resetting"},
                             status_code=503, headers={"Retry-After": "5"})
     return await call_next(request)
 
@@ -880,7 +880,7 @@ def ask(body: dict = Body(...), a: Actor = A, s: Session = S):
     try:
         cycle_id = quarterly_cycle(s, body.get("cycle_id")).id
     except HTTPException:
-        cycle_id = None  # no cycle yet: Ask TIQ still answers general questions
+        cycle_id = None  # no cycle yet: Ask ABIQ still answers general questions
     return lineage.ask(s, a, cycle_id, body.get("question", ""), body.get("cycle_loan_id"), body.get("history"))
 
 

@@ -4,7 +4,7 @@ The content follows the client file: Borrower Description, Deal Structure, Summa
 Ratings Information, Deal Team; Company Commentary, Key Statistics (LTM), Debt Ratios (LTM);
 Capital Structure, Asset and Mark Summary; Financial Commentary, Financials; Covenant Commentary
 and Analysis; risks, mitigants, sponsor, recommendation, mark; Holdings. Narrative sections come
-from TIQ's CMR editor; numbers from the approved spread and the Snowflake source tables (auto-fill).
+from ABIQ's CMR editor; numbers from the approved spread and the Snowflake source tables (auto-fill).
 Layout (decision D28): a header band on every page, a key-figures panel, numbered boxed sections,
 bordered tables and the recommendation as a callout, in Stone & Sage colours. Currency in USD millions.
 """

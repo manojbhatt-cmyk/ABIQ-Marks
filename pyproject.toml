@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tiq-marks"
 version = "0.1.0"
-description = "TIQ Marks POC: AllianceBernstein Private Credit marks process as one governed workflow"
+description = "ABIQ Marks POC: AllianceBernstein Private Credit marks process as one governed workflow"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",

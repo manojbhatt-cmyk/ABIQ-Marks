@@ -1,6 +1,6 @@
 # private-credit-underwriting
 
-**TIQ Marks POC**: one governed workflow for AllianceBernstein Private Credit's monthly and quarterly marks (loan valuation) process, with AI agents doing the preparation and people making every decision. Built by TransOrg on synthetic data.
+**ABIQ Marks POC**: one governed workflow for AllianceBernstein Private Credit's monthly and quarterly marks (loan valuation) process, with AI agents doing the preparation and people making every decision. Built by TransOrg on synthetic data.
 
 ## Status
 
@@ -40,8 +40,8 @@ Snowflake (live since 5 Nov, database `TIQ_POC`). The service key lives in `.sec
 ## Walk the whole process yourself
 
 1. Reset to a blank start: Admin, Synthetic data, play to `Q0`, Reset and play (or `synth.cli reset --until Q0`).
-2. Sign in as `pm.analyst@ab-poc.local`. My Work says "Start the 2026-Q3 cycle". Open Kickoff: create the cycle from Snowflake, check the calendar, preview the per-team messages and send the kickoff **inside TIQ** (no email).
-3. Use the demo clock on My Work (Next day, or jump to day 8 or 20). Borrowers email their packages to the deal teams; TIQ classifies them and drafts chases. Everything else is a person acting in TIQ.
+2. Sign in as `pm.analyst@ab-poc.local`. My Work says "Start the 2026-Q3 cycle". Open Kickoff: create the cycle from Snowflake, check the calendar, preview the per-team messages and send the kickoff **inside ABIQ** (no email).
+3. Use the demo clock on My Work (Next day, or jump to day 8 or 20). Borrowers email their packages to the deal teams; ABIQ classifies them and drafts chases. Everything else is a person acting in ABIQ.
 4. Switch users to play each role. Every person's My Work lists their next actions with a Go button: Deal Team analysts spread and draft the CMR, the A/C Manager, PM Team and SCT review, Deal Team leads decide Gate 1, the committee decides, the chair approves, governance signs, the PM Team distributes.
 5. Internal communication is in Messages (kickoff, impact notes, committee pack, approval request, distribution). External mail shows only borrower and Lincoln email.
 

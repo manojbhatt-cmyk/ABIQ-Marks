@@ -21,8 +21,8 @@ function useLoanContext() {
   return { id, borrower };
 }
 
-/** Ask TIQ: a round launcher at the bottom right of every page and a docked chat (full screen on phones).
- * It stays mounted in the shell, so the conversation survives moving between pages. TIQ cannot take actions. */
+/** Ask ABIQ: a round launcher at the bottom right of every page and a docked chat (full screen on phones).
+ * It stays mounted in the shell, so the conversation survives moving between pages. ABIQ cannot take actions. */
 export default function AskLauncher() {
   const { cycle } = useApp();
   const ctx = useLoanContext();
@@ -63,12 +63,12 @@ export default function AskLauncher() {
   return (
     <>
       {open && (
-        <section role="dialog" aria-label="Ask TIQ"
+        <section role="dialog" aria-label="Ask ABIQ"
           className="anim-modal fixed inset-0 z-[46] flex flex-col bg-surface sm:inset-auto sm:bottom-[88px] sm:right-6 sm:h-[min(600px,calc(100vh-120px))] sm:w-[400px] sm:rounded-card sm:border sm:border-line sm:shadow-float">
           <header className="flex items-center gap-2 border-b border-line px-4 py-3">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-50 text-accent-600"><Sparkles size={16} aria-hidden="true" /></span>
             <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-semibold text-ink">Ask TIQ</div>
+              <div className="text-[14px] font-semibold text-ink">Ask ABIQ</div>
               <div className="truncate text-xs text-muted">{b ? `About ${b}` : cycle ? `About the ${cycle.period} cycle` : "About this cycle"}</div>
             </div>
             {log.length > 0 && <button className="icon-btn" title="New conversation" aria-label="New conversation" onClick={() => setLog([])}><RotateCcw size={16} /></button>}
@@ -84,7 +84,7 @@ export default function AskLauncher() {
               <div key={i} className="space-y-2">
                 <div className="ml-10 rounded-[12px_12px_4px_12px] bg-brand-600 px-3 py-2 text-[13.5px] text-on-brand">{x.q}</div>
                 <div className="ai-note">
-                  <div className="mb-1 flex flex-wrap items-center gap-2"><AiChip>TIQ</AiChip>{x.a.kind === "general" && <span className="text-[11px] text-muted">General answer, not from a loan's records</span>}</div>
+                  <div className="mb-1 flex flex-wrap items-center gap-2"><AiChip>ABIQ</AiChip>{x.a.kind === "general" && <span className="text-[11px] text-muted">General answer, not from a loan's records</span>}</div>
                   <div className="text-[13.5px] leading-relaxed">{x.a.answer}</div>
                   {!!x.a.citations?.length && (
                     <div className="mt-2 flex flex-wrap gap-1.5">{x.a.citations.map((c, j) => <span key={j} className="badge badge-gray"><FileText size={12} aria-hidden="true" />{c.label}</span>)}</div>)}
@@ -98,10 +98,10 @@ export default function AskLauncher() {
               <input ref={input} className="input" aria-label="Your question" placeholder={b ? `Ask about ${b}` : "Ask about this cycle"} value={q} onChange={(e) => setQ(e.target.value)} />
               <button className="btn-primary" aria-label="Send" disabled={busy || !q.trim()}><Send size={16} aria-hidden="true" /></button>
             </form>
-            <div className="mt-1.5 text-[11.5px] text-faint">TIQ cannot take actions.</div>
+            <div className="mt-1.5 text-[11.5px] text-faint">ABIQ cannot take actions.</div>
           </footer>
         </section>)}
-      <button onClick={() => setOpen(!open)} aria-label={open ? "Close Ask TIQ" : "Ask TIQ"} aria-expanded={open} title="Ask TIQ"
+      <button onClick={() => setOpen(!open)} aria-label={open ? "Close Ask ABIQ" : "Ask ABIQ"} aria-expanded={open} title="Ask ABIQ"
         className={`fixed bottom-6 right-6 z-[47] flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-on-brand shadow-float transition-transform duration-150 hover:scale-105 active:scale-95 ${open ? "max-sm:hidden" : ""}`}>
         {open ? <X size={22} aria-hidden="true" /> : <Sparkles size={22} aria-hidden="true" />}
       </button>

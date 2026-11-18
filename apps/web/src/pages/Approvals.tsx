@@ -21,7 +21,7 @@ export default function Approvals() {
   const Schedule = () => (
     <div className="max-h-80 overflow-y-auto"><table className="w-full"><thead><tr>{["Facility", "Borrower", "Funded", "Previous", "Mark", "Value"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
       <tbody>{sch.lines.map((l: any) => <tr key={l.facility_id}><td className="td">{l.facility_id}</td><td className="td">{l.borrower}</td><td className="tdn">{fmt.num(l.funded)}</td><td className="tdn">{fmt.mark(l.previous_mark)}</td><td className="tdn font-semibold">{fmt.mark(l.mark)}</td><td className="tdn">{fmt.num(l.value, 3)}</td></tr>)}</tbody></table>
-      <div className="mt-2 flex justify-end gap-6 text-sm font-semibold"><span>Total {fmt.m(sch.total)}</span><span>Change {fmt.delta(sch.delta)}</span><span>Story loans {fmt.m(sch.story_total)}</span></div></div>
+      <div className="mt-2 flex justify-end gap-6 text-sm font-semibold"><span>Total {fmt.m(sch.total)}</span><span>Change {fmt.delta(sch.delta)}</span><span>{sch.lines.length} loans</span></div></div>
   );
   return (
     <>

@@ -174,7 +174,7 @@ def _pick_facts(hits: list[dict], terms: list[str], current: str, n: int = 2) ->
 
 
 def redraft_section(session: Session, actor: Actor, section_id: str, instruction: str) -> CmrSection:
-    """Tell TIQ what the section misses (decision D27). A2 redrafts from the current text, the instruction and the
+    """Tell ABIQ what the section misses (decision D27). A2 redrafts from the current text, the instruction and the
     loan's documents. The result is a suggestion next to the current text: Accept, Edit or Reject."""
     from domain.services.lineage import _search
 
@@ -225,7 +225,7 @@ def _kept_ratio(draft: str, final: str) -> float:
 
 
 def decide_section(session: Session, actor: Actor, section_id: str, action: str, body: str | None = None) -> CmrSection:
-    """action: accept | edit | reject (of the TIQ draft) or save (manual text)."""
+    """action: accept | edit | reject (of the ABIQ draft) or save (manual text)."""
     s = session.get(CmrSection, section_id)
     cmr = session.get(Cmr, s.cmr_id)
     cl = session.get(CycleLoan, cmr.cycle_loan_id)
@@ -527,7 +527,7 @@ def attach_mark(session: Session, actor: Actor, cycle_loan_id: str, decision) ->
 
 
 def _pending(session: Session, section_id: str) -> dict | None:
-    """The TIQ draft or redraft waiting for a person's decision, if any."""
+    """The ABIQ draft or redraft waiting for a person's decision, if any."""
     sug = session.query(AgentSuggestion).filter_by(target_entity_type="cmr_section", target_entity_id=section_id,
                                                    status="proposed").order_by(AgentSuggestion.created_at.desc()).first()
     if not sug:

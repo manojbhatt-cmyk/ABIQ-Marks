@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, fmt, useApi } from "../api";
-import { Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, Loops, PageHeader, StatusChip, useAction } from "../components/ui";
+import { Card, Chip, Delta, Empty, ErrorState, Kpi, Loading, Loops, MoveChip, PageHeader, StatusChip, useAction } from "../components/ui";
 import DemoControls from "../components/DemoControls";
 import { useApp } from "../context";
 import { PHASE_STYLE, ProcessStrip } from "./Work";
@@ -73,7 +73,7 @@ export default function Dashboard() {
         <Kpi label="Cycle" value={d.cycle.period} sub={d.cycle.status === "closed" ? "Closed" : d.cycle.status === "draft" ? "Kickoff pending" : "Open"} />
         <Kpi label="Loans in cycle" value={k.loans} sub="in scope" />
         <Kpi label="Gates passed" value={`G1 ${k.g1_passed} of ${k.loans}`} />
-        <Kpi label="Portfolio value so far" value={fmt.m(k.portfolio_current)} sub={<><Delta v={k.delta} /> vs {fmt.m(k.portfolio_previous)}; story loans {fmt.m(k.story_current)}</>} tone={k.delta < 0 ? "red" : undefined} />
+        <Kpi label="Portfolio value so far" value={fmt.m(k.portfolio_current)} sub={<><Delta v={k.delta} /> vs {fmt.m(k.portfolio_previous)}; all {k.loans} loans</>} tone={k.delta < 0 ? "red" : undefined} />
         <Kpi label="Open tasks overdue" value={k.overdue} tone={k.overdue ? "red" : "green"} />
       </div>
       <DemoControls />
@@ -84,15 +84,29 @@ export default function Dashboard() {
             const left = (Math.max(p.start, 0) / 45) * 100;
             const width = Math.min(((p.end - p.start + 1) / 45) * 100, 100 - left);
             return (
-              <div key={p.phase} title={`${p.name}${p.assumed ? " (assumed)" : ""}`} style={{ left: `${left}%`, width: `${width}%`, top: (i % 2) * 34 }}
+              <div key={p.phase} title={`${p.name}`} style={{ left: `${left}%`, width: `${width}%`, top: (i % 2) * 34 }}
                 className="absolute h-7 overflow-hidden truncate rounded-chip border border-line bg-sunken px-2 text-[11.5px] font-medium leading-[26px] text-ink">{p.phase}. {p.name}</div>
             );
           })}
-          {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}${x.assumed ? " (assumed)" : ""}`} className="absolute bottom-0 h-3 w-0.5 rounded-full bg-strong" style={{ left: `${Math.min((x.day / 45) * 100, 99.6)}%` }} />)}
+          {d.deadlines.map((x: any) => <div key={x.step} title={`${x.step} ${x.label}: day ${x.day}`} className="absolute bottom-0 h-3 w-0.5 rounded-full bg-strong" style={{ left: `${Math.min((x.day / 45) * 100, 99.6)}%` }} />)}
         </div>
       </Card>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
+          <Card title="Loan values" subtitle="Every loan: last quarter, this quarter and how far the mark moved" className="mb-4">
+            <div className="overflow-x-auto"><table className="w-full">
+              <thead><tr><th className="th">Loan</th><th className="th text-right">Previous mark</th><th className="th text-right">Current mark</th><th className="th">Move</th><th className="th text-right">Previous value</th><th className="th text-right">Current value</th><th className="th text-right">Change</th><th className="th">Status</th></tr></thead>
+              <tbody>{loans.map((l: any) => {
+                const mark = l.final_mark ?? l.committee_mark ?? l.deal_team_mark ?? l.lincoln_mark;
+                const change = l.previous_value != null && l.current_value != null ? l.current_value - l.previous_value : null;
+                return (
+                  <tr key={l.id}><td className="td font-medium">{l.borrower}<div className="text-xs text-muted">{l.facility_id}</div></td>
+                    <td className="tdn">{fmt.mark(l.previous_mark)}</td><td className="tdn">{fmt.mark(mark)}</td><td className="td"><MoveChip move={l.move} /></td>
+                    <td className="tdn">{fmt.num(l.previous_value, 3)}</td><td className="tdn">{fmt.num(l.current_value, 3)}</td>
+                    <td className="tdn">{change == null ? "-" : <Delta v={change} />}</td><td className="td"><StatusChip status={l.status} /></td></tr>);
+              })}</tbody>
+            </table></div>
+          </Card>
           <Card title="Loan board">
             {preG1 && <><Lane title="Deal Team track" cols={DT_COLS} loans={loans} stepKey="dt_step" /><Lane title="Lincoln track" cols={LN_COLS} loans={loans} stepKey="lincoln_step" /></>}
             <Lane title={preG1 ? "From G1" : "Single lane from G1"} cols={G1_COLS} loans={g1Loans.filter((l: any) => ["Q14", "Q15", "Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22"].includes(l.g1step) && (l.status !== "in_progress"))} stepKey="g1step" />

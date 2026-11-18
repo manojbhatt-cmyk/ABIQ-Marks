@@ -33,16 +33,22 @@ const STATUS_TONE: Record<string, Tone> = {
 
 export function StatusChip({ status }: { status?: string | null }) {
   if (!status) return <span className="text-faint">-</span>;
-  const label = status === "ai_draft" ? "TIQ draft" : fmt.label(status);
+  const label = status === "ai_draft" ? "ABIQ draft" : fmt.label(status);
   return <Chip tone={STATUS_TONE[status] || "neutral"}>{label}</Chip>;
 }
 
-/** Marks a rule AllianceBernstein has not confirmed yet. */
-export function AssumedChip({ dq, what }: { dq?: string | null; what?: string }) {
-  return (
-    <span title={`Assumed rule${what ? `: ${what}` : ""}. Not yet confirmed by AllianceBernstein${dq ? ` (discovery question ${dq})` : ""}.`}
-      className="badge badge-amber">Assumed{dq ? ` ${dq}` : ""}</span>
-  );
+/** Rules still to be confirmed are tracked in docs/decisions.md, not labelled on screen. Renders nothing. */
+/** Mark Move Monitor flag: how far a loan's latest mark moved against last quarter. Nothing below the warning level. */
+export function MoveChip({ move, quiet = false }: { move?: { move: number; level: string | null; previous: number; mark: number } | null; quiet?: boolean }) {
+  if (!move) return null;
+  const pct = `${move.move >= 0 ? "+" : ""}${(move.move * 100).toFixed(1)}%`;
+  if (!move.level) return quiet ? null : <span className="num text-xs text-muted">{pct}</span>;
+  return <span title={`Mark ${move.previous.toFixed(2)} to ${move.mark.toFixed(2)} against last quarter`}
+    className={`badge ${move.level === "alert" ? "badge-red" : "badge-amber"}`}>{move.level === "alert" ? "Big move" : "Moving"} {pct}</span>;
+}
+
+export function AssumedChip(_: { dq?: string | null; what?: string }) {
+  return null;
 }
 
 export function ConfirmedChip() {
@@ -178,7 +184,7 @@ export function ConfidenceRing({ value }: { value?: number | null }) {
 }
 
 /** AI note: sage rule and tint, the AI chip, its confidence and the human decision. Nothing is applied until a person acts. */
-export function AiCard({ title = "TIQ suggests", children, confidence, status, decidedBy, actions, evidence }: {
+export function AiCard({ title = "ABIQ suggests", children, confidence, status, decidedBy, actions, evidence }: {
   title?: string; children: ReactNode; confidence?: number | null; status?: string; decidedBy?: string | null; actions?: ReactNode; evidence?: ReactNode;
 }) {
   return (
@@ -278,7 +284,7 @@ export const Field = ({ label, children, help }: { label: string; children: Reac
 
 /** AI provenance chip: sage tint and a sparkle. Marks anything an agent produced. */
 export function AiChip({ children = "AI", title }: { children?: ReactNode; title?: string }) {
-  return <span className="ai-chip" title={title || "Prepared by TIQ. Agents prepare, people decide."}><Sparkles size={12} aria-hidden="true" />{children}</span>;
+  return <span className="ai-chip" title={title || "Prepared by ABIQ. Agents prepare, people decide."}><Sparkles size={12} aria-hidden="true" />{children}</span>;
 }
 
 /** Segmented control: filters or switches one view. */

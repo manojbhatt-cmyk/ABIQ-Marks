@@ -51,7 +51,7 @@ function StepRow({ s, n, last }: { s: Step; n: number; last: boolean }) {
       </div>
       <div className={`card p-4 ${s.mode === "automated" ? "" : s.mode === "assisted" ? "" : ""}`}>
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-muted">With TIQ</span><Mode mode={s.mode} />
+          <span className="text-xs font-medium text-muted">With ABIQ</span><Mode mode={s.mode} />
           <span className={`ml-auto text-xs font-medium num ${w < b ? "text-success-600" : "text-muted"}`}>{w} hand action{w === 1 ? "" : "s"}{b ? ` · ${pct(b, w)}% fewer` : ""}</span>
         </div>
         <p className="mb-2 text-[13px] leading-relaxed text-muted">{s.tiq}</p>
@@ -74,14 +74,14 @@ export default function Process() {
   const modes = { automated: all.filter((s) => s.mode === "automated").length, assisted: all.filter((s) => s.mode === "assisted").length, person: all.filter((s) => s.mode === "person").length };
   return (
     <>
-      <PageHeader title="Before and now" subtitle="The 22 quarterly steps as AllianceBernstein runs them today and as TIQ runs them. The process does not change: agents prepare, people decide." />
+      <PageHeader title="Before and now" subtitle="The 22 quarterly steps as AllianceBernstein runs them today and as ABIQ runs them. The process does not change: agents prepare, people decide." />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <span className="text-[13px] text-muted">Portfolio size</span>
         <Seg label="Portfolio size" value={String(n)} onChange={(v) => setN(Number(v))} options={[{ id: "5", label: "5 loans (demo)" }, { id: "24", label: "24 loans" }, { id: "60", label: "60 loans" }]} />
       </div>
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="Hand actions today" value={before} sub={`per quarter, ${n} loans`} icon={Hand} />
-        <Kpi label="Hand actions with TIQ" value={now} sub="review, confirm, send" icon={Hand} />
+        <Kpi label="Hand actions with ABIQ" value={now} sub="review, confirm, send" icon={Hand} />
         <Kpi label="Manual effort reduced" value={`${pct(before, now)}%`} sub={`${before - now} fewer hand actions`} tone="green" />
         <Kpi label="Decisions kept with people" value={decisions} sub="approvals, marks, sign-offs" icon={UserCheck} />
       </div>

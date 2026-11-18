@@ -24,9 +24,9 @@ cd apps/web && npm run dev                # web
 
 ## 1. Kickoff and intake (Q1 to Q3): PM Team
 
-1. **Q1 Kickoff:** create the cycle from Snowflake (5 loans), check the calendar, preview the message for each team, then **send the kickoff inside TIQ**. Internal communication never uses email.
+1. **Q1 Kickoff:** create the cycle from Snowflake (5 loans), check the calendar, preview the message for each team, then **send the kickoff inside ABIQ**. Internal communication never uses email.
 2. **Outside world:** in Demo controls, click **Borrowers send their packages**, then **Late borrowers reply to the reminders**. Borrowers email their financials to the deal teams, with the PM Team copied. (There is no clock on screen; this one button always names what borrowers or Lincoln do next.)
-3. **Q2 Intake:** in **External mail** (Inbox), TIQ has pulled out each attachment and classified it. It also tracks each package and drafts reminders to borrowers who are late.
+3. **Q2 Intake:** in **External mail** (Inbox), ABIQ has pulled out each attachment and classified it. It also tracks each package and drafts reminders to borrowers who are late.
 4. **Q3 Share with Lincoln:** **Share all complete packages** sends them to Lincoln in one click (no manual download and upload).
 
 ## 2. Modelling and CMR (Q4 to Q9): Harbor
@@ -41,17 +41,17 @@ cd apps/web && npm run dev                # web
 ## 3. Valuation and Gate 1 (Q10 to Q14)
 
 11. **Q10 Lincoln:** click **Lincoln sends draft marks**. Lincoln's draft marks arrive: Harbor **86.5** (range 85.0 to 88.0).
-12. **Q11 Impact note:** the PM Team sends it in TIQ. Story-loan delta is **−3.95M**.
+12. **Q11 Impact note:** the PM Team sends it in ABIQ. Story-loan delta is **−3.95M**.
 13. **Q12/Q13:** the PM Team loads the marks to Everest and copies them to SharePoint.
-14. **Gate 1** (`team.blue.lead`): run the **A5 challenge**. It uses the sponsor's 55 / 16 = 3.4x, which is inside the covenant. **Send back** to Lincoln with the TIQ-drafted note.
+14. **Gate 1** (`team.blue.lead`): run the **A5 challenge**. It uses the sponsor's 55 / 16 = 3.4x, which is inside the covenant. **Send back** to Lincoln with the ABIQ-drafted note.
 15. Click **Lincoln sends the revised valuation**. **Lincoln v2: 88.0** arrives, and the PM Team loads it.
 16. **Gate 1 again:** the lead **approves 88.0**. Impact note v2 shows **−3.05M**.
 
 ## 4. Valuation Committee, Gate 2 (Q15 to Q18)
 
-17. **Q16 Agenda** (`pm.analyst`): TIQ builds it from the rules: **Harbor, Sunrise, Orchard**.
-18. **Q17 Pack:** build the committee pack and send it in TIQ.
-19. **Organise meeting:** TIQ drafts the date, time slots and attendees. Edit if needed, then **Send invitation in TIQ**. Attendees get the message, a calendar file (.ics) and the pack.
+17. **Q16 Agenda** (`pm.analyst`): ABIQ builds it from the rules: **Harbor, Sunrise, Orchard**.
+18. **Q17 Pack:** build the committee pack and send it in ABIQ.
+19. **Organise meeting:** ABIQ drafts the date, time slots and attendees. Edit if needed, then **Send invitation in ABIQ**. Attendees get the message, a calendar file (.ics) and the pack.
 20. **Q18 Meeting** (`vc.chair`, Committee → Meeting tab):
     - Harbor: **Approve 88.0**
     - Sunrise: **Change the mark** from 89.0 to **88.5** and enter a rationale. The screen shows the value impact and the Lincoln range.
@@ -60,10 +60,10 @@ cd apps/web && npm run dev                # web
 
 ## 5. Close (Q19 to Q22)
 
-21. **Q19 Reconciliation** (`pm.analyst`): run it. TIQ finds **one break: Sunrise is 88.5 in TIQ but 89 in Everest**. Resolve it (correct Everest), then **re-run**. The result is clean.
+21. **Q19 Reconciliation** (`pm.analyst`): run it. ABIQ finds **one break: Sunrise is 88.5 in ABIQ but 89 in Everest**. Resolve it (correct Everest), then **re-run**. The result is clean.
 22. **Q20 Written approval:** the PM Team requests approval of the final marks, and `vc.chair` approves.
 23. **Q21 Governance, Gate 3** (`governance`): sign off.
-24. **Q22 Distribute** (`pm.analyst`): send the final marks in TIQ. The cycle closes.
+24. **Q22 Distribute** (`pm.analyst`): send the final marks in ABIQ. The cycle closes.
 
 **End result for the 3 story loans:** **114.625M**, down from 117.8M (**−3.175M**). Maple Dental 99.25, Harbor 88.0, Sunrise 88.5.
 
@@ -72,4 +72,4 @@ cd apps/web && npm run dev                # web
 - **Agents prepare, people decide.** No gate decision is made by an agent (the audit trail shows only human roles).
 - **Lineage** (Harbor): every number traces back to its source document, agent run and decision.
 - **Tracker:** the live mark and value for each loan through the cycle.
-- **Messages:** internal communication stays in TIQ. Email is only for borrowers and Lincoln.
+- **Messages:** internal communication stays in ABIQ. Email is only for borrowers and Lincoln.

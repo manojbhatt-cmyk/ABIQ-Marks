@@ -60,7 +60,7 @@ def _complete(run: AgentRun, messages: list[dict], heavy: bool = False, temperat
 
 
 def chat(run: AgentRun, system: str, messages: list[dict]) -> str | None:
-    """A conversational answer (Ask TIQ general questions). None when the model is off or fails."""
+    """A conversational answer (Ask ABIQ general questions). None when the model is off or fails."""
     if not llm_enabled():
         return None
     try:

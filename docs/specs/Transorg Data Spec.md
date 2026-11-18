@@ -18,8 +18,8 @@ What data the system uses, where each piece lives, its schema, and how the synth
 | Filed CMR PDFs, copies of Lincoln reports | SharePoint | Simulated **SharePoint** bucket `sharepoint` | PDF | Folder convention from the source note |
 | Approval emails (request and reply) | OneDrive | Simulated **OneDrive** bucket `onedrive` | PDF bundle plus .eml | |
 | Kickoff emails, chase emails, impact notes, committee pack emails, approval emails, distribution | Outlook | Simulated Outlook (send and inbox API) | .eml | |
-| Marks tracker | Excel | **Postgres** `marks_tracker_row` with an Excel export that reproduces the client's columns | Table, xlsx export | TIQ becomes the tracker in the POC |
-| Workflow state, tasks, reviews, decisions, approvals, reconciliation, audit, agent runs | Not systematised today | **Postgres** application schema | Tables | TIQ is the system of record for these |
+| Marks tracker | Excel | **Postgres** `marks_tracker_row` with an Excel export that reproduces the client's columns | Table, xlsx export | ABIQ becomes the tracker in the POC |
+| Workflow state, tasks, reviews, decisions, approvals, reconciliation, audit, agent runs | Not systematised today | **Postgres** application schema | Tables | ABIQ is the system of record for these |
 | Document text, tables, page images, embeddings | Not systematised today | Postgres (`document_page`, `document_table`) and pgvector; page images in the `uploads` bucket | Rows, PNG | |
 | LangGraph checkpoints and long-term store | n/a | Postgres (`langgraph_*` tables) | | |
 
@@ -75,7 +75,7 @@ Local fallback: if a Snowflake account is not available in an environment, the s
 | --- | --- | --- |
 | `SIGMA.PORTFOLIO_SNAPSHOT` (view) | FACILITY_ID, AS_OF_MONTH, CURRENT_MARK, RISK_RATING, WATCHLIST_FLAG, LAST_FINANCIALS_PERIOD, LTM_LEVERAGE, LTM_INTEREST_COVER, LEVERAGE_TREND (`up`, `flat`, `down`), INTEREST_RECEIVED_MTD | What the Sigma dashboard shows per loan |
 | `FINANCE.PACING_FILE` | FACILITY_ID, AS_OF_MONTH, FUNDED_AMOUNT, EXPECTED_INTEREST, INTEREST_RECEIVED, PACING_STATUS (`on_track`, `behind`, `ahead`), NOTES, SOURCE_FILE_NAME | Loaded from the pacing Excel; layout assumed (open item 4) |
-| `FINANCE.WATCHLIST_CALL_NOTE` | NOTE_ID, FACILITY_ID, CALL_DATE, ATTENDEES, NOTE_TEXT, UPLOADED_BY | Watchlist call notes, uploaded in TIQ and mirrored here for the Sigma view |
+| `FINANCE.WATCHLIST_CALL_NOTE` | NOTE_ID, FACILITY_ID, CALL_DATE, ATTENDEES, NOTE_TEXT, UPLOADED_BY | Watchlist call notes, uploaded in ABIQ and mirrored here for the Sigma view |
 
 ### 2.6 The loan universe query (Q1)
 
@@ -419,7 +419,7 @@ Every package also has a covenant certificate (PDF, one page, the borrower's own
 | `spread.ltm_quarters` | 4 | no |
 | `review.stage_order` | ac_manager, pm_team, file, sct | no |
 | `review.checklist.pm_team` | ratios_on_ltm, addbacks_allowed, recommendation_consistent, evidence_attached | no (from the source note) |
-| `agenda.tests` | watchlist, downgrade, mark_move_10pct, outside_lincoln_range, g1_unresolved | no (the fifth is a TIQ addition) |
+| `agenda.tests` | watchlist, downgrade, mark_move_10pct, outside_lincoln_range, g1_unresolved | no (the fifth is a ABIQ addition) |
 | `agenda.mark_move_threshold` | 0.10 | no |
 | `agenda.manual_add_allowed` | true | no |
 | `g1.max_send_back_loops` | 3 | no |
@@ -427,7 +427,7 @@ Every package also has a covenant certificate (PDF, one page, the borrower's own
 | `g1.co_decision_required` | false | no |
 | `committee.send_back_allowed` | true (loop QF) | no (DQ18) |
 | `classify.confidence_threshold` | 0.8 | n/a (POC choice) |
-| `cert.tolerance` | 0.05x (covenant certificate vs TIQ ratio) | no |
+| `cert.tolerance` | 0.05x (covenant certificate vs ABIQ ratio) | no |
 | `committee.outcomes` | approve, change, send_back, defer, request_information | no |
 | `committee.rationale_required_for` | change, send_back, defer | no |
 | `reconciliation.checks` | the four check codes in 5.8 | no |

@@ -113,7 +113,7 @@ export default function Work() {
         </div>
         <div className="space-y-4">
           {data.cycle && <DeadlinesCard />}
-          <Card title={<span className="flex items-center gap-2"><MessagesSquare size={18} className="text-muted" aria-hidden="true" /> Messages</span>} subtitle="Internal communication, inside TIQ" actions={<button className="btn-ghost btn-sm" onClick={() => nav("/messages")}>Open</button>}>
+          <Card title={<span className="flex items-center gap-2"><MessagesSquare size={18} className="text-muted" aria-hidden="true" /> Messages</span>} subtitle="Internal communication, inside ABIQ" actions={<button className="btn-ghost btn-sm" onClick={() => nav("/messages")}>Open</button>}>
             {inbox.length ? inbox.map((m) => <button key={m.id} onClick={() => nav(m.link || "/messages")} className="mb-1 flex w-full items-start gap-2.5 rounded-control px-2 py-2 text-left transition-colors duration-150 hover:bg-sunken">
               <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${m.read ? "bg-transparent" : "bg-accent-500"}`} aria-hidden="true" />
               <span className="min-w-0"><span className={`block text-[13px] text-ink ${m.read ? "" : "font-semibold"}`}>{m.subject}</span><span className="block text-xs text-muted">from {m.from.split("@")[0]} · {fmt.date(m.at)}</span></span></button>)

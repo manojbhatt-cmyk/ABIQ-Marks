@@ -1,21 +1,25 @@
 """The outside world in the demo: borrowers and Lincoln act as the clock advances.
 
 Advancing the cycle day delivers what third parties would send that day: borrower
-packages by email to the deal team (Q2) and Lincoln's drafts into Box (Q10, from day
-20; a revision two days after a send-back). TIQ's watchers pick them up exactly as they
-would in production. Every internal step stays with the people in the UI.
+packages by email to the deal team (Q2) and Lincoln's drafts into Box (Q10). Lincoln works
+loan by loan: a loan's first draft arrives LINCOLN_DRAFT_DAYS after its package is shared,
+and a revision two days after a send-back (decision D34). ABIQ's watchers pick them up
+exactly as they would in production. On each day the demo autopilot moves the loans that
+are not being presented, each at its own pace.
 """
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from domain.models import CycleLoan, Document, LincolnPackage, ValuationCycle, ValuationDecision
+from domain.models import AuditEvent, CycleLoan, Deadline, ValuationCycle, ValuationDecision
 from domain.services import cycle as cyc_svc
 from domain.services import intake, lincoln
 from domain.services.core import Actor
 from synth import generator
 
-LINCOLN_V1_DAY = 20
+LINCOLN_DRAFT_DAYS = 5  # Lincoln needs at least this many days after a loan's package is in Box
+# Lincoln sends each loan's first draft around its kickoff deadline (Q10), a few days apart ("every few days")
+LINCOLN_OFFSET = {"F-0001": -2, "F-0013": 0, "F-0015": 0, "F-0002": 1, "F-0003": 3}
 
 
 def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[str]:
@@ -25,6 +29,9 @@ def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[
     if cyc.status == "draft":
         raise ValueError("Send the kickoff first")
     log: list[str] = []
+    from synth import autopilot
+
+    keep = autopilot.setting(session)
     for day in range(cyc.current_day + 1, min(to_day, 45) + 1):
         cyc_svc.move_clock(session, actor, cycle_id, day)
         n = generator.deliver_borrower_mail(day)
@@ -35,13 +42,13 @@ def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[
         if day in (8, 10):
             drafted = intake.draft_chases(session, cycle_id)
             if drafted:
-                log.append(f"TIQ drafted {len(drafted)} borrower chase(s) for the PM Team")
-        if day >= LINCOLN_V1_DAY and not _has_v1(session, cycle_id) and not _shared(session, cycle_id):
-            log.append(f"Lincoln is waiting for every package to be shared in Box before drafting")
-        if day >= LINCOLN_V1_DAY and _shared(session, cycle_id) and not _has_v1(session, cycle_id):
-            generator.deliver_lincoln(1)
-            got = lincoln.ingest_lincoln(session, cycle_id)
-            log.append(f"Lincoln delivered draft marks for {len(got)} loans to Box")
+                log.append(f"ABIQ drafted {len(drafted)} borrower chase(s) for the PM Team")
+        due = [cl for cl, d in _lincoln_due(session, cycle_id) if d <= day]
+        for cl in due:
+            generator.deliver_lincoln_loan(cl.facility_id)
+        if due:
+            lincoln.ingest_lincoln(session, cycle_id)
+            log.append(f"Lincoln sent draft marks for {', '.join(cl.borrower for cl in due)}")
         for d in _pending_send_backs(session, cycle_id, day):
             cl = session.get(CycleLoan, d.cycle_loan_id)
             current = lincoln.latest_valuation(session, cl.id).version
@@ -51,22 +58,19 @@ def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[
                 generator.deliver_revision(cl.facility_id, current + 1)
             lincoln.ingest_lincoln(session, cycle_id)
             log.append(f"Lincoln delivered a revised valuation for {cl.borrower}")
+        if keep is not None:  # the loans not being presented do today's work
+            log += autopilot.run(session, cycle_id, keep)
     from connectors import live_mail
 
     if live_mail.enabled():
         got = intake.process_inbox(session, cycle_id)
         if got:
             log.append(f"{len(got)} real email(s) received and classified")
-    from synth import autopilot
-
-    keep = autopilot.setting(session)
-    if keep is not None:
-        log += autopilot.run(session, cycle_id, keep)
     from domain.services import reminders
 
     sent = reminders.send_due(session, cycle_id)
     if sent:
-        log.append(f"TIQ sent {len(sent)} deadline reminder(s)")
+        log.append(f"ABIQ sent {len(sent)} deadline reminder(s)")
     if not log:
         log.append("Nothing arrived from outside")
     return list(dict.fromkeys(log))
@@ -76,7 +80,7 @@ def next_event(session: Session, cycle_id: str) -> dict | None:
     """What the outside world does next, so the demo moves on without showing a clock.
 
     Returns the label for the button and the day the world has to reach for it to happen, or None when
-    nothing outside is pending (everything waits on people in TIQ).
+    nothing outside is pending (everything waits on people in ABIQ).
     """
     cyc = session.get(ValuationCycle, cycle_id)
     if cyc is None or cyc.status != "open" or cyc.cycle_type != "quarterly":
@@ -86,24 +90,43 @@ def next_event(session: Session, cycle_id: str) -> dict | None:
     if mail_days and mail_days[0] <= 10:
         return {"key": "borrowers", "to_day": 10, "label": "Borrowers send their packages",
                 "detail": "Borrowers email their quarterly packages to the deal teams, PM Team copied. "
-                          "TIQ drafts reminders for anything missing."}
+                          "ABIQ drafts reminders for anything missing."}
     if mail_days:
         return {"key": "chased", "to_day": max(mail_days[-1], day + 1), "label": "Late borrowers reply to the reminders",
                 "detail": "The remaining documents arrive by email."}
-    if not _has_v1(session, cycle_id):
-        if not _shared(session, cycle_id):
-            return {"key": "waiting", "to_day": None, "label": "Lincoln is waiting for the packages",
-                    "detail": "Lincoln drafts once every package is shared (Lincoln Exchange)."}
-        return {"key": "lincoln", "to_day": max(LINCOLN_V1_DAY, day + 1), "label": "Lincoln sends draft marks",
-                "detail": "Lincoln's draft marks and reports arrive in Box; TIQ ingests them."}
+    events = []
+    due = _lincoln_due(session, cycle_id)
+    if due:
+        first = min(d for _, d in due)
+        names = sorted(cl.borrower for cl, d in due if d == first)
+        events.append({"key": "lincoln", "to_day": max(first, day + 1), "label": "Lincoln sends draft marks",
+                       "detail": f"Lincoln's draft for {', '.join(names)} arrives in Box; ABIQ ingests it."})
     pending = [d for d in session.query(ValuationDecision).join(CycleLoan, CycleLoan.id == ValuationDecision.cycle_loan_id).filter(
         CycleLoan.cycle_id == cycle_id, ValuationDecision.outcome == "sent_back") if
         session.get(CycleLoan, d.cycle_loan_id).status == "waiting_on_lincoln"]
     if pending:
         names = sorted({session.get(CycleLoan, d.cycle_loan_id).borrower for d in pending})
-        return {"key": "revision", "to_day": max(max((d.decided_day or 0) + 2 for d in pending), day + 1),
-                "label": "Lincoln sends the revised valuation", "detail": f"Lincoln answers the send-back for {', '.join(names)}."}
-    return None
+        events.append({"key": "revision", "to_day": max(min((d.decided_day or 0) + 2 for d in pending), day + 1),
+                       "label": "Lincoln sends the revised valuation",
+                       "detail": f"Lincoln answers the send-back for {', '.join(names)}."})
+    from synth import autopilot
+
+    fixing = autopilot.waiting(session, cycle_id) if autopilot.setting(session) is not None else []
+    if fixing:
+        events.append({"key": "cmr_revision", "to_day": max(min(d for _, d in fixing), day + 1),
+                       "label": "Analysts send the revised CMRs",
+                       "detail": f"The Deal Team fixes the comments for {', '.join(sorted(b for b, _ in fixing))} "
+                                 "and resubmits."})
+    # Stop at the next kickoff deadline; everything due before it (Lincoln's drafts, revisions, the other loans'
+    # work) happens on its own day on the way, so the presenter clicks once per deadline, not once per event.
+    nxt = min(((d, step) for step, d in autopilot.deadlines(session, cycle_id).items() if d > day), default=None)
+    if nxt:
+        dl = session.query(Deadline).filter_by(cycle_id=cycle_id, step_code=nxt[1]).first()
+        on_way = [e["label"] for e in sorted(events, key=lambda e: e["to_day"]) if e["to_day"] <= nxt[0]]
+        return {"key": "deadline", "to_day": nxt[0], "label": f"Go to the next deadline: {dl.label} (day {nxt[0]})",
+                "detail": ("On the way: " + "; ".join(dict.fromkeys(on_way)) + ". " if on_way else "")
+                + "The other loans keep working, each at its own pace."}
+    return min(events, key=lambda e: e["to_day"]) if events else None
 
 
 def run_next_event(session: Session, actor: Actor, cycle_id: str) -> list[str]:
@@ -116,15 +139,20 @@ def run_next_event(session: Session, actor: Actor, cycle_id: str) -> list[str]:
     return advance(session, actor, cycle_id, ev["to_day"])
 
 
-def _shared(session: Session, cycle_id: str) -> bool:
-    """Lincoln drafts once every in-scope package is in its Box folder."""
-    loans = [cl for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True)
-             if (cl.valuation_method or "Lincoln") == "Lincoln"]
-    return bool(loans) and all(session.query(LincolnPackage).filter_by(cycle_loan_id=cl.id).first() for cl in loans)
+def _lincoln_due(session: Session, cycle_id: str) -> list[tuple[CycleLoan, int]]:
+    """Loans shared with Lincoln that have no draft yet, with the day Lincoln's first draft arrives."""
+    from synth import autopilot
 
-
-def _has_v1(session: Session, cycle_id: str) -> bool:
-    return session.query(Document).filter_by(cycle_id=cycle_id, doc_type="lincoln_marks").count() > 0
+    out = []
+    for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True):
+        if (cl.valuation_method or "Lincoln") != "Lincoln" or lincoln.latest_valuation(session, cl.id):
+            continue
+        ev = session.query(AuditEvent).filter_by(cycle_loan_id=cl.id, action="lincoln_package.shared").order_by(
+            AuditEvent.occurred_at).first()
+        if ev:
+            q10 = autopilot.deadlines(session, cycle_id).get("Q10", 0) + LINCOLN_OFFSET.get(cl.facility_id, 0)
+            out.append((cl, max((ev.cycle_day or 0) + LINCOLN_DRAFT_DAYS, q10)))
+    return out
 
 
 def _pending_send_backs(session: Session, cycle_id: str, day: int):

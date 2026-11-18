@@ -1,4 +1,4 @@
-"""Mark lineage (S21) and Ask TIQ (S20, A9): read-only views over the audit trail and records."""
+"""Mark lineage (S21) and Ask ABIQ (S20, A9): read-only views over the audit trail and records."""
 from __future__ import annotations
 
 import re
@@ -24,10 +24,10 @@ def lineage(session: Session, cycle_loan_id: str) -> dict:
                       "detail": detail, "entity_type": entity_type, "entity_id": entity_id, "badge": badge})
 
     for d in session.query(Document).filter_by(cycle_id=cl.cycle_id, borrower_id=cl.borrower_id, store="uploads"):
-        add("documents", d.file_name, d.doc_type_confirmed_by or "TIQ (A0, auto)", d.created_at,
+        add("documents", d.file_name, d.doc_type_confirmed_by or "ABIQ (A0, auto)", d.created_at,
             f"{d.doc_type} ({(d.doc_type_confidence or 0):.2f})", "document", d.id)
     for s in session.query(FinancialSpread).filter_by(cycle_loan_id=cl.id).order_by(FinancialSpread.version):
-        add("spread", f"Spread v{s.version} ({s.status})", s.approved_by or "TIQ (A1 proposal)", s.approved_at or s.created_at,
+        add("spread", f"Spread v{s.version} ({s.status})", s.approved_by or "ABIQ (A1 proposal)", s.approved_at or s.created_at,
             f"Everest {s.written_back_spread_id or 'not written'}", "financial_spread", s.id)
     for c in session.query(Cmr).filter_by(cycle_loan_id=cl.id):
         for rv in session.query(CmrReview).filter_by(cmr_id=c.id).order_by(CmrReview.created_at):
@@ -88,9 +88,9 @@ def audit_events(session: Session, cycle_id: str | None = None, cycle_loan_id: s
             for e in q.order_by(AuditEvent.occurred_at.desc()).limit(limit)]
 
 
-# ---------------- A9 Ask TIQ ----------------
+# ---------------- A9 Ask ABIQ ----------------
 
-GENERAL = ("You are TIQ, the assistant inside TIQ Marks, AllianceBernstein Private Credit's quarterly and monthly "
+GENERAL = ("You are ABIQ, the assistant inside ABIQ Marks, AllianceBernstein Private Credit's quarterly and monthly "
            "loan valuation (marks) workflow. The quarterly cycle has 22 steps in six phases: kickoff and intake (Q1 to "
            "Q3), modelling and CMR (Q4 to Q9), Lincoln draft marks (Q10 to Q13), Deal Team approval at Gate 1 (Q14 to "
            "Q15), the Valuation Committee (Q16 to Q18) and finalise and distribute (Q19 to Q22). What happens: the PM "
@@ -139,16 +139,16 @@ def _general(session: Session, cycle_id: str | None, question: str, history: lis
                   "\"Why is Harbor on the agenda?\"") if cycle_id else ("No cycle has been started yet. The PM Team "
                                                                      "starts the quarter from Kickoff.")
     return {"answer": answer, "citations": [{"type": "document", "id": h["document_id"], "label": f"{h['file']} p.{h['page']}"}
-                                            for h in hits[:3]], "kind": "general", "footer": "TIQ cannot take actions"}
+                                            for h in hits[:3]], "kind": "general", "footer": "ABIQ cannot take actions"}
 
 
 def ask(session: Session, actor: Actor, cycle_id: str | None, question: str, cycle_loan_id: str | None = None,
         history: list[dict] | None = None) -> dict:
-    """Read-only answers with citations built by code from the records used. TIQ cannot take actions.
+    """Read-only answers with citations built by code from the records used. ABIQ cannot take actions.
     `cycle_loan_id` is the loan on the screen the question was asked from; a loan named in the question wins."""
     q = question.lower()
     if re.search(r"\b(approve|send back|change the mark|set the rating|sign off|email)\b", q) and q.startswith(("please", "can you", "approve", "send")):
-        return {"answer": "TIQ cannot take actions. Use the Pricing Panel (S10), the Committee screen (S13) or "
+        return {"answer": "ABIQ cannot take actions. Use the Pricing Panel (S10), the Committee screen (S13) or "
                           "Approvals (S15) to do this.", "citations": []}
     if not cycle_id:
         return _general(session, None, question, history)
@@ -202,7 +202,7 @@ def ask(session: Session, actor: Actor, cycle_id: str | None, question: str, cyc
         answer = rewrite(run, " ".join(parts), "Answer the question in plain words using only these facts: " + question)
         run.output_summary = answer[:300]
     return {"answer": answer, "citations": citations, "loan": cl.facility_id,
-            "footer": "TIQ cannot take actions"}
+            "footer": "ABIQ cannot take actions"}
 
 
 def _search(session: Session, cycle_id: str, q: str, facility_id: str | None = None) -> list[dict]:

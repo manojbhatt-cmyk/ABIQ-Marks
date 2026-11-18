@@ -70,7 +70,7 @@ export default function Universe() {
           <div className="space-y-2 text-sm">
             <div><Chip tone="blue">{u.data.freshness.source}</Chip></div>
             <div>{u.data.freshness.dealcloud}</div><div>Everest via Snowflake, Q2 2026 final marks and ratings</div><div>{u.data.freshness.sentry}</div>
-            <div className="text-xs text-slate-400">Revolvers are out of scope by default (assumed, DQ2).</div>
+            <div className="text-xs text-slate-400">Revolvers are out of scope by default.</div>
           </div>
         </Card>
       </div>

@@ -6,7 +6,7 @@ If another CLAUDE.md is loaded from a folder above this repository, it belongs t
 
 ## What this is
 
-The TIQ Marks POC: AllianceBernstein Private Credit's marks (loan valuation) process as one governed workflow. 22 quarterly steps and 6 monthly steps, AI agents prepare, people decide. Demo on synthetic data; it may become a live product later.
+The ABIQ Marks POC: AllianceBernstein Private Credit's marks (loan valuation) process as one governed workflow. 22 quarterly steps and 6 monthly steps, AI agents prepare, people decide. Demo on synthetic data; it may become a live product later.
 
 ## Source of truth
 

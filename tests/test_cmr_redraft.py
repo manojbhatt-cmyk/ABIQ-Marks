@@ -1,4 +1,4 @@
-"""Tell TIQ what a CMR section misses (decision D27): a redraft is a suggestion, never applied by itself."""
+"""Tell ABIQ what a CMR section misses (decision D27): a redraft is a suggestion, never applied by itself."""
 import pytest
 
 from domain.db import session_scope

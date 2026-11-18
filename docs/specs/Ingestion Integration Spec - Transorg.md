@@ -1,6 +1,6 @@
 # Ingestion and Integration Specification
 
-How data gets into TIQ Marks, how documents and emails are processed, how TIQ writes back, and how the simulated connectors map to the real ones later.
+How data gets into ABIQ Marks, how documents and emails are processed, how ABIQ writes back, and how the simulated connectors map to the real ones later.
 
 ---
 
@@ -95,7 +95,7 @@ Size limits (POC): 50 MB per file, 300 pages per document; larger files are reje
 | --- | --- |
 | Poll | The worker polls `Mailbox.poll_inbox(since)` every 60 seconds (configurable); in the demo, the generator posts emails into the inbox API in day order |
 | Dedupe | By `message_id` |
-| Thread | `thread_id` from the `In-Reply-To` and `References` headers; replies to a TIQ-sent email inherit its `cycle_id` and `facility_id` |
+| Thread | `thread_id` from the `In-Reply-To` and `References` headers; replies to a ABIQ-sent email inherit its `cycle_id` and `facility_id` |
 | Match | Sender domain against borrower domains; Lincoln's domain routes to the Lincoln exchange; deal team and committee addresses route to their cycles; else `unmatched` queue in S04 |
 | Attachments | Each attachment enters the document pipeline with `email_message_id` |
 | Intent (optional) | A0 also tags inbound mail with `{intent: package_submission, question, waiver_request, approval_reply, other}` so that an approval reply from the chair ("Approved") can be linked to the approval request automatically, subject to the chair confirming in S15 |
@@ -125,18 +125,18 @@ Notifications are rows in `notification` (user_id, kind, entity, read_at) delive
 
 ## 6. Write-back adapter
 
-TIQ is the system of record for workflow, decisions and the tracker, but the client's record for spreads, CMRs, the pricing panel, ratings and governance sign-off is Everest. The adapter has three modes:
+ABIQ is the system of record for workflow, decisions and the tracker, but the client's record for spreads, CMRs, the pricing panel, ratings and governance sign-off is Everest. The adapter has three modes:
 
 | Mode | Behaviour | When |
 | --- | --- | --- |
-| `synthetic_write` | Writes directly into the synthetic `EVEREST` schema in Snowflake (or DuckDB) with `SOURCE_SYSTEM = 'tiq'` and the TIQ entity id | POC default |
+| `synthetic_write` | Writes directly into the synthetic `EVEREST` schema in Snowflake (or DuckDB) with `SOURCE_SYSTEM = 'tiq'` and the ABIQ entity id | POC default |
 | `queue` | Creates a `writeback_change` row (target table, key, payload, requested_by, status `pending`) and shows it in S22 "Changes to apply in Everest" with a copyable payload; a person marks it `applied` after doing it in Everest; reconciliation (Q19) then confirms | Production default until an API exists |
 | `api` | Calls the Everest API (interface stubbed; mapping to be defined when AllianceBernstein answers DQ20) | Future |
 
 Rules:
-- Every write is recorded in `writeback_change` in all modes, with before and after values, so the audit trail shows what TIQ changed in the client system and when.
+- Every write is recorded in `writeback_change` in all modes, with before and after values, so the audit trail shows what ABIQ changed in the client system and when.
 - Writes are only triggered by user actions that pass a gate or an approval (spread approved, CMR filed, G1 decided, committee decided, reconciliation correction, G3 signed). Agents never trigger a write.
-- Writes are idempotent: the payload carries the TIQ entity id and version; re-sending the same version is a no-op.
+- Writes are idempotent: the payload carries the ABIQ entity id and version; re-sending the same version is a no-op.
 
 ## 7. Box, SharePoint and OneDrive behaviour
 
@@ -175,6 +175,6 @@ File names are deterministic (`<borrower-slug>-<facility-id>-v<n>.pdf`) so a hum
 | Snowflake synthetic database | Client Snowflake, schemas for DealCloud, Everest and Sentry as they really are | Confirm table and column names (DQ4, DQ20); the loan universe query is the only place that changes |
 | MinIO `box` | Box API with a service account on the shared Lincoln folder; webhooks instead of polling | Lincoln keeps working in Box; nothing changes for them |
 | MinIO `sharepoint`, `onedrive` | Microsoft Graph drive items on the PrivateCredit site and the PM OneDrive | Same folder conventions |
-| Mailsink | Microsoft Graph on a shared mailbox (for example `valuations@`) with send-as rights | Borrowers keep emailing; TIQ reads the shared inbox |
+| Mailsink | Microsoft Graph on a shared mailbox (for example `valuations@`) with send-as rights | Borrowers keep emailing; ABIQ reads the shared inbox |
 | Synthetic write-back | `queue` mode first; `api` mode when Everest access is confirmed | The Q19 reconciliation is the safety net in queue mode |
 | Local users | Entra ID single sign-on with role mapping | Roles unchanged |

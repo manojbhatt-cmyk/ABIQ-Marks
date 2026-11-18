@@ -9,7 +9,7 @@
         "tiq": "Builds the cycle from Snowflake and drafts one message per team with its loans and dates." },
       { "code": "Q2", "name": "Borrower financials", "owner": "Deal Team", "tools_before": ["Outlook"],
         "before": [["Save each package's attachments from the inbox", "loan"], ["File them in the loan's folder", "loan"], ["Check by eye what is still missing", "loan"], ["Write a chase email for anything late", "loan"]],
-        "now": [["Confirm document types TIQ is not sure of", "cycle"], ["Review and send the chases TIQ drafted", "cycle"]], "mode": "assisted",
+        "now": [["Confirm document types ABIQ is not sure of", "cycle"], ["Review and send the chases ABIQ drafted", "cycle"]], "mode": "assisted",
         "tiq": "Reads the inbox, classifies every attachment, files it to the loan, tracks completeness and drafts the chases." },
       { "code": "Q3", "name": "Share with Lincoln", "owner": "PM Team", "tools_before": ["Outlook", "Box"],
         "before": [["Download the package from email", "loan"], ["Upload it to the Box folder shared with Lincoln", "loan"], ["Tell Lincoln it is there", "loan"]],
@@ -19,11 +19,11 @@
     { "name": "Modelling and CMR", "steps": [
       { "code": "Q4", "name": "Spread", "owner": "Deal Team analyst", "tools_before": ["Everest", "Excel"],
         "before": [["Re-key the statements into the standard template", "loan"], ["Compute LTM figures and ratios", "loan"], ["Run the covenant test", "loan"]],
-        "now": [["Review the cells TIQ flags and approve the spread", "loan"]], "decisions": ["Approve the spread and its add-backs"], "mode": "assisted",
+        "now": [["Review the cells ABIQ flags and approve the spread", "loan"]], "decisions": ["Approve the spread and its add-backs"], "mode": "assisted",
         "tiq": "The Spreading Agent proposes every line with its source page; metrics and covenant tests are computed by code." },
       { "code": "Q5", "name": "CMR draft", "owner": "Deal Team analyst", "tools_before": ["Everest", "Word"],
         "before": [["Gather the figures from the spread", "loan"], ["Write seven sections from a blank page", "loan"], ["Collect and attach the evidence", "loan"]],
-        "now": [["Edit TIQ's draft, telling it what it missed", "loan"], ["Tick the evidence to attach", "loan"]], "decisions": ["Set the rating, watchlist and waiver recommendation"], "mode": "assisted",
+        "now": [["Edit ABIQ's draft, telling it what it missed", "loan"], ["Tick the evidence to attach", "loan"]], "decisions": ["Set the rating, watchlist and waiver recommendation"], "mode": "assisted",
         "tiq": "Drafts every section with citations; the Review Checker flags gaps before submission." },
       { "code": "Q6", "name": "A/C Manager review", "owner": "A/C Manager", "tools_before": ["Everest", "Outlook"],
         "before": [["Email the draft to the reviewer and collect comments", "loan"]],
@@ -40,7 +40,7 @@
       { "code": "Q9", "name": "SCT review", "owner": "SCT", "tools_before": ["SharePoint", "Outlook"],
         "before": [["Send the filed PDF to SCT and collect comments", "loan"]],
         "now": [], "decisions": ["Pass, send back or defer"], "mode": "person",
-        "tiq": "SCT reviews in TIQ; re-filing keeps every version." }
+        "tiq": "SCT reviews in ABIQ; re-filing keeps every version." }
     ]},
     { "name": "Lincoln draft marks", "steps": [
       { "code": "Q10", "name": "Lincoln drafts", "owner": "Lincoln", "tools_before": ["Box"],
@@ -49,7 +49,7 @@
         "tiq": "Watches Box, extracts point, range and yield, and cross-checks the report against the sheet." },
       { "code": "Q11", "name": "Tracker and impact note", "owner": "PM Team", "tools_before": ["Excel", "Outlook"],
         "before": [["Re-key Lincoln's point and range into the Excel tracker", "loan"], ["Compute the value change", "cycle"], ["Write the early impact email to Finance", "cycle"]],
-        "now": [["Review and send the impact note TIQ drafted", "cycle"]], "mode": "assisted",
+        "now": [["Review and send the impact note ABIQ drafted", "cycle"]], "mode": "assisted",
         "tiq": "Fills the tracker from the extraction, computes values and drafts the note." },
       { "code": "Q12", "name": "Load to Everest", "owner": "PM Team", "tools_before": ["Everest"],
         "before": [["Key each draft mark and range into the Everest pricing panel", "loan"]],
@@ -87,7 +87,7 @@
     { "name": "Finalise and distribute", "steps": [
       { "code": "Q19", "name": "Reconcile", "owner": "PM Team", "tools_before": ["Excel", "Everest", "Sentry"],
         "before": [["Compare the tracker with Everest", "loan"], ["Compare Everest ratings with the CMR", "loan"], ["Compare funded amounts with Sentry", "loan"]],
-        "now": [["Resolve the mismatches TIQ lists", "cycle"]], "mode": "assisted",
+        "now": [["Resolve the mismatches ABIQ lists", "cycle"]], "mode": "assisted",
         "tiq": "Compares every pair by code and lists only the mismatches, with both values." },
       { "code": "Q20", "name": "Written approval", "owner": "PM Team", "tools_before": ["Outlook", "OneDrive"],
         "before": [["Write the approval email with the schedule", "cycle"], ["Save the email and the reply to OneDrive", "cycle"]],

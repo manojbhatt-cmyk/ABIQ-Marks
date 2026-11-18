@@ -30,7 +30,7 @@ class Actor:
         return cls(user.email, user.role, user.display_name, user.deal_team_id)
 
 
-SYSTEM = Actor("system@tiq", "system", "TIQ system")
+SYSTEM = Actor("system@tiq", "system", "ABIQ system")
 
 # Permission matrix: action -> roles allowed (Master Spec section 7). "system" is used by the generator's
 # external events (borrower emails, Lincoln files) and by derived recomputes, never for decisions.

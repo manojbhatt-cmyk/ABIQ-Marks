@@ -15,18 +15,33 @@ from domain.models import (AgendaTestResult, Cmr, CmrRecommendation, CommitteeAg
 from domain.pdf import BODY, H1, H2, PageBreak, Spacer, build, grid, inch, para
 from domain.services.core import (Actor, BusinessRuleError, audit, bump_loop, cycle_date, now, require, rule,
                                   rule_meta, users_by_role)
+from domain.services.cycle import step_index
 from domain.services.lincoln import latest_valuation
 from domain.services.tracker import recompute
 
 TEST_LABELS = {"watchlist": "Watchlist", "downgrade": "Rating downgrade", "mark_move_10pct": "Mark move",
-               "outside_lincoln_range": "Outside Lincoln range", "g1_unresolved": "G1 unresolved (TIQ addition)"}
+               "outside_lincoln_range": "Outside Lincoln range", "g1_unresolved": "G1 unresolved (ABIQ addition)"}
+
+
+def _decided_agenda(session: Session, cycle_id: str) -> CommitteeAgenda | None:
+    """The latest agenda if the committee has already recorded a decision on it."""
+    ag = latest_agenda(session, cycle_id)
+    if ag and session.query(CommitteeDecision).join(CommitteeAgendaItem).filter(
+            CommitteeAgendaItem.agenda_id == ag.id).first():
+        return ag
+    return None
 
 
 def run_agenda_tests(session: Session, actor: Actor, cycle_id: str) -> dict:
     require(actor, "agenda.manage")
+    ag = _decided_agenda(session, cycle_id)
+    if ag:
+        raise BusinessRuleError(f"The committee has already decided on agenda v{ag.version}. Rebuilding it would "
+                                "undo those decisions; revise a decision on the Meeting tab or add a loan by hand.")
     rows = {r.cycle_loan_id: r for r in recompute(session, cycle_id, "agenda")}
     tests = rule(session, "agenda.tests", list(TEST_LABELS))
     thr = float(rule(session, "agenda.mark_move_threshold", 0.10))
+    max_loops = int(rule(session, "g1.max_send_back_loops", 3))
     version = {k: rule_meta(session, k)["version"] for k in ("agenda.tests", "agenda.mark_move_threshold")}
     run_id = str(uuid.uuid4())
     results = {}
@@ -40,7 +55,8 @@ def run_agenda_tests(session: Session, actor: Actor, cycle_id: str) -> dict:
             "mark_move_10pct": move is not None and abs(move) >= thr - 1e-9,
             "outside_lincoln_range": proposed is not None and r.lincoln_range_low is not None and not (
                 r.lincoln_range_low <= proposed <= r.lincoln_range_high),
-            "g1_unresolved": r.deal_team_mark is None,
+            # Functional Spec Q16: fires when loop QA reached the send-back limit and the mark is still not agreed
+            "g1_unresolved": (cl.loop_counts_json or {}).get("QA", 0) >= max_loops and r.deal_team_mark is None,
         }
         inputs = {"watchlist": r.watchlist_flag, "previous_rating": r.previous_rating, "rating": r.current_rating,
                   "previous_mark": r.previous_mark, "proposed_mark": proposed,
@@ -80,6 +96,8 @@ def build_agenda(session: Session, actor: Actor, cycle_id: str) -> CommitteeAgen
             session.add(CommitteeAgendaItem(agenda_id=ag.id, cycle_loan_id=cl_id, reasons_json=res["reasons"],
                                             source="rules", sort_order=order))
             cl.status, cl.current_step = "on_agenda", "Q16"
+        elif cl.status == "approved" and step_index(cl.current_step) < step_index("Q19"):
+            cl.current_step = "Q19"  # not on the agenda: approved at the Deal Team mark, next is reconciliation
     for m in manual:
         if not session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, cycle_loan_id=m.cycle_loan_id).first():
             order += 1
@@ -156,6 +174,8 @@ def build_pack(session: Session, actor: Actor, cycle_id: str, cover_note: str | 
     ag = latest_agenda(session, cycle_id)
     if not ag:
         raise BusinessRuleError("Build the agenda first")
+    # one pack build at a time per agenda: a double click must not create two packs with the same version
+    session.query(CommitteeAgenda).filter_by(id=ag.id).with_for_update().populate_existing().one()
     cyc = session.get(ValuationCycle, cycle_id)
     items = [i for i in session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, removed=False).order_by(
         CommitteeAgendaItem.sort_order)]
@@ -256,6 +276,10 @@ def record_decision(session: Session, actor: Actor, item_id: str, outcome: str, 
     session.flush()
     lv = latest_valuation(session, cl.id)
     note = ""
+    if outcome == "change":
+        from domain.services import mark_moves
+
+        mark_moves.check(session, cl, float(decided_mark), "committee")
     if outcome in ("approve", "change"):
         it.status = "decided"
         cl.status, cl.current_step = "decided", "Q19"

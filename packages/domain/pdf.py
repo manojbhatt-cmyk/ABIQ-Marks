@@ -22,7 +22,7 @@ LINCOLN_GREEN = colors.HexColor("#00A67E")
 TIQ_NAVY = colors.HexColor("#183850")
 ROW_GREY = colors.HexColor("#F0F0F0")
 
-# Stone & Sage (TIQ's own documents): graphite text, warm hairlines, sage for AI and accents. No blue.
+# Stone & Sage (ABIQ's own documents): graphite text, warm hairlines, sage for AI and accents. No blue.
 GRAPHITE = colors.HexColor("#3D3935")
 INK = colors.HexColor("#2B2926")
 MUTED = colors.HexColor("#625D56")

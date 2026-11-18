@@ -30,7 +30,7 @@ export default function Distribution() {
       <div className="mb-6 grid grid-cols-3 gap-4">
         <Kpi label="Cycle" value={cycle.status === "closed" ? "Closed" : cycle.status} />
         <Kpi label="Final portfolio value" value={fmt.m(data.schedule.total)} sub={`change ${fmt.delta(data.schedule.delta)}`} tone={data.schedule.delta < 0 ? "red" : undefined} />
-        <Kpi label="Story loans" value={fmt.m(data.schedule.story_total)} sub={`from ${fmt.m(data.schedule.story_previous)}`} />
+        <Kpi label="Loans" value={data.schedule.lines.length} sub={`from ${fmt.m(data.schedule.previous_total)}`} />
       </div>
       <div className="grid grid-cols-3 gap-4">
         {groups.map(([id, name, members]: any) => {

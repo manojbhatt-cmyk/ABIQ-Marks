@@ -253,7 +253,7 @@ def governance(session: Session, actor: Actor, cycle_id: str, decision: str, rea
         writeback.upsert(session, "EVEREST", "GOVERNANCE_SIGNOFF", {"SIGNOFF_ID": sid},
                          {"PERIOD": cyc.period, "CYCLE_TYPE": "quarterly", "SIGNED_BY": actor.email,
                           "SIGNED_AT": g.signed_at.isoformat(timespec="seconds")[:19], "SCHEDULE_HASH": h,
-                          "SCHEDULE_DOC_REF": f"onedrive/{g.evidence_path}", "NOTES": "Signed in TIQ"},
+                          "SCHEDULE_DOC_REF": f"onedrive/{g.evidence_path}", "NOTES": "Signed in ABIQ"},
                          actor=actor.email, tiq_entity_type="governance_signoff", tiq_entity_id=g.id)
         g.everest_signoff_id = sid
         for cl in session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True):

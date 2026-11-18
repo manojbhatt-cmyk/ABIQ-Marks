@@ -4,7 +4,7 @@ Every write to a client system (Everest pricing panel, risk rating, spread, CMR,
 governance sign-off) goes through here. Modes:
   synthetic_write  apply to the synthetic warehouse schema now (POC default)
   queue            record the change for a person to apply in the client system
-Writes are idempotent: the same TIQ entity version never produces two changes.
+Writes are idempotent: the same ABIQ entity version never produces two changes.
 """
 from __future__ import annotations
 

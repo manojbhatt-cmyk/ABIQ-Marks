@@ -21,7 +21,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode; rese
         <div className="flex-1">
           <div className="font-semibold">This screen hit an error</div>
           <div className="mt-1 font-mono text-xs text-slate-500">{this.state.error.message}</div>
-          <div className="mt-2 text-slate-500">The rest of TIQ still works. Try again, or open another screen from the menu.</div>
+          <div className="mt-2 text-slate-500">The rest of ABIQ still works. Try again, or open another screen from the menu.</div>
         </div>
         <button className="btn-secondary" onClick={() => this.setState({ error: null })}>Try again</button>
       </div>

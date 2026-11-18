@@ -1,5 +1,5 @@
 """In-platform messaging. Internal communication (PM Team, Deal Teams, reviewers, committee, governance,
-Finance and IR) happens inside TIQ: a message plus a notification that links to the screen where the
+Finance and IR) happens inside ABIQ: a message plus a notification that links to the screen where the
 recipient acts. Email is kept only for third parties (borrowers, Lincoln) through the mailbox connector."""
 from __future__ import annotations
 

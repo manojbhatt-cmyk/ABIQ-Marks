@@ -1,4 +1,4 @@
--- One-time setup for TIQ Marks in the Snowflake trial account. Run in Snowsight as ACCOUNTADMIN.
+-- One-time setup for ABIQ Marks in the Snowflake trial account. Run in Snowsight as ACCOUNTADMIN.
 -- After this, `synth load --target snowflake` (run as TIQ_SERVICE / GEN_LOADER) creates the schemas and tables.
 
 USE ROLE ACCOUNTADMIN;

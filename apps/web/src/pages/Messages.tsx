@@ -49,7 +49,7 @@ export default function Messages() {
             <div className="flex items-start justify-between gap-4">
               <div><div className="text-xl font-bold text-navy-900">{m.subject}</div>
                 <div className="mt-1 text-xs text-slate-500">From {m.from} ({ROLE_LABEL[m.from_role] || m.from_role}) to {m.to.join(", ")} · {fmt.date(m.at)}</div></div>
-              {m.link && <button className="btn-primary shrink-0" onClick={() => nav(m.link)}>Open in TIQ <ArrowRight size={14} /></button>}
+              {m.link && <button className="btn-primary shrink-0" onClick={() => nav(m.link)}>Open in ABIQ <ArrowRight size={14} /></button>}
             </div>
             <div className="mt-5 whitespace-pre-wrap rounded-xl bg-canvas-50 p-4 text-sm leading-relaxed">{m.body}</div>
             {m.attachments?.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{m.attachments.map((a: any) => <button key={a.path} className="flex items-center gap-1 rounded-lg border border-canvas-200 px-2 py-1 text-xs text-brand-700 hover:bg-brand-50" onClick={() => openFile(`/api/files/${a.store}/${a.path}`)}><Paperclip size={12} />{a.name}</button>)}</div>}
@@ -58,7 +58,7 @@ export default function Messages() {
       </div>
       {compose && (
         <Modal title="New message" onClose={() => setCompose(false)} footer={<><button className="btn-secondary" onClick={() => setCompose(false)}>Cancel</button>
-          <button className="btn-primary" disabled={!to.length || !body} onClick={() => act.run(async () => { await api("/messages", { body: { to, subject, body, cycle_id: cycle?.id } }); setCompose(false); setTo([]); setSubject(""); setBody(""); setBox("sent"); reload(); })}><Send size={13} /> Send in TIQ</button></>}>
+          <button className="btn-primary" disabled={!to.length || !body} onClick={() => act.run(async () => { await api("/messages", { body: { to, subject, body, cycle_id: cycle?.id } }); setCompose(false); setTo([]); setSubject(""); setBody(""); setBox("sent"); reload(); })}><Send size={13} /> Send in ABIQ</button></>}>
           <Field label="To"><select className="input" value="" onChange={(e) => e.target.value && !to.includes(e.target.value) && setTo([...to, e.target.value])}><option value="">Add a team, role or person</option>{options.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</select></Field>
           <div className="my-2 flex flex-wrap gap-1">{to.map((t) => <button key={t} onClick={() => setTo(to.filter((x) => x !== t))}><Chip tone="violet">{options.find((o) => o.v === t)?.l || t} ×</Chip></button>)}</div>
           <Field label="Subject"><input className="input" value={subject} onChange={(e) => setSubject(e.target.value)} /></Field>

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from domain.models import (Approval, ApprovalRequest, Cmr, CommitteeAgendaItem, CommitteePack, CycleLoan, Distribution,
+from domain.models import (Approval, ApprovalRequest, Cmr, CommitteeAgendaItem, CommitteePack, CycleLoan, Deadline,
+                           Distribution,
                            Document, FinancialSpread, GovernanceSignoff, ImpactSummary, LincolnPackage, LincolnValuation,
                            ReconciliationRun, Reminder, ValuationCycle, ValuationDecision)
 from domain.services.core import Actor
@@ -34,7 +35,7 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
     if cyc is None:
         if role in ("pm_team", "admin"):
             items.append(_item("Q1", "Start the 2026-Q3 cycle", "Read the loan universe from Snowflake, set the calendar "
-                               "and send the kickoff to every deal team inside TIQ.", "/kickoff", priority=1))
+                               "and send the kickoff to every deal team inside ABIQ.", "/kickoff", priority=1))
         return {"items": items, "cycle": None}
     loans = session.query(CycleLoan).filter_by(cycle_id=cyc.id, in_scope=True).order_by(CycleLoan.facility_id).all()
     if role in ("deal_analyst", "deal_lead"):
@@ -53,11 +54,11 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
     if role in ("pm_team", "admin"):
         if cyc.status == "draft":
             items.append(_item("Q1", "Send the kickoff", "Review the calendar and the per-team messages, then send them in "
-                               "TIQ. Deal teams get their loans, deadlines and tasks.", "/kickoff", priority=1))
+                               "ABIQ. Deal teams get their loans, deadlines and tasks.", "/kickoff", priority=1))
         for r in session.query(Reminder).join(CycleLoan, CycleLoan.id == Reminder.cycle_loan_id).filter(
                 CycleLoan.cycle_id == cyc.id, Reminder.status == "draft"):
             cl = session.get(CycleLoan, r.cycle_loan_id)
-            items.append(_item("Q2", f"Send the chase to {cl.borrower}", "TIQ drafted a reminder to the borrower "
+            items.append(_item("Q2", f"Send the chase to {cl.borrower}", "ABIQ drafted a reminder to the borrower "
                                "(external email). Review and send.", "/intake", loan=cl.borrower))
         low = session.query(Document).filter(Document.cycle_id == cyc.id, Document.store == "uploads",
                                              Document.status == "parsed").count()
@@ -91,7 +92,7 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             CycleLoan.cycle_id == cyc.id).count()
         if latest_v and (not sent_imp or (sent_imp.sent_at < latest_v)):
             items.append(_item("Q11", "Send the impact note to Finance", "Lincoln drafts changed the portfolio value. "
-                               "TIQ drafts the note; you review and send it in TIQ.", "/tracker", priority=1))
+                               "ABIQ drafts the note; you review and send it in ABIQ.", "/tracker", priority=1))
         for cl in loans:
             c = cmr_of(cl)
             if c and c.current_stage == "pm_team":
@@ -111,17 +112,25 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
         if all_g1 and not ag:
             items.append(_item("Q16", "Build the committee agenda", "Every loan has passed G1. Run the agenda tests.",
                                "/committee", priority=1))
+        g1_due = session.query(Deadline).filter_by(cycle_id=cyc.id, step_code="Q14").first()
+        late = [cl.borrower for cl in loans if g1_due and cyc.current_day > g1_due.due_day and cl.status in (
+            "not_started", "waiting_on_borrower", "in_progress", "in_review", "sent_back", "waiting_on_lincoln")]
+        if late and not ag:
+            items.append(_item("Q14", f"Gate 1 overdue: {', '.join(late)}", "Not through Gate 1 by the deadline "
+                               f"(day {g1_due.due_day}). AllianceBernstein has not defined what happens next: wait, "
+                               "take the loan to the committee as an exception, or carry last quarter's mark. "
+                               "Open question for AB.", "/tracker", priority=1))
         if ag:
-            pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc()).first()
+            pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc(), CommitteePack.built_at.desc()).first()
             if not pack or not pack.sent_email_message_id:
-                items.append(_item("Q17", "Build and send the committee pack", "TIQ drafts the one-pagers; the pack goes "
-                                   "to the committee inside TIQ.", "/committee", priority=1))
+                items.append(_item("Q17", "Build and send the committee pack", "ABIQ drafts the one-pagers; the pack goes "
+                                   "to the committee inside ABIQ.", "/committee", priority=1))
             from domain.services import meeting as meeting_svc
 
             mt = meeting_svc.current(session, cyc.id)
             if not mt:
-                items.append(_item("Q17", "Organise the committee meeting", "TIQ drafts the date, time, agenda slots and "
-                                   "attendees; you check and send the invitation in TIQ.", "/committee", priority=1))
+                items.append(_item("Q17", "Organise the committee meeting", "ABIQ drafts the date, time, agenda slots and "
+                                   "attendees; you check and send the invitation in ABIQ.", "/committee", priority=1))
             pending = session.query(CommitteeAgendaItem).filter_by(agenda_id=ag.id, removed=False, status="pending").count()
             run = session.query(ReconciliationRun).filter_by(cycle_id=cyc.id).order_by(ReconciliationRun.run_no.desc()).first()
             if pack and pack.sent_email_message_id and not pending and (not run or run.status != "clean"):
@@ -135,7 +144,7 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             gov = session.query(GovernanceSignoff).filter_by(cycle_id=cyc.id, status="signed").first()
             if gov and not session.query(Distribution).filter_by(cycle_id=cyc.id).first():
                 items.append(_item("Q22", "Distribute and close the cycle", "Send the final CMRs to Finance, IR and the "
-                                   "Deal Teams inside TIQ.", "/distribution", priority=1))
+                                   "Deal Teams inside ABIQ.", "/distribution", priority=1))
 
     if role in ("deal_analyst", "deal_lead"):
         for cl in loans:
@@ -154,7 +163,7 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
             elif not c or (c.status == "draft" and not c.current_stage):
                 again = c is not None and c.submitted_at is not None
                 items.append(_item("Q5", f"{'Fix and resubmit' if again else 'Draft and submit'} {cl.borrower}'s CMR",
-                                   "Address the review comments." if again else "Draft with TIQ, set the recommendation, "
+                                   "Address the review comments." if again else "Draft with ABIQ, set the recommendation, "
                                    "attach evidence and submit.", f"/loans/{cl.id}/cmr", loan=cl.borrower, priority=1))
             elif c.status == "filed" and c.current_stage is None:
                 items.append(_item("Q9", f"Resolve SCT comments on {cl.borrower}", "Resolve them so the PM Team can re-file.",
@@ -199,7 +208,7 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
         from domain.services.committee import latest_agenda
 
         ag = latest_agenda(session, cyc.id)
-        pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc()).first() if ag else None
+        pack = session.query(CommitteePack).filter_by(agenda_id=ag.id).order_by(CommitteePack.version.desc(), CommitteePack.built_at.desc()).first() if ag else None
         from domain.services import meeting as meeting_svc
 
         mt = meeting_svc.current(session, cyc.id) if ag else None
@@ -241,12 +250,17 @@ def process_map(session: Session, cycle_id: str) -> list[dict]:
     cyc = session.get(ValuationCycle, cycle_id)
     loans = session.query(CycleLoan).filter_by(cycle_id=cycle_id, in_scope=True).all()
     n = len(loans) or 1
+    # From the agenda on, steps are cycle-wide: a loan the committee is done with is where the cycle is.
+    m = _milestone(session, cycle_id)
+    past_g1 = ("approved", "decided", "reconciled", "final")
+    pos = {l.id: max(step_index(l.current_step), step_index(f"Q{m}") if m and l.status in past_g1 else -1)
+           for l in loans}
     out = []
     for s in STEP_ORDER:
         i = step_index(s)
-        done = sum(1 for l in loans if step_index(l.current_step) > i or (s == "Q22" and l.status == "final"
-                                                                           and cyc.status == "closed"))
-        at = sum(1 for l in loans if l.current_step == s)
+        done = sum(1 for l in loans if pos[l.id] > i or (s == "Q22" and l.status == "final"
+                                                          and cyc.status == "closed"))
+        at = sum(1 for l in loans if pos[l.id] == i)
         out.append({"step": s, "name": STEP_NAMES[s], "done": done, "at": at, "total": n,
                     "state": "done" if done == n else ("active" if at or done else "todo")})
     if cyc.status == "draft":
@@ -254,15 +268,15 @@ def process_map(session: Session, cycle_id: str) -> list[dict]:
     return out
 
 
-def cycle_stage(session: Session, cycle_id: str) -> tuple[int, float]:
-    """Where the cycle is (step number) and how far along (0 to 1), from milestones rather than the calendar."""
-    from domain.models import (ApprovalRequest, CommitteeAgendaItem, CommitteeDecision, CommitteePack,
-                               GovernanceSignoff, ReconciliationRun)
+def _milestone(session: Session, cycle_id: str) -> int | None:
+    """The cycle-wide step (16 to 22) from its milestones, or None before the agenda is built."""
+    from domain.models import CommitteeDecision, GovernanceSignoff
+
     from domain.services.committee import latest_agenda
 
     cyc = session.get(ValuationCycle, cycle_id)
     if cyc.status == "closed":
-        return 22, 1.0
+        return 22
     step = None
     if session.query(GovernanceSignoff).filter_by(cycle_id=cycle_id, status="signed").first():
         step = 22
@@ -282,6 +296,14 @@ def cycle_stage(session: Session, cycle_id: str) -> tuple[int, float]:
                     CommitteeAgendaItem.agenda_id == ag.id).first() else 17
             else:
                 step = 16
+    return step
+
+
+def cycle_stage(session: Session, cycle_id: str) -> tuple[int, float]:
+    """Where the cycle is (step number) and how far along (0 to 1), from milestones rather than the calendar."""
+    if session.get(ValuationCycle, cycle_id).status == "closed":
+        return 22, 1.0
+    step = _milestone(session, cycle_id)
     if step is None:
         steps = process_map(session, cycle_id)
         step = int(next((p["step"] for p in steps if p["state"] != "done"), "Q15")[1:])

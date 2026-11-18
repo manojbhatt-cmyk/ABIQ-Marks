@@ -6,7 +6,7 @@ it; every other loan stays simulated. Each new message is copied once into the `
 Sending happens only when a person clicks Send on that loan's chase. Settings come from .env:
 
   MAIL_LIVE_ENABLED=true          MAIL_LIVE_FACILITY=F-0002
-  MAIL_USER / MAIL_PASSWORD       the mailbox TIQ reads and sends from (an app password, never committed)
+  MAIL_USER / MAIL_PASSWORD       the mailbox ABIQ reads and sends from (an app password, never committed)
   MAIL_IMAP_HOST, MAIL_IMAP_PORT  default imap.gmail.com:993
   MAIL_SMTP_HOST, MAIL_SMTP_PORT  default smtp.gmail.com:465 (587 uses STARTTLS)
   MAIL_LIVE_BORROWER              the borrower's real address (mail from it is the borrower's)
@@ -81,7 +81,7 @@ def poll(since: datetime | None = None) -> list[str]:
                 _, msg = con.uid("fetch", uid, "(RFC822)")
                 raw = next((p[1] for p in msg if isinstance(p, tuple)), None)
                 at = _received(raw) if raw else None
-                if raw and since and (at is None or at < since):
+                if raw and since and (at is None or at < since.replace(microsecond=0)):  # Date has whole seconds
                     store.put("mail", skipped, b"")  # older than the cycle: never filed, never fetched again
                     continue
                 if raw:

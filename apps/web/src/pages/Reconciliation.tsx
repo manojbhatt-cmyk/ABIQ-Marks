@@ -47,7 +47,6 @@ export default function Reconciliation() {
           <div className="max-h-[480px] overflow-y-auto">{sch.lines.map((l: any) => <div key={l.facility_id} className="flex justify-between border-b border-canvas-100 py-1 text-xs"><span>{l.borrower}</span><span className="num">{fmt.mark(l.mark)} / {fmt.num(l.value, 3)}</span></div>)}</div>
           <div className="mt-3 flex justify-between text-sm font-semibold"><span>Total</span><span className="num">{fmt.m(sch.total)}</span></div>
           <div className="flex justify-between text-sm"><span>Change</span><span className="num">{fmt.delta(sch.delta)}</span></div>
-          <div className="flex justify-between text-sm"><span>Story loans (Maple, Harbor, Sunrise)</span><span className="num">{fmt.m(sch.story_total)}</span></div>
         </Card>
       </div>
     </>

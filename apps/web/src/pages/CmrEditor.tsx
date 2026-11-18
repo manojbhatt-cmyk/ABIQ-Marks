@@ -82,7 +82,7 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
   if (loading && !data) return <Loading />;
   if (error) return <ErrorState error={error} retry={reload} />;
   const refresh = () => { reload(); onChange(); };
-  if (!data) return <Card title="CMR"><Empty text="No CMR yet for this quarter" hint="Create it, then draft the sections with TIQ or write them yourself." action={<button className="btn-primary" onClick={() => act.run(async () => { await api(`/loans/${loanId}/cmr`, { body: {} }); refresh(); })}>Create CMR</button>} />{act.node}</Card>;
+  if (!data) return <Card title="CMR"><Empty text="No CMR yet for this quarter" hint="Create it, then draft the sections with ABIQ or write them yourself." action={<button className="btn-primary" onClick={() => act.run(async () => { await api(`/loans/${loanId}/cmr`, { body: {} }); refresh(); })}>Create CMR</button>} />{act.node}</Card>;
   const c = data.cmr;
   const editable = c.status === "draft";
   const sug = data.recommendation_suggestion;
@@ -104,7 +104,7 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
           {data.files.map((f: any) => <Chip key={f.version} tone="green" dot>v{f.version} filed {fmt.date(f.filed_at)}</Chip>)}
         </div>
         <div className="flex flex-wrap gap-2">
-          {editable && <button className="btn-secondary" onClick={() => setAllOpen(true)}><Sparkles size={16} aria-hidden="true" /> Draft all with TIQ</button>}
+          {editable && <button className="btn-secondary" onClick={() => setAllOpen(true)}><Sparkles size={16} aria-hidden="true" /> Draft all with ABIQ</button>}
           <button className="btn-secondary" onClick={() => openFile(`/api/cmr/${c.id}/pdf`)}><FileDown size={16} aria-hidden="true" /> Export PDF</button>
           {editable && <button className="btn-primary" onClick={() => act.run(async () => { const r = await api(`/cmr/${c.id}/submit`, { body: {} }); if (!r.submitted) setFindings(r.findings); else refresh(); })}>Submit for review</button>}
         </div>
@@ -130,14 +130,14 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
           <div className="min-w-0 space-y-4">
             {cur && (
               <Card title={<span className="flex items-baseline gap-2.5"><span className="num text-[13px] font-medium text-faint">{String(idx + 1).padStart(2, "0")}</span>{cur.title}</span>}
-                actions={<><StatusChip status={cur.status} />{cur.kept_ratio != null && cur.status !== "ai_draft" && <span className="text-xs text-muted">from TIQ draft{cur.status === "edited" ? ", edited" : ""}</span>}</>}>
+                actions={<><StatusChip status={cur.status} />{cur.kept_ratio != null && cur.status !== "ai_draft" && <span className="text-xs text-muted">from ABIQ draft{cur.status === "edited" ? ", edited" : ""}</span>}</>}>
                 {pending && cur.draft && (
                   <div className="ai-note mb-4">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <AiChip>{pending.kind === "cmr_redraft" ? "TIQ redraft" : "TIQ draft"}</AiChip>
+                      <AiChip>{pending.kind === "cmr_redraft" ? "ABIQ redraft" : "ABIQ draft"}</AiChip>
                       {pending.instruction && <span className="text-[13px] text-muted">You asked: “{pending.instruction}”</span>}
                     </div>
-                    {pending.nothing_found && <div className="mb-2 text-[13px] text-warn-700">TIQ found nothing new on this in the loan's documents. Add it in the text below, or attach the document first.</div>}
+                    {pending.nothing_found && <div className="mb-2 text-[13px] text-warn-700">ABIQ found nothing new on this in the loan's documents. Add it in the text below, or attach the document first.</div>}
                     {pending.kind === "cmr_redraft" && cur.body && (
                       <details className="mb-2 text-[13px]"><summary className="cursor-pointer text-muted">Show the current text</summary><div className="mt-1 whitespace-pre-wrap text-muted">{cur.body}</div></details>)}
                     <div className="whitespace-pre-wrap text-[14px] leading-[1.65]">{cur.draft}</div>
@@ -147,16 +147,16 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
                       <button className="btn-ghost btn-sm" onClick={() => act.run(async () => { await api(`/cmr-sections/${cur.id}`, { body: { action: "reject" } }); refresh(); })}>Reject</button>
                     </div>}
                   </div>)}
-                <textarea className="input min-h-[220px] leading-[1.65]" value={text} disabled={!editable} onChange={(e) => setText(e.target.value)} placeholder="Write this section, or ask TIQ to draft it" />
+                <textarea className="input min-h-[220px] leading-[1.65]" value={text} disabled={!editable} onChange={(e) => setText(e.target.value)} placeholder="Write this section, or ask ABIQ to draft it" />
                 <Sources cites={cur.citations} />
                 {editable && <div className="mt-3 flex flex-wrap gap-2">
                   <button className="btn-secondary" disabled={text === (cur.body || "")} onClick={() => act.run(async () => { await api(`/cmr-sections/${cur.id}`, { body: { action: cur.draft ? "edit" : "save", body: text } }); refresh(); })}>Save section</button>
-                  <button className="btn-ghost" onClick={() => act.run(async () => { await api(`/cmr/${c.id}/draft`, { body: { codes: [cur.code] } }); refresh(); })}><Sparkles size={16} aria-hidden="true" /> Draft this section with TIQ</button>
+                  <button className="btn-ghost" onClick={() => act.run(async () => { await api(`/cmr/${c.id}/draft`, { body: { codes: [cur.code] } }); refresh(); })}><Sparkles size={16} aria-hidden="true" /> Draft this section with ABIQ</button>
                 </div>}
                 {editable && (
                   <div className="mt-5 rounded-panel border border-line bg-raised p-4">
-                    <label htmlFor="tell-tiq" className="flex items-center gap-2 text-[13px] font-medium text-ink"><Wand2 size={16} className="text-accent-600" aria-hidden="true" /> Tell TIQ what's missing</label>
-                    <p className="mt-0.5 text-xs text-muted">TIQ redrafts this section from the current text, your note and the loan's documents. You review the result before anything changes.</p>
+                    <label htmlFor="tell-tiq" className="flex items-center gap-2 text-[13px] font-medium text-ink"><Wand2 size={16} className="text-accent-600" aria-hidden="true" /> Tell ABIQ what's missing</label>
+                    <p className="mt-0.5 text-xs text-muted">ABIQ redrafts this section from the current text, your note and the loan's documents. You review the result before anything changes.</p>
                     <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
                       <input id="tell-tiq" className="input flex-1" value={ask} onChange={(e) => setAsk(e.target.value)} onKeyDown={(e) => e.key === "Enter" && ask.trim().length > 3 && !asking && redraft()}
                         placeholder="For example: add the sponsor equity commitment and when the funds arrive" />
@@ -175,7 +175,7 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
           <div className="space-y-4">
             {sug && sug.status === "proposed" && (
               <div className="ai-note">
-                <div className="mb-1.5 flex items-center gap-2"><AiChip>TIQ suggests</AiChip><span className="text-[13px] font-medium">A recommendation</span></div>
+                <div className="mb-1.5 flex items-center gap-2"><AiChip>ABIQ suggests</AiChip><span className="text-[13px] font-medium">A recommendation</span></div>
                 <div className="text-[13.5px]">{sug.payload.text}</div>
                 <div className="mt-1 text-xs text-muted">{sug.payload.rationale}</div>
                 {editable && <button className="btn-secondary btn-sm mt-3" onClick={() => setRec({ ...rec, ...sug.payload })}>Use these values</button>}
@@ -208,11 +208,11 @@ export default function CmrEditor({ loanId, onChange }: { loanId: string; onChan
       )}
 
       {allOpen && (
-        <Modal title="Draft all sections with TIQ" onClose={() => setAllOpen(false)} footer={<>
+        <Modal title="Draft all sections with ABIQ" onClose={() => setAllOpen(false)} footer={<>
           <button className="btn-ghost" onClick={() => setAllOpen(false)}>Cancel</button>
           <button className="btn-primary" disabled={act.busy} onClick={() => act.run(async () => { await api(`/cmr/${c.id}/draft`, { body: { instruction: allNote } }); setAllOpen(false); setAllNote(""); refresh(); })}>{act.busy ? "Drafting" : "Draft all"}</button></>}>
-          <p className="mb-3 text-[13.5px] text-muted">TIQ drafts every section from the approved spread and the loan's documents. Each draft waits for you to accept, edit or reject it.</p>
-          <Field label="Anything TIQ should cover? (optional)" help="For example: stress the customer concentration and the waiver conditions.">
+          <p className="mb-3 text-[13.5px] text-muted">ABIQ drafts every section from the approved spread and the loan's documents. Each draft waits for you to accept, edit or reject it.</p>
+          <Field label="Anything ABIQ should cover? (optional)" help="For example: stress the customer concentration and the waiver conditions.">
             <textarea className="input min-h-[88px]" value={allNote} onChange={(e) => setAllNote(e.target.value)} />
           </Field>
         </Modal>)}

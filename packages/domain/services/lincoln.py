@@ -138,6 +138,9 @@ def ingest_lincoln(session: Session, cycle_id: str, actor: Actor = SYSTEM) -> li
                 suggest(session, run, "extraction", "lincoln_valuation", lv.id, {**sheet, "yield": ry, **check},
                         check["confidence"])
             created.append(lv)
+            from domain.services import mark_moves
+
+            mark_moves.check(session, cl, lv.point_estimate, "lincoln_draft")
             if version > 1:
                 _loop(cl, "QC")
             cl.lincoln_track_status, cl.lincoln_step = "marks_received", "Q11"

@@ -16,7 +16,7 @@ export default function Committee() {
   if (error) return <ErrorState error={error} retry={reload} />;
   return (
     <>
-      <PageHeader title={tab === "meeting" ? "Committee meeting" : "Committee agenda and pack"} ai subtitle={tab === "meeting" ? "Gate 2: the chair records each decision and its rationale during the meeting." : "TIQ tests every loan against the agenda rules; the PM Team builds the agenda, the pack and the meeting."} />
+      <PageHeader title={tab === "meeting" ? "Committee meeting" : "Committee agenda and pack"} ai subtitle={tab === "meeting" ? "Gate 2: the chair records each decision and its rationale during the meeting." : "ABIQ tests every loan against the agenda rules; the PM Team builds the agenda, the pack and the meeting."} />
       <Tabs active={tab} onChange={(x) => nav(`/committee/${x}`)} tabs={[{ id: "agenda", label: "Agenda and pack" }, { id: "meeting", label: "Meeting" }]} />
       {tab === "agenda" ? <Agenda data={data} reload={reload} pm={user?.role === "pm_team"} cycleId={cycle.id} /> : <Meeting data={data} reload={reload} canDecide={["committee_member", "committee_chair"].includes(user!.role)} />}
     </>
@@ -31,8 +31,8 @@ function Agenda({ data, reload, pm, cycleId }: any) {
   return (
     <>
       {act.node}{confirm.node}
-      <Card title="Agenda tests" className="mb-6" actions={pm && <><button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycleId}/agenda/tests`, { body: {} }); reload(); })}>Run tests</button><button className="btn-primary" onClick={() => act.run(async () => { await api(`/cycles/${cycleId}/agenda`, { body: {} }); reload(); })}>Build agenda</button></>}>
-        <div className="mb-3 flex flex-wrap gap-2 text-xs">{data.tests.map((t: any) => <span key={t.code} className="flex items-center gap-1 rounded-lg bg-canvas-100 px-2 py-1">{t.label}{t.code === "mark_move_10pct" && ` (${(data.threshold.value * 100).toFixed(0)} percent)`}{t.tiq_addition ? <AssumedChip dq="TIQ addition" /> : <AssumedChip dq="DQ17" />}</span>)}</div>
+      <Card title="Agenda tests" className="mb-6" actions={pm && (data.items || []).some((i: any) => i.decision) ? <span className="text-xs text-muted">The committee has decided; the agenda is locked.</span> : pm && <><button className="btn-secondary" onClick={() => act.run(async () => { await api(`/cycles/${cycleId}/agenda/tests`, { body: {} }); reload(); })}>Run tests</button><button className="btn-primary" onClick={() => act.run(async () => { await api(`/cycles/${cycleId}/agenda`, { body: {} }); reload(); })}>Build agenda</button></>}>
+        <div className="mb-3 flex flex-wrap gap-2 text-xs">{data.tests.map((t: any) => <span key={t.code} className="flex items-center gap-1 rounded-lg bg-canvas-100 px-2 py-1">{t.label}{t.code === "mark_move_10pct" && ` (${(data.threshold.value * 100).toFixed(0)} percent)`}{t.tiq_addition ? <AssumedChip dq="ABIQ addition" /> : <AssumedChip dq="DQ17" />}</span>)}</div>
         <table className="w-full"><thead><tr><th className="th">Loan</th><th className="th">Team</th>{data.tests.map((t: any) => <th key={t.code} className="th text-center">{t.label}</th>)}<th className="th">Move</th><th className="th">Agenda</th>{pm && <th className="th" />}</tr></thead>
           <tbody>{data.grid.map((g: any) => (
             <tr key={g.cycle_loan_id} className={g.on_agenda ? "bg-raised" : ""}><td className="td font-medium">{g.borrower}</td><td className="td text-xs">{g.team}</td>
@@ -46,7 +46,7 @@ function Agenda({ data, reload, pm, cycleId }: any) {
         <div className="mb-6">
           {data.meeting ? <div className="space-y-2"><MeetingCard m={data.meeting} />{pm && <OrganiseMeeting cycleId={cycleId} existing={data.meeting} onDone={reload} />}</div>
             : <Card title="Committee meeting" actions={pm && <OrganiseMeeting cycleId={cycleId} onDone={reload} />}>
-              <div className="text-sm text-slate-500">Not organised yet. {pm ? "TIQ drafts the date, time, agenda slots and attendees from this agenda; you check and send the invitation in TIQ." : "The PM Team organises it once the agenda is built."}</div>
+              <div className="text-sm text-slate-500">Not organised yet. {pm ? "ABIQ drafts the date, time, agenda slots and attendees from this agenda; you check and send the invitation in ABIQ." : "The PM Team organises it once the agenda is built."}</div>
             </Card>}
         </div>)}
       {data.agenda && (
@@ -103,7 +103,7 @@ function Meeting({ data, reload, canDecide }: any) {
       {act.node}{confirm.node}
       <div className="card self-start p-2 xl:col-span-2">{items.map((i: any) => <button key={i.id} onClick={() => { setSel(i.id); setF({ outcome: "", members_present: f.members_present }); }} className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm ${item.id === i.id ? "bg-brand-50" : "hover:bg-canvas-100"}`}><div className="font-medium">{i.borrower}</div><StatusChip status={i.status} /></button>)}</div>
       <div className="xl:col-span-6 space-y-4">
-        <Card title={item.borrower} actions={<><button className="btn-ghost btn-sm" onClick={() => openAsk(`Why is ${item.borrower.split(" ")[0]} on the agenda?`)}>Ask TIQ</button><button className="btn-ghost btn-sm" onClick={() => window.location.assign(`/loans/${item.cycle_loan_id}/cmr`)}>Open CMR</button></>}>
+        <Card title={item.borrower} actions={<><button className="btn-ghost btn-sm" onClick={() => openAsk(`Why is ${item.borrower.split(" ")[0]} on the agenda?`)}>Ask ABIQ</button><button className="btn-ghost btn-sm" onClick={() => window.location.assign(`/loans/${item.cycle_loan_id}/cmr`)}>Open CMR</button></>}>
           {summary ? <div className="whitespace-pre-wrap text-sm">{summary.body.replace(/\*\*/g, "")}</div> : <div className="text-sm text-slate-400">Pack not built</div>}
           {summary && <div className="mt-3 rounded-lg bg-brand-50 p-3 text-sm"><b>Questions the pack raises:</b><ul className="ml-4 list-disc">{summary.questions.map((q: string) => <li key={q}>{q}</li>)}</ul></div>}
           {item.decision && <div className="mt-3 rounded-control border border-success-100 bg-success-50 px-4 py-2.5 text-[13.5px] text-success-700">Decided: {item.decision.outcome} {fmt.mark(item.decision.decided_mark)}{item.decision.rationale ? `: ${item.decision.rationale}` : ""} ({item.decision.recorded_by}){v && item.decision.decided_mark ? `. Decided ${item.decision.decided_mark.toFixed(2)}, ${item.decision.decided_mark >= v.low && item.decision.decided_mark <= v.high ? "inside" : "outside"} Lincoln range ${v.low.toFixed(2)} to ${v.high.toFixed(2)}` : ""}</div>}

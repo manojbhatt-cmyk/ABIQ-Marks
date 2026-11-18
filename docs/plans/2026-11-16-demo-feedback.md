@@ -16,10 +16,10 @@ These depart from `docs/specs/`. Each one goes in `docs/decisions.md` and the tr
 |---|---|---|
 | D-a | Demo portfolio cut to 5 in-scope loans: F-0001, F-0002 Harbor, F-0003 Sunrise, F-0004, F-0006. The story totals ($117.80M → $114.625M) stay, because they are computed on the story loans | Master Spec section 1 (portfolio), Data Spec (synthetic universe) |
 | D-b | Demo autopilot is on by default for every loan except Harbor; the "Autofill other loans" button is removed | Demo script only (autopilot is a demo device, not a spec feature) |
-| D-c | Ask TIQ moves from the sidebar to a floating chat button at the bottom right | Master Spec screen list (S-Ask) |
+| D-c | Ask ABIQ moves from the sidebar to a floating chat button at the bottom right | Master Spec screen list (S-Ask) |
 | D-d | Frontend restyled to Stone & Sage (`stone-sage-ui-design.md`), replacing the current Design.md look | Design.md |
 | D-e | Automatic deadline reminders to every task owner (e.g. "2 days left"), plus manual reminders from the PM Team | Functional Spec (chasing, A10) |
-| D-f | CMR "tell TIQ what it missed": the analyst gives an instruction and the agent redrafts the section. The draft stays a suggestion; the analyst still accepts it | Agentic AI Spec A2 |
+| D-f | CMR "tell ABIQ what it missed": the analyst gives an instruction and the agent redrafts the section. The draft stays a suggestion; the analyst still accepts it | Agentic AI Spec A2 |
 
 ## Parts
 
@@ -47,9 +47,9 @@ One branch and one pull request per part. Order is by demo risk: fixes first, th
 - **Manual:** PM Team gets a "Send reminder" action on My Work, the Tracker and each loan's task list, with an editable message, for a person or a whole step. Every reminder is audited.
 - Test: advancing the clock creates exactly one reminder per threshold; manual send is PM-only.
 
-### Part 5. CMR: tell TIQ what it missed, and a better CMR output, branch `p2/2.5-cmr-rewrite`
-- In the CMR editor, every section gets "Tell TIQ what's missing". The analyst types an instruction, e.g. "add the truck appraisal date and customer concentration". A2 redrafts that section using the current text, the instruction and the loan's documents and spread. The result is shown **as a suggestion** next to the current text, with Accept, Edit or Reject (agents prepare, people decide). Each instruction and redraft is stored on the agent run.
-- "Draft all with TIQ" accepts an optional instruction for the whole CMR.
+### Part 5. CMR: tell ABIQ what it missed, and a better CMR output, branch `p2/2.5-cmr-rewrite`
+- In the CMR editor, every section gets "Tell ABIQ what's missing". The analyst types an instruction, e.g. "add the truck appraisal date and customer concentration". A2 redrafts that section using the current text, the instruction and the loan's documents and spread. The result is shown **as a suggestion** next to the current text, with Accept, Edit or Reject (agents prepare, people decide). Each instruction and redraft is stored on the agent run.
+- "Draft all with ABIQ" accepts an optional instruction for the whole CMR.
 - CMR in the editor and the read view: clear section separation (numbered headings, hairline dividers, consistent spacing), and citations shown as small chips under each section.
 
 ### Part 6. Report PDFs with structure, branch `p2/2.6-pdf-layout`
@@ -57,10 +57,10 @@ One branch and one pull request per part. Order is by demo risk: fixes first, th
 - Colours follow the Stone & Sage palette (graphite, sage, hairlines).
 
 ### Part 7. Challenge Assistant output layout, branch `p2/2.7-challenge-layout`
-- Pricing (G1) tab: show the challenge as structured cards. Each card holds the assumption quoted from Lincoln, the finding, the evidence chips (open the document at the page), the math in a monospace block (55 / 16 = 3.4x vs 3.50x covenant), and the materiality badge. The draft send-back note goes below in an AI note with Copy and Use buttons. "TIQ suggests: consider send-back" stays a hint and is never pre-selected.
+- Pricing (G1) tab: show the challenge as structured cards. Each card holds the assumption quoted from Lincoln, the finding, the evidence chips (open the document at the page), the math in a monospace block (55 / 16 = 3.4x vs 3.50x covenant), and the materiality badge. The draft send-back note goes below in an AI note with Copy and Use buttons. "ABIQ suggests: consider send-back" stays a hint and is never pre-selected.
 
-### Part 8. Ask TIQ as a floating chat, branch `p2/2.8-ask-tiq-launcher`
-- Remove Ask TIQ from the sidebar and the top-bar search. Add a round launcher button at the bottom right on every page. It opens a chat panel (about 400 × 600, docked bottom right; full screen on phones) that keeps the conversation while you move between pages and knows the current page's loan or cycle.
+### Part 8. Ask ABIQ as a floating chat, branch `p2/2.8-ask-tiq-launcher`
+- Remove Ask ABIQ from the sidebar and the top-bar search. Add a round launcher button at the bottom right on every page. It opens a chat panel (about 400 × 600, docked bottom right; full screen on phones) that keeps the conversation while you move between pages and knows the current page's loan or cycle.
 
 ### Part 9. Stone & Sage restyle (frontend only), branch `p2/2.9-stone-sage`
 - Tokens from `stone-sage-ui-design.md` section 8 go into the global CSS and are mapped in `tailwind.config`. Remove every blue and purple class, and add light and dark themes.
@@ -70,7 +70,7 @@ One branch and one pull request per part. Order is by demo risk: fixes first, th
 - No API changes in this part.
 
 ### Part 10. Before vs now flow chart, branch `p2/2.10-process-flow`
-- One long page (in-app at `/process`, plus a shareable artifact). It shows two swimlane flows side by side: the old process (email, Excel, re-keying between Box, Everest and SharePoint) and the TIQ process (the same 22 steps; agents prepare, people decide). Each step is marked manual, assisted or automated.
+- One long page (in-app at `/process`, plus a shareable artifact). It shows two swimlane flows side by side: the old process (email, Excel, re-keying between Box, Everest and SharePoint) and the ABIQ process (the same 22 steps; agents prepare, people decide). Each step is marked manual, assisted or automated.
 - **% manual effort reduced:** the specs hold no baseline hours. Proposed method: count the manual actions per step before and now (re-keying, copying, chasing, drafting from blank), and show the reduction per step and overall. The count method is stated on the page. **If the client has baseline hours per step, send them and the page will use those instead.**
 
 ## Exit demo
@@ -78,9 +78,9 @@ One branch and one pull request per part. Order is by demo risk: fixes first, th
 From a reset with 5 loans:
 1. Autofill runs by itself.
 2. Present Harbor end to end, with the new reminders firing as the clock moves.
-3. Show the "tell TIQ what's missing" redraft on Harbor's CMR.
+3. Show the "tell ABIQ what's missing" redraft on Harbor's CMR.
 4. Show the new Challenge Assistant layout and the bordered PDFs.
-5. Ask TIQ works from the floating button on every page.
+5. Ask ABIQ works from the floating button on every page.
 6. Every screen is in Stone & Sage, light and dark.
 
 ## Answered in this round (no code needed)

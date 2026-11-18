@@ -9,7 +9,7 @@ const MAT: Record<string, { tone: "red" | "amber" | "neutral"; label: string }> 
   high: { tone: "red", label: "High materiality" }, medium: { tone: "amber", label: "Medium materiality" }, low: { tone: "neutral", label: "Low materiality" },
 };
 
-/** One finding: Lincoln's assumption, what TIQ found, the math, the evidence and how much it matters. */
+/** One finding: Lincoln's assumption, what ABIQ found, the math, the evidence and how much it matters. */
 function Finding({ d, n }: { d: Diff; n: number }) {
   const m = MAT[d.materiality] || MAT.low;
   const math = (d.math || "").split(/;\s+/).filter(Boolean);
@@ -27,7 +27,7 @@ function Finding({ d, n }: { d: Diff; n: number }) {
             <blockquote className="mt-1 border-l-2 border-strong pl-3 text-[13.5px] italic text-muted">“{d.assumption_quote}”</blockquote>
           </div>)}
         <div>
-          <div className="text-xs font-medium text-muted">What TIQ found</div>
+          <div className="text-xs font-medium text-muted">What ABIQ found</div>
           <p className="mt-1 text-[14px] leading-relaxed text-ink">{d.finding}</p>
         </div>
         {math.length > 0 && (
@@ -78,7 +78,7 @@ export default function Challenge({ challenge, canRun, onRun, onUseNote, running
         {high > 0 && (
           <div className="flex items-start gap-2 rounded-control border border-line bg-raised px-3 py-2 text-[13px] text-ink">
             <Lightbulb size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden="true" />
-            <span>TIQ suggests considering a send-back: {high} high-materiality difference{high > 1 ? "s" : ""}. The decision is yours; nothing is selected for you.</span>
+            <span>ABIQ suggests considering a send-back: {high} high-materiality difference{high > 1 ? "s" : ""}. The decision is yours; nothing is selected for you.</span>
           </div>)}
         {diffs.length ? diffs.map((d, i) => <Finding key={i} d={d} n={i + 1} />)
           : <div className="rounded-panel border border-line px-4 py-6 text-center text-[13px] text-muted">No differences found between Lincoln's assumptions and the Deal Team's evidence.</div>}

@@ -55,6 +55,14 @@ def sponsor_equity(session: Session, cl: CycleLoan) -> dict | None:
     return None
 
 
+def _move(session: Session, cl: CycleLoan) -> dict | None:
+    from domain.models import MarksTrackerRow
+    from domain.services import mark_moves
+
+    tr = session.query(MarksTrackerRow).filter_by(cycle_loan_id=cl.id).first()
+    return mark_moves.current(session, tr) if tr else None
+
+
 def pricing_view(session: Session, cycle_loan_id: str) -> dict:
     cl = session.get(CycleLoan, cycle_loan_id)
     cyc = session.get(ValuationCycle, cl.cycle_id)
@@ -75,7 +83,8 @@ def pricing_view(session: Session, cycle_loan_id: str) -> dict:
         "loan": {"id": cl.id, "borrower": cl.borrower, "facility_id": cl.facility_id, "previous_mark": cl.previous_mark,
                  "valuation_method": cl.valuation_method or "Lincoln",
                  "team": cl.team_name, "deal_team_id": cl.deal_team_id, "status": cl.status,
-                 "loops": cl.loop_counts_json or {}, "funded": cl.funded_amount},
+                 "loops": cl.loop_counts_json or {}, "funded": cl.funded_amount,
+                 "move": _move(session, cl)},
         "versions": [valuation_dict(v) for v in lvs],
         "crosscheck": crosscheck(session, lv, cl) if lv else None,
         "knows": {"recommendation": {"rating": rec.proposed_rating, "previous_rating": rec.previous_rating,
@@ -210,6 +219,9 @@ def decide_g1(session: Session, actor: Actor, cycle_loan_id: str, outcome: str, 
         if mark is None or not rationale:
             raise BusinessRuleError("A mark and a rationale are mandatory for approve at a different mark")
         d.approved_mark, d.rationale = float(mark), rationale
+        from domain.services import mark_moves
+
+        mark_moves.check(session, cl, d.approved_mark, "gate1")
     elif outcome == "sent_back":
         if not reason_category or not note:
             raise BusinessRuleError("A reason category and a note are required to send back")

@@ -40,7 +40,7 @@ class Warehouse(ABC):
     def insert_rows(self, table: str, columns: list[str], rows: Iterable[Sequence[Any]]) -> int: ...
 
     def reference(self, sql: str, params: Sequence[Any] | None = None) -> list[dict]:
-        """A query on reference data TIQ never writes (covenants, positions, the spread template, the Sigma
+        """A query on reference data ABIQ never writes (covenants, positions, the spread template, the Sigma
         snapshot). Cached per process until the synthetic data is reloaded, so recomputing a spread costs no
         warehouse round trips (each is 80 to 130 ms on Snowflake)."""
         key = (self.name, sql, tuple(params or ()))

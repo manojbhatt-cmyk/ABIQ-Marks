@@ -1,6 +1,6 @@
 # Build Plan
 
-How to build the POC in order, what each phase delivers, how it is tested, and how the demo is run. The feature-level order with status chips is in `TIQ Marks POC Feature Roadmap.xlsx`; this document explains the phases behind that order.
+How to build the POC in order, what each phase delivers, how it is tested, and how the demo is run. The feature-level order with status chips is in `ABIQ Marks POC Feature Roadmap.xlsx`; this document explains the phases behind that order.
 
 ---
 
@@ -15,7 +15,7 @@ The order follows the process: nothing in a later step can be demonstrated witho
 | P2 | Modelling and CMR | Spread service and metrics engine, Spreading Agent A1 with verifier, S07, CMR service and editor S08, CMR Drafting Assistant A2, Review Checker A3, review queue S09 with the three stages, filing to SharePoint, covenant certificate checker A11 | Run Q4 to Q9 on Harbor: spread, CMR, three reviews, two filed versions |
 | P3 | Lincoln and the tracker | Box watcher, A4 extractor, Lincoln exchange S05, Everest load through the adapter, SharePoint copy, tracker service and S11, impact narrator A6, impact note send | Run Q10 to Q13: Lincoln v1 lands, tracker shows -$3.95M, note sent |
 | P4 | Gate G1 | Pricing panel S10, cross-check calculator, Challenge Assistant A5, send-back note to Box, Lincoln v2 ingestion, mark block on the CMR | Run Q14 and Q15 on all three loans including the Harbor loop |
-| P5 | Committee | Rules engine with the agenda tests, agenda and pack S12, pack narrator, meeting screen S13 with decision capture, Ask TIQ A9 docked | Run Q16 to Q18: agenda, pack, decisions including Sunrise 88.5 |
+| P5 | Committee | Rules engine with the agenda tests, agenda and pack S12, pack narrator, meeting screen S13 with decision capture, Ask ABIQ A9 docked | Run Q16 to Q18: agenda, pack, decisions including Sunrise 88.5 |
 | P6 | Close | Reconciliation service and S14 with A7, approvals S15 (G2, G3), OneDrive evidence, governance write-back, distribution S16, cycle close, lineage S21 | Run Q19 to Q22; show the lineage for Sunrise |
 | P7 | Monthly | Monthly cycle, update file from Snowflake inputs, S17, proposals and DDTL S18 with A10, consolidation, monthly approval S19 | Run M1 to M6 for October 2026 |
 | P8 | Hardening and evaluation | Admin S22 complete (rules, connectors, synthetic data, agents, evaluation), eval harness and sets, ablations, cost meter, performance pass, accessibility pass, demo script rehearsal, documentation | Full end-to-end demo from a reset database in under 40 minutes |
@@ -91,7 +91,7 @@ Definition of done for a feature: code merged with tests, screen states implemen
 | 34 | S14 | Reconciliation finds the Sunrise mismatch; correct Everest; clean run; schedule $114.625M | "The step that catches the wrong number" |
 | 36 | S15 | Written approval; governance sign-off; evidence in OneDrive and Everest | |
 | 38 | S16, S21 | Distribute; open Sunrise's lineage | "Every mark traceable to its source and its approvers" |
-| 40 | S20 | Ask TIQ: "Why is Harbor at 88?" | |
+| 40 | S20 | Ask ABIQ: "Why is Harbor at 88?" | |
 
 A 10-minute monthly demo follows the same shape with S17 to S19.
 

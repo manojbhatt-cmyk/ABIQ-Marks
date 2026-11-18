@@ -1,6 +1,6 @@
 # UI/UX Screens Specification
 
-Every screen in TIQ Marks, who uses it, what it shows, what the user can do there, and the states it must handle. The visual system is the TranspoRG enterprise design system (navy command rail, light canvas, white cards, one violet accent, fixed semantic colours). Only product-specific decisions are written here; the design system itself is the reference.
+Every screen in ABIQ Marks, who uses it, what it shows, what the user can do there, and the states it must handle. The visual system is the TranspoRG enterprise design system (navy command rail, light canvas, white cards, one violet accent, fixed semantic colours). Only product-specific decisions are written here; the design system itself is the reference.
 
 ---
 
@@ -10,7 +10,7 @@ Every screen in TIQ Marks, who uses it, what it shows, what the user can do ther
 
 Two-zone shell: a fixed 240px navy sidebar (`--navy-900`) and a `--canvas-100` content canvas with 24 to 32px padding and a 12-column grid with 24px gutters, max content width 1600px. Inter is the only typeface; numbers use tabular figures everywhere.
 
-Sidebar, top to bottom: product wordmark "TIQ Marks" with the descriptor "AllianceBernstein Private Credit" in `--slate-400`; a **cycle switcher** (current cycle name, day counter "Day 27 of 45", phase chip) that sets the context for every screen; primary navigation (role dependent, section 2); a divider; secondary navigation (Ask TIQ, Lineage, Reports, Admin); the user row at the bottom (initials avatar, name, role).
+Sidebar, top to bottom: product wordmark "ABIQ Marks" with the descriptor "AllianceBernstein Private Credit" in `--slate-400`; a **cycle switcher** (current cycle name, day counter "Day 27 of 45", phase chip) that sets the context for every screen; primary navigation (role dependent, section 2); a divider; secondary navigation (Ask ABIQ, Lineage, Reports, Admin); the user row at the bottom (initials avatar, name, role).
 
 Page header: page title (24px/700), subtitle (14px, `--slate-400`), right side context controls (cycle, deal team filter, period) and the one primary action for the screen in `--brand-600`. A small sparkle icon next to the title marks AI-assisted screens (S04, S07, S08, S09, S10, S11, S12, S13, S14, S17, S18, S20).
 
@@ -31,8 +31,8 @@ Gates use a lock icon: closed (grey) until the step is reachable, open (violet) 
 
 | Component | Behaviour |
 | --- | --- |
-| **AI suggestion card** | `--brand-50` wash, sparkle icon, title "TIQ suggests", body, evidence links, confidence ring, three actions: Accept, Edit, Reject. Status chip after a decision (accepted, edited, rejected, with who and when). Never pre-fills a gate decision |
-| **Evidence viewer** | Split pane: the page image with the cited cell or sentence highlighted on the left, the TIQ field on the right; keyboard navigation between evidence items; "no evidence" shows a grey chip |
+| **AI suggestion card** | `--brand-50` wash, sparkle icon, title "ABIQ suggests", body, evidence links, confidence ring, three actions: Accept, Edit, Reject. Status chip after a decision (accepted, edited, rejected, with who and when). Never pre-fills a gate decision |
+| **Evidence viewer** | Split pane: the page image with the cited cell or sentence highlighted on the left, the ABIQ field on the right; keyboard navigation between evidence items; "no evidence" shows a grey chip |
 | **Version strip** | Horizontal list of versions (v1, v2, ...) with who, when and a diff toggle |
 | **Gate decision panel** | Fixed layout: what is being decided, the inputs (read-only), the decision options as radio buttons (none pre-selected), reason category, free text, evidence attachments, the "Decide" primary button with a confirmation dialog that repeats the decision in words |
 | **Loop badge** | Small circle with the loop letter and a counter, for example "QA x1" |
@@ -59,7 +59,7 @@ Loading (skeleton cards), empty (muted icon, one line, one action), error (plain
 | Governance Panel | Approvals (S15 governance tab), Lineage (S21) |
 | Finance / IR | Distribution inbox (S16 recipient view), Marks Tracker (S11 read, final only) |
 | Admin | Admin (S22) plus everything read-only |
-| Everyone | Ask TIQ (S20 side panel), Lineage (S21) for loans they can see |
+| Everyone | Ask ABIQ (S20 side panel), Lineage (S21) for loans they can see |
 
 ## 3. Screen index
 
@@ -84,7 +84,7 @@ Loading (skeleton cards), empty (muted icon, one line, one action), error (plain
 | S17 | Monthly Dashboard | M1, M2, M5 | PM Team |
 | S18 | Monthly Proposals and DDTL | M3, M4 | Deal Team |
 | S19 | Monthly Approval | M6 (decision) | Committee |
-| S20 | Ask TIQ | all | everyone |
+| S20 | Ask ABIQ | all | everyone |
 | S21 | Mark Lineage and Audit | all | everyone (scoped) |
 | S22 | Admin | n/a | Admin |
 
@@ -145,7 +145,7 @@ Loading (skeleton cards), empty (muted icon, one line, one action), error (plain
 
 - **Purpose:** write the CMR with AI drafts, set the recommendation, submit (Q5), see the mark block (Q15).
 - **Layout:** left: section navigator with status per section (empty, AI draft, edited, final) and the review comment count; centre: the editor for the selected section (markdown, citations as chips linking to the evidence viewer, flagged sentences underlined amber with the reason); right: the recommendation form (rating with previous shown, watchlist action, waiver with conditions, expected mark direction, rationale) with the AI suggestion card above it; evidence list with tick boxes; the Review Checker (A3) findings; the version strip.
-- **Actions:** "Draft with TIQ" per section or all; accept, edit, reject per section (kept-sentence ratio recorded silently); attach evidence; submit for review (runs A3; warnings must be acknowledged); re-file after SCT comments; export PDF.
+- **Actions:** "Draft with ABIQ" per section or all; accept, edit, reject per section (kept-sentence ratio recorded silently); attach evidence; submit for review (runs A3; warnings must be acknowledged); re-file after SCT comments; export PDF.
 - **Mark block (read-only, after Q15):** Q3 mark, Lincoln range, approved by, approval date, committee mark and rationale after Q18.
 - **Acceptance:** Harbor's draft mentions the lost 22 percent customer, the covenant breach, the $5M Northgate commitment, the trucks and the two replacement contracts, each with a citation; submitting without the equity letter attached raises the A3 finding.
 
@@ -160,7 +160,7 @@ Loading (skeleton cards), empty (muted icon, one line, one action), error (plain
 
 - **Purpose:** approve or send back Lincoln's mark (Q14).
 - **Layout:** header: loan, previous mark, Lincoln version strip (v1, v2 side by side when both exist). Left card "Lincoln": point, range (as a bar from range low to high with the point marker), required yield, methodology, key assumptions (quotes). Centre card "What the Deal Team knows": CMR recommendation and direction, covenant status, key metrics, sponsor support, with the A5 Challenge Assistant card listing differences (assumption quote, finding, evidence, math, materiality) and the draft send-back note. Right: the indicative cross-check calculator (coupon, years to maturity, required yield slider, indicative price; labelled "indicative, not a mark") and the gate decision panel.
-- **Decision panel:** three outcomes, none pre-selected: Approve (mark = Lincoln point); Approve at a different mark (Assumed chip; the mark field and a mandatory rationale appear; a warning shows when the mark is outside Lincoln's range, because that puts the loan on the committee agenda); Send back (reason category, note pre-filled only if the user clicks "use TIQ's draft", evidence attachments). Co-decision by the lead optional (configurable); confirmation dialog. When the committee has sent the loan back (loop QF), the committee's note is shown above the panel.
+- **Decision panel:** three outcomes, none pre-selected: Approve (mark = Lincoln point); Approve at a different mark (Assumed chip; the mark field and a mandatory rationale appear; a warning shows when the mark is outside Lincoln's range, because that puts the loan on the committee agenda); Send back (reason category, note pre-filled only if the user clicks "use ABIQ's draft", evidence attachments). Co-decision by the lead optional (configurable); confirmation dialog. When the committee has sent the loan back (loop QF), the committee's note is shown above the panel.
 - **After send-back:** status "waiting on Lincoln, loop QA x1", the note visible, v2 appears when received, the tracker and impact note update on approval.
 - **Acceptance:** Harbor: A5 lists the sponsor equity difference with the 55 / 16 = 3.4x math; sending back writes the Box note; approving v2 at 88.0 updates S11 to -$3.05M.
 
@@ -174,13 +174,13 @@ Loading (skeleton cards), empty (muted icon, one line, one action), error (plain
 ### S12 Committee Agenda and Pack
 
 - **Purpose:** agenda tests and the pack (Q16, Q17).
-- **Layout:** top: five test columns, the client's four with Assumed chips and the rule values ("10 percent", "Lincoln range") and a fifth, `g1_unresolved`, marked "TIQ addition, assumed"; table of loans with a tick grid and the On agenda chip, reasons; manual add or remove with reason. Below: the pack builder: cover note (editable), per-loan one-pagers (A6 drafts, editable), attachments list (CMR version, Lincoln report version, tracker export), "Build pack", preview PDF, "Send to committee" (confirmation lists recipients), stale banner if a source changed after the build.
+- **Layout:** top: five test columns, the client's four with Assumed chips and the rule values ("10 percent", "Lincoln range") and a fifth, `g1_unresolved`, marked "ABIQ addition, assumed"; table of loans with a tick grid and the On agenda chip, reasons; manual add or remove with reason. Below: the pack builder: cover note (editable), per-loan one-pagers (A6 drafts, editable), attachments list (CMR version, Lincoln report version, tracker export), "Build pack", preview PDF, "Send to committee" (confirmation lists recipients), stale banner if a source changed after the build.
 - **Acceptance:** Maple off, Harbor on (watchlist, downgrade), Sunrise on (watchlist, move 11.25 percent); Harbor's one-pager carries proposed 88.0, old 97, 3 to 5, new to watchlist, waiver requested.
 
 ### S13 Committee Meeting
 
 - **Purpose:** run the meeting and record decisions (Q18).
-- **Layout:** left: agenda list with status (pending, decided, deferred); centre: the selected loan's one-pager, links to the CMR and Lincoln report in the evidence viewer, the questions the pack raises (from A6), and the discussion notes box; right: the gate decision panel for G2: outcome (approve, change, send back, defer, request information), decided mark (pre-filled with the proposed mark only after the user chooses Approve), rating, watchlist, waiver decision with conditions, rationale (mandatory for change, send back, defer), members present, Record decision. Ask TIQ (S20) docked on this screen.
+- **Layout:** left: agenda list with status (pending, decided, deferred); centre: the selected loan's one-pager, links to the CMR and Lincoln report in the evidence viewer, the questions the pack raises (from A6), and the discussion notes box; right: the gate decision panel for G2: outcome (approve, change, send back, defer, request information), decided mark (pre-filled with the proposed mark only after the user chooses Approve), rating, watchlist, waiver decision with conditions, rationale (mandatory for change, send back, defer), members present, Record decision. Ask ABIQ (S20) docked on this screen.
 - **Acceptance:** recording Sunrise as change to 88.5 without a rationale is blocked; with the rationale it shows "Decided 88.5, inside Lincoln range 87.5 to 90.5"; recording send back to the Deal Team sets the loan to sent back with loop QF x1 and it reappears in S10.
 
 ### S14 Reconciliation
@@ -219,10 +219,10 @@ Loading (skeleton cards), empty (muted icon, one line, one action), error (plain
 - **Layout:** consolidated table (opened from the request sent on S15); per loan Approve or Push back with rationale; Approve all remaining; the approval record.
 - **Acceptance:** a push-back returns the loan to the team in S18 with the rationale.
 
-### S20 Ask TIQ
+### S20 Ask ABIQ
 
 - **Purpose:** questions over the cycle with citations.
-- **Layout:** right-side panel on every screen (and a full page): conversation, suggested questions for the current screen ("Why is Harbor on the agenda?"), answers with a citations block (document page, CMR section, decision record) that open the evidence viewer, "TIQ cannot take actions" footer.
+- **Layout:** right-side panel on every screen (and a full page): conversation, suggested questions for the current screen ("Why is Harbor on the agenda?"), answers with a citations block (document page, CMR section, decision record) that open the evidence viewer, "ABIQ cannot take actions" footer.
 - **Acceptance:** "What changed in Harbor's valuation and why?" returns 86.5 to 88.0, the sponsor equity, the send-back date and the approver, with citations.
 
 ### S21 Mark Lineage and Audit
@@ -236,10 +236,10 @@ Loading (skeleton cards), empty (muted icon, one line, one action), error (plain
 - **Tabs:** Rules (every `rule_config` key with value, Confirmed or Assumed chip, the discovery question, version history, edit with reason); Calendar templates; Email templates; Connectors (health per connector, last sync, write-back mode, the "changes to apply in Everest" queue when in queue mode); Synthetic data (generate, load, play to a step, reset, with a log); Users and roles; Agents (model names per tier, limits, prompt versions, trace links, cost meter per cycle and per loan); Evaluation (the eval sets, last results per component, ablation table, failing trajectories list).
 - **Acceptance:** changing `agenda.mark_move_threshold` to 0.12 re-runs the tests on demand and Sunrise (11.25 percent) drops off test 3 while staying on the agenda through the watchlist.
 
-## 5. Interaction rules specific to TIQ Marks
+## 5. Interaction rules specific to ABIQ Marks
 
 - A gate decision is never pre-selected and always confirmed in words ("You are approving Lincoln's mark of 88.0 for Harbor Logistics as the Deal Team mark").
-- AI drafts are visually distinct (`--brand-50` wash, sparkle) until accepted; after acceptance they look like user content with a small "from TIQ draft, edited" caption.
+- AI drafts are visually distinct (`--brand-50` wash, sparkle) until accepted; after acceptance they look like user content with a small "from ABIQ draft, edited" caption.
 - Every number shows its origin on hover (source table or document page, as-of date, who edited).
 - Assumed chips are present wherever a rule is applied, not only in Admin.
 - Destructive actions do not exist; "supersede" and "reopen" require a reason.
@@ -271,6 +271,6 @@ Feature ids are from the roadmap workbook; every screen has at least one feature
 | S17 Monthly Dashboard | F-094 (plus F-093) |
 | S18 Monthly Proposals and DDTL | F-097 (plus F-095, F-096) |
 | S19 Monthly Approval | F-098 |
-| S20 Ask TIQ | F-081 (plus F-080) |
+| S20 Ask ABIQ | F-081 (plus F-080) |
 | S21 Mark Lineage and Audit | F-091 |
 | S22 Admin | F-100, F-101, F-102, F-103, F-104, F-106 (plus F-007 rule config, F-017 loaders) |

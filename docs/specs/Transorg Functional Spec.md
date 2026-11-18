@@ -1,6 +1,6 @@
 # Process and Functional Specification
 
-Every step of the monthly and quarterly marks process, as the client runs it today and as the POC runs it. Each step has the same shape: a process table (input, owner, action, data, system, output, next owner, exception), what TIQ does at that step, where AI assists and what the person still does, the audit events written, and acceptance criteria.
+Every step of the monthly and quarterly marks process, as the client runs it today and as the POC runs it. Each step has the same shape: a process table (input, owner, action, data, system, output, next owner, exception), what ABIQ does at that step, where AI assists and what the person still does, the audit events written, and acceptance criteria.
 
 Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md; agents **A0 to A11** in Agentic AI Spec - Transorg Deck.md; entities and fields in Transorg Data Spec.md; connectors in document 03.
 
@@ -10,7 +10,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 
 | Rule | Detail |
 | --- | --- |
-| Cycle calendar | A quarterly cycle starts on Day 1 after quarter end and must finish by Day 45. The sample calendar from the process map is the default: Phase 1 Days 1 to 9, Phase 2 Days 10 to 26, Phase 3 Days 18 to 30 (assumed: the notes put Lincoln's own work on Days 18 to 20, in parallel with Phase 2, and the sample calendar starts Phase 3 on Day 26; TIQ interpolates Q10 to Q13 processing onto Days 26 to 30 and spans both so that loop QC re-drafts have a home), Phase 4 Days 27 to 31, Phase 5 Days 36 to 43, Phase 6 Days 44 to 45. Every date is editable at kickoff and flagged `assumed`. |
+| Cycle calendar | A quarterly cycle starts on Day 1 after quarter end and must finish by Day 45. The sample calendar from the process map is the default: Phase 1 Days 1 to 9, Phase 2 Days 10 to 26, Phase 3 Days 18 to 30 (assumed: the notes put Lincoln's own work on Days 18 to 20, in parallel with Phase 2, and the sample calendar starts Phase 3 on Day 26; ABIQ interpolates Q10 to Q13 processing onto Days 26 to 30 and spans both so that loop QC re-drafts have a home), Phase 4 Days 27 to 31, Phase 5 Days 36 to 43, Phase 6 Days 44 to 45. Every date is editable at kickoff and flagged `assumed`. |
 | Status model per loan | Each loan in a cycle carries `current_step` and a status: `not_started`, `in_progress`, `waiting_on_borrower`, `waiting_on_lincoln`, `in_review`, `sent_back`, `approved` (G1 passed), `on_agenda`, `decided`, `deferred`, `reconciled` (set at Q19 when the loan's checks are clean), `final` (set at Q21 when governance signs). Monthly loans use `not_started`, `requested`, `proposed`, `pushed_back`, `monthly_final`. Between Q3 and Q14 a loan has two track statuses, `deal_team_track_status` (Q4 to Q9) and `lincoln_track_status` (Q10 to Q13); the loan's `status` and `current_step` are derived from whichever track is furthest behind, and the Cycle Dashboard (S01) shows both tracks as two swimlanes until G1. |
 | Parallel tracks | After Q3, the Deal Team track (Q4 to Q9) and the Lincoln track (Q10 to Q13) run at the same time. Q14 needs both the filed CMR (Q8, with Q9 comments resolved) and Lincoln's draft mark (Q12). |
 | Gates | G1 (Q14) Deal Team approves or sends back Lincoln's mark. G2 (Q18 decision, Q20 written approval) Valuation Committee. G3 (Q21) Governance Panel. A gate is passed only by a user with the right role, with a reason or rationale where required, and is logged. |
@@ -39,7 +39,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Next owner | Deal Teams and Borrowers | Same |
 | Exception | Loans missing a deal team owner; new facilities booked after the list was pulled | Wizard blocks on unowned loans; "late additions" action adds a loan mid-cycle with its own dates |
 
-**TIQ behaviour**
+**ABIQ behaviour**
 1. Cycle creation: `POST /cycles` with type `quarterly`, period `2026-Q3`, day 0 = quarter end. The service copies the calendar template and computes every deadline date.
 2. Loan universe: reads active facilities as of day 0 (Transorg Data Spec.md section 2.6), joins deal team assignments, previous quarter's final mark and risk rating, watchlist flag, and Sentry funded amount.
 3. Email generation: one email per deal team from a template (Transorg Data Spec.md section 3.5) listing their loans, the CMR type per loan (assumed: `standard` or `watchlist`), and every date. The PM Team edits the text before sending.
@@ -65,7 +65,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Next owner | PM Team (Q3) and Deal Team (Q4) | Same |
 | Exception | Late, missing or inconsistent documents; waiver requests inside the package | Chase rules fire reminders; a waiver request is flagged as a task for the CMR |
 
-**TIQ behaviour**
+**ABIQ behaviour**
 1. Email pipeline (Ingestion Integration Spec - Transorg.md section 4): every inbound email is matched to a borrower by sender domain and subject, else queued for manual matching.
 2. Document pipeline: each attachment is parsed, classified into one of `financial_statements`, `covenant_certificate`, `supporting`, `sponsor_letter`, `waiver_request`, `other`, and tagged with the reporting period found in the document.
 3. Completeness: the required set per loan is configurable (assumed: financial statements and covenant certificate required; sponsor letter required when the CMR type is `watchlist`). Missing items create a `waiting_on_borrower` status.
@@ -91,7 +91,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Next owner | Lincoln (Q10) | Same |
 | Exception | Package shared then updated by the borrower | Re-share creates manifest version 2 and notifies Lincoln |
 
-**TIQ behaviour:** Sharing is a side effect to an external party, so it needs a confirmation dialog listing exactly which files go out. The manifest is a JSON file written alongside the documents in Box (Transorg Data Spec.md section 3.2).
+**ABIQ behaviour:** Sharing is a side effect to an external party, so it needs a confirmation dialog listing exactly which files go out. The manifest is a JSON file written alongside the documents in Box (Transorg Data Spec.md section 3.2).
 
 **AI assist:** none.
 
@@ -111,13 +111,13 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | Deal Team analyst | Deal Team analyst, with the Spreading Agent (A1) |
 | Action | Re-key the numbers into the Everest standard template; decide add-backs; compute LTM metrics; run covenant tests | The agent proposes a full spread with evidence per line; the analyst reviews cell by cell in S07, accepts or corrects, and approves the spread |
 | Data | Template lines (revenue, cost lines, EBITDA, adjustments, cash, debt, interest), periods (quarter and LTM), units and currency | `financial_spread`, `spread_line_item`, `adjustment`, `metric`, `covenant_test` (Transorg Data Spec.md section 5.3) |
-| System | Everest | TIQ spread service; write-back of the approved spread to `EVEREST.SPREAD_MODEL` through the adapter |
+| System | Everest | ABIQ spread service; write-back of the approved spread to `EVEREST.SPREAD_MODEL` through the adapter |
 | Output | Standard model for the period with metrics and covenant results | Approved spread version with evidence and confidence; metrics: quarterly adjusted EBITDA, LTM adjusted EBITDA, debt, net debt, cash, leverage, interest cover, covenant pass or fail with headroom |
 | Next owner | Deal Team (Q5) | Same |
 | Exception | Unusual formats, scanned pages, missing periods, disputed add-backs | Low-confidence cells are highlighted; add-backs outside the allow-list are flagged; the analyst can request a re-run with instructions |
 
-**TIQ behaviour**
-1. Trigger: when the package is complete, the analyst clicks "Spread with TIQ" (or the service auto-queues the run and the analyst reviews when ready; configurable).
+**ABIQ behaviour**
+1. Trigger: when the package is complete, the analyst clicks "Spread with ABIQ" (or the service auto-queues the run and the analyst reviews when ready; configurable).
 2. The agent (Agentic AI Spec - Transorg Deck.md section 6, A1) reads the parsed tables, maps borrower line items to template lines, extracts quarterly and LTM values, proposes add-backs with the reason found in the notes, and writes a draft spread with per-cell evidence (document id, page, table, cell) and confidence.
 3. The metrics engine (plain code) computes: adjusted EBITDA = reported operating profit before depreciation plus accepted add-backs; LTM = sum of the last four quarters (prior quarters from the previous approved spreads); leverage = total debt divided by LTM adjusted EBITDA; net leverage = (debt minus cash) divided by LTM adjusted EBITDA; interest cover = LTM adjusted EBITDA divided by yearly interest. Covenant tests compare each metric with the covenant definition on the facility.
 4. The analyst reviews in S07: source page on the left, template on the right, a confidence chip per cell, a diff against last quarter. Accepting the spread creates version n and writes the audit trail per cell that changed from the agent's proposal.
@@ -133,16 +133,16 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 
 | Field | Today | In the POC |
 | --- | --- | --- |
-| Input | Approved spread, prior quarter CMR, borrower package, covenant results, sponsor letters, waiver requests | Same, all linked to the loan in TIQ |
+| Input | Approved spread, prior quarter CMR, borrower package, covenant results, sponsor letters, waiver requests | Same, all linked to the loan in ABIQ |
 | Owner | Deal Team analyst | Deal Team analyst, with the CMR Drafting Assistant (A2) |
 | Action | Write the CMR: what happened, financial performance, risks, mitigants, recommendation (risk rating, watchlist, waiver), expected mark direction | CMR editor (S08) with AI-drafted sections the analyst edits; structured fields for the recommendation |
 | Data | CMR sections and fields (Transorg Data Spec.md section 5.4) | `cmr`, `cmr_section`, `cmr_recommendation` |
-| System | Everest | TIQ CMR service; write-back to `EVEREST.CMR` on filing (Q8) |
+| System | Everest | ABIQ CMR service; write-back to `EVEREST.CMR` on filing (Q8) |
 | Output | Draft CMR version 1 | Same, status `draft` |
 | Next owner | A/C Manager (Q6) | Same |
 | Exception | Missing evidence for a claim; recommendation inconsistent with metrics | Review Checker (A3) pre-flags before submission |
 
-**TIQ behaviour**
+**ABIQ behaviour**
 1. CMR type is set at kickoff (`standard` or `watchlist`, assumed). The template has fixed sections: Summary of the quarter, Financial performance (auto-table from the spread), Covenants and liquidity, Risks, Mitigants, Sponsor and collateral, Recommendation, Expected mark direction, Evidence list.
 2. A2 drafts every narrative section from the spread, the prior CMR, the documents and the covenant results, with a citation per sentence where one exists. The financial performance table is generated by code from the spread.
 3. The recommendation block is structured: proposed risk rating (1 to 5), watchlist add or keep or remove, waiver request with conditions, expected mark direction (down, flat, up). A2 may suggest values with reasons; the analyst sets them.
@@ -163,12 +163,12 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | A/C Manager | Same |
 | Action | Read, comment, send back or pass on | Review queue (S09): checklist, inline comments on sections, decision |
 | Data | Comments, decision | `cmr_review` (stage, reviewer, comments, outcome) |
-| System | Everest, email | TIQ review service, notification |
+| System | Everest, email | ABIQ review service, notification |
 | Output | Either comments back to the analyst or CMR passed to the PM Team | Same |
 | Next owner | Deal Team (if sent back) or PM Team (Q7) | Same |
 | Exception | Loop QB-type: changes needed | Loop counter increments; the analyst sees the comments in S08 and resubmits |
 
-**TIQ behaviour:** Stage order is configurable (assumed: A/C Manager, PM Team, file, SCT). Each stage has its own checklist (Transorg Data Spec.md section 8). Harbor demo comment: "Looks good. Attach the $5M equity letter." The analyst attaches it and resubmits.
+**ABIQ behaviour:** Stage order is configurable (assumed: A/C Manager, PM Team, file, SCT). Each stage has its own checklist (Transorg Data Spec.md section 8). Harbor demo comment: "Looks good. Attach the $5M equity letter." The analyst attaches it and resubmits.
 
 **AI assist:** A3 Review Checker pre-populates checklist findings for the reviewer (for example "Sponsor letter referenced in Mitigants but not attached"). The reviewer decides.
 
@@ -184,7 +184,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | PM Team | Same |
 | Action | Apply the PM checklist: ratios on LTM, add-backs allowed, recommendation consistent with the numbers, evidence attached | S09 with the PM checklist and A3 findings |
 | Data | Checklist results, comments | `cmr_review` |
-| System | Everest, email | TIQ |
+| System | Everest, email | ABIQ |
 | Output | Comments back or CMR passed | Same |
 | Next owner | Deal Team or PM Team (Q8) | Same |
 | Exception | **Loop QB** (Q7 back to Q4+5) | Counter, comments, resubmission |
@@ -224,7 +224,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | SCT (senior credit team) | Same |
 | Action | Senior review on the kickoff dates; comments | S09, stage `sct` |
 | Data | Comments, outcome | `cmr_review` |
-| System | SharePoint, email | TIQ |
+| System | SharePoint, email | ABIQ |
 | Output | Agreed CMR, or one more change and re-file | Same |
 | Next owner | Deal Team (Q14) once Lincoln's mark is in | Same |
 | Exception | Change requested after filing | Analyst edits, PM re-files (Q8), version increments |
@@ -254,7 +254,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 
 **Demo values:** Maple point 99.25 range 98.75 to 99.75; Harbor point 86.5 range 85.0 to 88.0, required yield 16.5 percent; Sunrise point 89.0 range 87.5 to 90.5. After the Q14 send-back, Harbor revised: point 88.0, range 86.5 to 89.5, required yield 15.5 percent.
 
-**AI assist:** none at Lincoln. TIQ offers the Deal Team an indicative cross-check later (Q14).
+**AI assist:** none at Lincoln. ABIQ offers the Deal Team an indicative cross-check later (Q14).
 
 **Audit:** `lincoln_valuation.received` (file hashes, version).
 
@@ -268,10 +268,10 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | PM Team | PM Team |
 | Action | Re-key Lincoln's point and range into the Excel tracker; compute old value, new value, change; send an early impact update to the finance leads | A4 extracts the values; the tracker service fills `draft_mark`, `range_low`, `range_high`, computes values; A6 drafts the early impact note; the PM reviews and sends |
 | Data | Old mark, draft mark, funded amount, old value, new value, delta | `marks_tracker_row` |
-| System | Excel, Outlook | TIQ tracker (S11), simulated Outlook |
+| System | Excel, Outlook | ABIQ tracker (S11), simulated Outlook |
 | Output | Tracker updated; early revenue and NAV impact note to Wes and Justin | Same, note stored as `impact_summary` v1 |
 | Next owner | PM Team (Q12), Deal Team (Q14) | Same |
-| Exception | Lincoln's file has a loan TIQ does not know, or a value outside 0 to 100 | Extraction exceptions queue in S05 for the PM to match or reject |
+| Exception | Lincoln's file has a loan ABIQ does not know, or a value outside 0 to 100 | Extraction exceptions queue in S05 for the PM to match or reject |
 
 **Demo arithmetic:** Harbor old value $60M × 97 percent = $58.2M, new $60M × 86.5 percent = $51.9M, delta -$6.3M. Maple +$0.1M, Sunrise +$2.25M, portfolio -$3.95M. After the Harbor revision to 88.0: -$3.05M, an improvement of $0.90M.
 
@@ -329,12 +329,12 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | Deal Team (analyst and A/C Manager) | Same |
 | Action | In the Everest pricing panel: approve, or send back with the reason and the new information Lincoln should consider | S10: side by side Lincoln's valuation and the CMR facts; A5 Challenge Assistant lists where Lincoln's assumptions differ from the CMR; the team approves or sends back with a note and evidence |
 | Data | Decision, reason, evidence documents, the challenge note | `valuation_decision` (Transorg Data Spec.md section 5.6) |
-| System | Everest pricing panel, email to Lincoln | TIQ, write-back to `EVEREST.PRICING_PANEL.DEAL_TEAM_STATUS` and `DEAL_TEAM_MARK`, send-back note written to Box for Lincoln |
+| System | Everest pricing panel, email to Lincoln | ABIQ, write-back to `EVEREST.PRICING_PANEL.DEAL_TEAM_STATUS` and `DEAL_TEAM_MARK`, send-back note written to Box for Lincoln |
 | Output | Approved mark, or a send-back that restarts Lincoln's work for that loan | Same |
 | Next owner | Deal Team (Q15) if approved; Lincoln (Q10) if sent back | Same |
 | Exception | **Loop QA** (Q14 to Q10). Repeated disagreement | Loop counter; after `g1.max_send_back_loops` cycles (assumed 3) the fifth agenda test `g1_unresolved` fires so the loan reaches the committee with "unresolved disagreement" |
 
-**TIQ behaviour**
+**ABIQ behaviour**
 1. S10 shows per loan: previous mark, Lincoln point and range, required yield, Lincoln's assumption notes, the CMR recommendation and expected direction, and the indicative cross-check: a transparent yield-to-price calculator (coupon, maturity, required yield) labelled "indicative, not a mark".
 2. A5 compares Lincoln's stated assumptions with the CMR and the documents and lists differences with evidence, for example "Lincoln's report does not mention the $5M sponsor equity committed in the Northgate letter dated 6 October; debt net of the equity would be $55M and net leverage 55 / 16 = 3.4x, inside the 3.50x covenant." The note follows the source's convention of netting the equity against debt and not also netting cash; the `covenant_math` tool reports both figures with labels (Agentic AI Spec - Transorg Deck.md section 13.2).
 3. Decision form, three outcomes: Approve (the Deal Team mark equals Lincoln's point and the loan status becomes `approved`); Approve at a different mark (assumed, DQ15 and DQ18: the Deal Team records its own mark with a mandatory rationale, which is what makes agenda test 4 possible); Send back with reason category (new information, factual error, methodology question, other), free text, and attached evidence. The send-back note is written to Lincoln's Box folder and emailed. Nothing is pre-selected.
@@ -356,7 +356,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | Deal Team | Deal Team (automatic on approval, confirmed by the analyst) |
 | Action | Write the approved mark, Lincoln range, approver and date into the CMR in Everest | The CMR gets a "Mark" block: Q3 mark 88.0, Lincoln range 86.5 to 89.5, approved by Team Blue, Day 31; CMR version increments and is re-filed |
 | Data | Mark block | `cmr.mark_block` |
-| System | Everest | TIQ, adapter |
+| System | Everest | ABIQ, adapter |
 | Output | CMR with the number and the explanation together | Same |
 | Next owner | PM Team (Q16) | Same |
 | Exception | Committee later changes the mark (Q18) | Mark block updated again at Q19 with the committee mark and rationale |
@@ -375,9 +375,9 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | --- | --- | --- |
 | Input | Tracker with Deal Team approved marks, risk ratings, watchlist flags, Lincoln ranges | Same |
 | Owner | PM Team | PM Team |
-| Action | Apply the four tests to every loan; any yes puts the loan on the agenda | Rules engine runs the four client tests plus TIQ's fifth test `g1_unresolved` (S12); the PM can add or remove a loan with a reason |
+| Action | Apply the four tests to every loan; any yes puts the loan on the agenda | Rules engine runs the four client tests plus ABIQ's fifth test `g1_unresolved` (S12); the PM can add or remove a loan with a reason |
 | Data | Test results per loan, agenda | `agenda_test_result`, `committee_agenda` |
-| System | Excel | TIQ rules engine |
+| System | Excel | ABIQ rules engine |
 | Output | Agenda list with the reason per loan | Same |
 | Next owner | PM Team (Q17) | Same |
 | Exception | Discretionary additions (assumed allowed) | Manual add with reason, logged |
@@ -417,14 +417,14 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | Valuation Committee, with the Deal Teams present | Same |
 | Action | Discuss each agenda loan; decide the mark, rating, watchlist, waiver; record rationale | Meeting view (S13): per loan, the pack, the discussion questions, a decision form with outcome (approve, change, send back, defer, request information), final mark, rating, watchlist, conditions, rationale (mandatory for change or send back) |
 | Data | Decision per loan | `committee_decision` (Transorg Data Spec.md section 5.7) |
-| System | Meeting, notes | TIQ |
+| System | Meeting, notes | ABIQ |
 | Output | Committee marks for agenda loans; non-agenda loans keep the Deal Team mark | Same |
 | Next owner | PM Team (Q19) | Same |
 | Exception | **Loop QF** (assumed): send back to the Deal Team (re-enter Q14) or to Lincoln (re-enter Q10); defer to a later meeting | Loan status `sent_back` with the owner and the committee note shown on S10, loop counter QF incremented; or `deferred` with the date |
 
 **Demo:** Harbor: 88.0 approved, rating 5, stay on watchlist, waiver approved under the stated conditions (the $5M was received on 30 October). Sunrise: proposed 89.0, decided 88.5 (recovery is improving, but the supermarket contract is three months old with a six-month termination clause); 88.5 is inside Lincoln's 87.5 to 90.5 range.
 
-**AI assist:** A9 Ask TIQ can answer factual questions over the pack during the meeting ("what is Sunrise's contract termination clause?"). Person: decides. No agent proposes a committee mark.
+**AI assist:** A9 Ask ABIQ can answer factual questions over the pack during the meeting ("what is Sunrise's contract termination clause?"). Person: decides. No agent proposes a committee mark.
 
 **Audit:** `committee_decision.recorded` (outcome, values, rationale, members present).
 
@@ -440,7 +440,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | PM Team | PM Team |
 | Action | Compare the tracker with the Everest pricing panel; the Everest risk ratings with the CMR ratings; funded amounts with Sentry; fix mismatches | Reconciliation run (S14): code compares every pair, lists mismatches with both values, the PM resolves each (correct the target through the adapter, or mark as explained) |
 | Data | Reconciliation items | `reconciliation_run`, `reconciliation_item` |
-| System | Excel, Everest, Sentry | TIQ, Snowflake read, adapter write |
+| System | Excel, Everest, Sentry | ABIQ, Snowflake read, adapter write |
 | Output | Every record agrees; final marks schedule | Run status `clean`; `final_mark` set per loan; loan status `reconciled` |
 | Next owner | PM Team (Q20) | Same |
 | Exception | **Loops QD and QE** return here | Re-run after changes |
@@ -459,7 +459,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | --- | --- | --- |
 | Input | Clean reconciliation, final marks schedule | Same |
 | Owner | PM Team (requests), Committee Chair (approves) | Same |
-| Action | Email "Q3 2026 final marks for approval" with the schedule and any changes (Sunrise 89.0 to 88.5); the chair replies "Approved"; the analyst saves the email and the reply to OneDrive | S15: generate the approval request, send; the chair approves in TIQ (which also sends the email reply); TIQ saves the request and reply as a PDF bundle to the `onedrive` bucket |
+| Action | Email "Q3 2026 final marks for approval" with the schedule and any changes (Sunrise 89.0 to 88.5); the chair replies "Approved"; the analyst saves the email and the reply to OneDrive | S15: generate the approval request, send; the chair approves in ABIQ (which also sends the email reply); ABIQ saves the request and reply as a PDF bundle to the `onedrive` bucket |
 | Data | Approval request, approval, evidence file | `approval_request`, `approval`, `document (store = onedrive)` |
 | System | Outlook, OneDrive | Simulated |
 | Output | Written approval with evidence | Same |
@@ -478,9 +478,9 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | --- | --- | --- |
 | Input | Written approval | Same |
 | Owner | Governance Panel | Same |
-| Action | Record in Everest what was approved, who approved it, when | S15 governance tab: the panel reviews the schedule and evidence, signs off; TIQ writes `EVEREST.GOVERNANCE_SIGNOFF` through the adapter |
+| Action | Record in Everest what was approved, who approved it, when | S15 governance tab: the panel reviews the schedule and evidence, signs off; ABIQ writes `EVEREST.GOVERNANCE_SIGNOFF` through the adapter |
 | Data | Sign-off record | `governance_signoff` |
-| System | Everest | TIQ, adapter |
+| System | Everest | ABIQ, adapter |
 | Output | Audit trail complete | Same; every loan's status becomes `final` |
 | Next owner | PM Team (Q22) | Same |
 | Exception | **Loop QE**: the panel does not sign | Status `returned` with reasons; back to Q19 |
@@ -499,7 +499,7 @@ Cross references: screens **S01 to S22** are specified in Transorg UI UX Spec.md
 | Owner | PM Team | PM Team |
 | Action | Export the final CMRs from Everest and send to Finance (NAV), Investor Relations and the Deal Teams | S16: distribution list per recipient group, bundle, send, log |
 | Data | Distribution record | `distribution` |
-| System | Everest, Outlook | TIQ, simulated Outlook |
+| System | Everest, Outlook | ABIQ, simulated Outlook |
 | Output | Quarter closed on Day 44 | Cycle status `closed`; final portfolio value shown |
 | Next owner | None | None |
 | Exception | Late correction after distribution | Re-open with reason, re-distribute, both logged |
@@ -524,7 +524,7 @@ The monthly cycle updates marks between quarters without Lincoln. The source for
 | Owner | PM Team | PM Team |
 | Action | Build the update file listing every loan with its current mark and the inputs | S17: monthly cycle created; update file built by code from the sources; the PM reviews |
 | Data | Per loan: current mark, pacing inputs, Sigma metrics, watchlist notes | `monthly_update_row` |
-| System | Excel, Sigma | TIQ |
+| System | Excel, Sigma | ABIQ |
 | Output | Monthly update file | Same, version 1 |
 | Next owner | PM Team (M2) | Same |
 | Exception | **Loop MA**: gaps flagged by deal teams send the file back for update | Version 2 |
@@ -562,7 +562,7 @@ The monthly cycle updates marks between quarters without Lincoln. The source for
 | Owner | Deal Team | Deal Team |
 | Action | Propose a mark per loan with commentary and rationale | S18 form per loan: proposed mark, rationale, evidence; A10 Monthly Mark Assistant shows last quarter's mark, Lincoln's last range, the pacing and Sigma signals, and drafts a rationale the analyst edits |
 | Data | Proposal | `monthly_mark_proposal` |
-| System | Email, Excel | TIQ |
+| System | Email, Excel | ABIQ |
 | Output | Proposals submitted | Same |
 | Next owner | PM Team (M5), or M4 if DDTL | Same |
 | Exception | **Loop MC**: committee push-back sends the proposal back | Version increments |
@@ -581,7 +581,7 @@ The monthly cycle updates marks between quarters without Lincoln. The source for
 | Owner | Deal Team (assumed; DQ13) | Same |
 | Action | Rebalance funded and unfunded positions; apply the mark to the right amounts | S18 DDTL tab: code computes funded and unfunded after draws, shows the rebalance, the analyst confirms |
 | Data | Rebalance record | `ddtl_rebalance` |
-| System | Sentry, Excel | TIQ, Snowflake read |
+| System | Sentry, Excel | ABIQ, Snowflake read |
 | Output | Rebalanced positions | Same |
 | Next owner | PM Team (M5) | Same |
 | Exception | Partial draws, timing | Flagged assumed; rule configurable |
@@ -600,7 +600,7 @@ The monthly cycle updates marks between quarters without Lincoln. The source for
 | Owner | PM Team | PM Team |
 | Action | Chase outstanding teams; consolidate into one file | S17: response board, A8 Chaser drafts reminders, consolidation by code into the monthly marks file |
 | Data | Consolidated file | `monthly_marks_file` |
-| System | Email, Excel | TIQ |
+| System | Email, Excel | ABIQ |
 | Output | One consolidated file | Same |
 | Next owner | Valuation Committee (M6) | Same |
 | Exception | **Loop MB**: missing teams chased, M3 and M4 repeated | Counter |
@@ -619,7 +619,7 @@ The monthly cycle updates marks between quarters without Lincoln. The source for
 | Owner | PM Team (sends), Valuation Committee (approves) | Same |
 | Action | Email the file; the committee approves the monthly marks | S15 (monthly tab): the PM sends the approval request; S19: the committee approves or pushes back per loan with rationale |
 | Data | Approval | `approval`, `monthly_decision` |
-| System | Email | TIQ |
+| System | Email | ABIQ |
 | Output | Approved monthly marks | Cycle closed; each loan's status becomes `monthly_final` and the approved mark is written to `monthly_decision` |
 | Next owner | None | None |
 | Exception | **Loop MC**: push-back on a mark | Back to M3 for that loan |
@@ -639,7 +639,7 @@ The monthly cycle updates marks between quarters without Lincoln. The source for
 | Cycle Dashboard | Day counter, phase progress, loan board by step, overdue tasks, gates passed, loops fired, portfolio value so far | S01 | Transorg UI UX Spec.md S01 |
 | Notifications | In-app and email for task assignment, due dates, send-backs, decisions | all | Ingestion Integration Spec - Transorg.md section 5 |
 | Chaser | Rule-based reminder timing with AI-drafted text; a person always sends | S04, S17 | Agentic AI Spec - Transorg Deck.md A8 |
-| Ask TIQ | Read-only assistant over the cycle: documents, spreads, CMRs, marks, decisions, audit; cites sources; cannot act | S20 | Agentic AI Spec - Transorg Deck.md A9 |
+| Ask ABIQ | Read-only assistant over the cycle: documents, spreads, CMRs, marks, decisions, audit; cites sources; cannot act | S20 | Agentic AI Spec - Transorg Deck.md A9 |
 | Mark lineage | One page per loan per cycle tracing the final mark to every input and decision | S21 | Transorg UI UX Spec.md S21 |
 | Rules configuration | Thresholds, calendars, checklists, allow-lists, chase cadence, with confirmed or assumed flags and versions | S22 | Transorg Data Spec.md section 8 |
 | Synthetic data loader | Generate and load the demo dataset; reset the demo | S22 | Transorg Data Spec.md section 7 |
@@ -680,4 +680,4 @@ This table is the union of the screen index in Transorg UI UX Spec.md section 3 
 | M4 | S18 DDTL tab | monthly | none | |
 | M5 | S17 | monthly | A8 | MB |
 | M6 | S15 (request), S19 (decision) | approval | none | monthly gate, MC |
-| all | S01 Dashboard, S06 Loan workspace, S20 Ask TIQ, S21 Lineage, S22 Admin | cross-cutting | A9 | |
+| all | S01 Dashboard, S06 Loan workspace, S20 Ask ABIQ, S21 Lineage, S22 Admin | cross-cutting | A9 | |
