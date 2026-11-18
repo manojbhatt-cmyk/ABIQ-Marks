@@ -345,6 +345,9 @@ def lincoln_view(cycle_id: str, a: Actor = A, s: Session = S):
     return {"loans": out, "exceptions": exceptions, "box": get_store().list("box", quarterly_cycle(s, cycle_id).period)}
 
 
+import synth.autopilot  # noqa: E402,F401  registers the hand-action take-over before any request
+
+
 def _follow(s: Session, cycle_id: str | None = None, cycle_loan_id: str | None = None) -> None:
     """Demo autofill: after the presenter acts, the other loans catch up to the presented loan (never past it).
     Runs in a savepoint, so a problem in autofill never undoes the presenter's own action."""

@@ -1,6 +1,8 @@
 """Shared service plumbing: actors, permissions, audit events, rules, notifications."""
 from __future__ import annotations
 
+import contextvars
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Iterable
@@ -88,6 +90,21 @@ def snapshot(obj: Any, fields: Iterable[str]) -> dict:
     return {f: to_json(getattr(obj, f, None)) for f in fields}
 
 
+_AUTOMATED: contextvars.ContextVar[bool] = contextvars.ContextVar("automated", default=False)
+# Called with (session, audit_event) for every action a person takes on a loan (not the demo's own actions).
+HUMAN_ACTION_HOOKS: list = []
+
+
+@contextmanager
+def automated():
+    """Marks the demo's own actions (the outside world and the autopilot), so they are not taken for a person's."""
+    token = _AUTOMATED.set(True)
+    try:
+        yield
+    finally:
+        _AUTOMATED.reset(token)
+
+
 def audit(session: Session, actor: Actor, action: str, entity_type: str, entity_id: Any, *, cycle_id: str | None = None,
           cycle_loan_id: str | None = None, before: dict | None = None, after: dict | None = None,
           evidence: Any = None, agent_run_id: str | None = None) -> AuditEvent:
@@ -101,6 +118,9 @@ def audit(session: Session, actor: Actor, action: str, entity_type: str, entity_
                     agent_run_id=agent_run_id, cycle_day=day, created_by=actor.email)
     session.add(ev)
     session.flush()
+    if cycle_loan_id and actor.role != "system" and not _AUTOMATED.get():
+        for hook in HUMAN_ACTION_HOOKS:
+            hook(session, ev)
     return ev
 
 

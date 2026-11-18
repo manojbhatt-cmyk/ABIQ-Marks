@@ -23,7 +23,8 @@ from domain.models import (AgentSuggestion, AuditEvent, CmrRecommendation, CmrRe
                            CommitteeAgendaItem, CommitteeDecision, CommitteePack, CycleLoan, Deadline, LincolnPackage,
                            RuleConfig, ValuationCycle, ValuationDecision)
 from domain.services import cmrs, committee, intake, lincoln, spreads, valuation
-from domain.services.core import SYSTEM, audit
+from domain.services import core
+from domain.services.core import SYSTEM, audit, automated
 from synth.play import FACS, actor, pm
 from synth.portfolio import SUNRISE_COMMITTEE
 
@@ -68,7 +69,29 @@ def set_setting(session: Session, except_fids: list[str] | None) -> None:
                                description="Demo only: loans the autopilot leaves for the presenter"))
 
 
+# A person's own work on a loan: once someone does one of these by hand, the demo stops acting for that loan.
+HAND_ACTIONS = ("spread.", "cmr.", "valuation_decision.", "valuation.internal")
+
+
+def _take_over(session: Session, ev) -> None:
+    """The presenter acted on a loan by hand: from now on that loan is theirs and the autopilot leaves it alone."""
+    keep = setting(session)
+    if keep is None or not ev.action.startswith(HAND_ACTIONS):
+        return
+    cl = session.get(CycleLoan, ev.cycle_loan_id)
+    if cl and cl.facility_id not in keep:
+        set_setting(session, keep + [cl.facility_id])
+
+
+core.HUMAN_ACTION_HOOKS.append(_take_over)
+
+
 def run(session: Session, cycle_id: str, except_fids: list[str]) -> list[str]:
+    with automated():
+        return _run(session, cycle_id, except_fids)
+
+
+def _run(session: Session, cycle_id: str, except_fids: list[str]) -> list[str]:
     log: list[str] = []
     cyc = session.get(ValuationCycle, cycle_id)
     if cyc.status in ("draft", "closed"):

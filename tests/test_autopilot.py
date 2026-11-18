@@ -53,3 +53,19 @@ def test_next_event_names_what_the_outside_world_does(cycle_at_q1):
         ev = world.next_event(s, cycle_at_q1)
         # this module's earlier test already moved past intake and Lincoln v1
         assert ev is None or ev["key"] in ("revision", "lincoln", "deadline", "cmr_revision")
+
+
+def test_acting_on_a_loan_by_hand_takes_it_over(cycle_at_q1):
+    """Once a person acts on a loan, the demo stops acting for it (it must never pass a review you are doing)."""
+    from domain.services.core import Actor, audit, automated
+
+    with session_scope() as s:
+        autopilot.set_setting(s, ["F-0002"])
+        orchard = s.query(CycleLoan).filter_by(facility_id="F-0013").one()
+        acm = Actor("acm.one@ab-poc.local", "ac_manager")
+        with automated():  # the demo's own action does not count
+            audit(s, acm, "cmr.review_comment", "cmr_review", "x", cycle_id=orchard.cycle_id, cycle_loan_id=orchard.id)
+        assert autopilot.setting(s) == ["F-0002"]
+        audit(s, acm, "cmr.review_comment", "cmr_review", "x", cycle_id=orchard.cycle_id, cycle_loan_id=orchard.id)
+        assert autopilot.setting(s) == ["F-0002", "F-0013"]
+        s.rollback()

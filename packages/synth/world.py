@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from domain.models import AuditEvent, CycleLoan, Deadline, ValuationCycle, ValuationDecision
+from domain.models import AuditEvent, CycleLoan, ValuationCycle, ValuationDecision
 from domain.services import cycle as cyc_svc
 from domain.services import intake, lincoln
 from domain.services.core import Actor
@@ -23,6 +23,13 @@ LINCOLN_OFFSET = {"F-0001": -2, "F-0013": 0, "F-0015": 0, "F-0002": 1, "F-0003":
 
 
 def advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[str]:
+    from domain.services.core import automated
+
+    with automated():  # the outside world and the other loans, not the presenter
+        return _advance(session, actor, cycle_id, to_day)
+
+
+def _advance(session: Session, actor: Actor, cycle_id: str, to_day: int) -> list[str]:
     # Lock the cycle row: a second click (or a second tab) waits, then sees the new day, so no day's borrower
     # mail or Lincoln file is delivered twice.
     cyc = session.query(ValuationCycle).filter_by(id=cycle_id).with_for_update().populate_existing().one()
@@ -121,12 +128,25 @@ def next_event(session: Session, cycle_id: str) -> dict | None:
     # work) happens on its own day on the way, so the presenter clicks once per deadline, not once per event.
     nxt = min(((d, step) for step, d in autopilot.deadlines(session, cycle_id).items() if d > day), default=None)
     if nxt:
-        dl = session.query(Deadline).filter_by(cycle_id=cycle_id, step_code=nxt[1]).first()
         on_way = [e["label"] for e in sorted(events, key=lambda e: e["to_day"]) if e["to_day"] <= nxt[0]]
-        return {"key": "deadline", "to_day": nxt[0], "label": f"Go to the next deadline: {dl.label} (day {nxt[0]})",
-                "detail": ("On the way: " + "; ".join(dict.fromkeys(on_way)) + ". " if on_way else "")
-                + "The other loans keep working, each at its own pace."}
+        label = on_way[0] if on_way else NEXT_LABEL.get(nxt[1], "The teams keep working")
+        return {"key": "deadline", "to_day": nxt[0], "label": label,
+                "detail": "; ".join(dict.fromkeys(on_way + [NEXT_LABEL.get(nxt[1], "")])).strip("; ")
+                + ". The other loans keep working, each at its own pace."}
     return min(events, key=lambda e: e["to_day"]) if events else None
+
+
+# What the teams deliver by each kickoff date, in plain words for the next-event button.
+NEXT_LABEL = {
+    "Q2": "Borrowers send their packages", "Q3": "Packages go to Lincoln", "Q4": "Analysts finish their spreads",
+    "Q5": "Analysts submit their CMRs", "Q6": "A/C Managers review the CMRs", "Q7": "The PM Team reviews the CMRs",
+    "Q8": "CMRs are filed", "Q9": "SCT reviews the CMRs", "Q10": "Lincoln sends draft marks",
+    "Q11": "The marks tracker fills in", "Q12": "Lincoln's marks go into Everest",
+    "Q13": "Lincoln's reports are copied to SharePoint", "Q14": "Deal Teams decide on Lincoln's marks",
+    "Q15": "Approved marks go on the CMRs", "Q16": "Time to build the committee agenda",
+    "Q17": "The committee pack goes out", "Q18": "The Valuation Committee meets", "Q19": "Time to reconcile",
+    "Q20": "Written approval", "Q21": "Governance sign-off", "Q22": "Distribution",
+}
 
 
 def run_next_event(session: Session, actor: Actor, cycle_id: str) -> list[str]:
