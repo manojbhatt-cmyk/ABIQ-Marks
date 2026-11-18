@@ -87,7 +87,9 @@ function LoanStages({ loans }: { loans: any[] }) {
             <tr key={l.id} className="cursor-pointer hover:bg-sunken" onClick={() => nav(`/loans/${l.id}`)}>
               <td className="td"><div className="font-medium text-ink">{l.borrower}</div><div className="text-xs text-muted">{l.team}</div></td>
               <td className="td"><div className="text-[13px] text-ink">{l.now}</div><div className="text-xs text-muted">Step {String(l.step || "").replace("Q", "")}</div></td>
-              <td className="td"><div className="text-[13px]">{l.waiting_on}</div>{l.days != null && <div className={`text-xs ${l.days >= 3 ? "text-warn-700" : "text-muted"}`}>{l.days === 0 ? "since today" : `for ${l.days} day${l.days === 1 ? "" : "s"}`}</div>}</td>
+              <td className="td"><div className="text-[13px]">{l.waiting_on}</div>{l.due_day != null && (l.late_days > 0
+                ? <div className="text-xs font-medium text-warn-700">{l.late_days} day{l.late_days === 1 ? "" : "s"} late (due day {l.due_day})</div>
+                : <div className="text-xs text-muted">due day {l.due_day}</div>)}</td>
               <td className="td text-[13px] text-muted">{l.lincoln}</td>
               <td className="td"><div className="flex flex-wrap gap-1">{Object.entries(l.loops || {}).filter(([, n]) => (n as number) > 0).map(([k, n]) => <Chip key={k} tone="amber">{LOOP_LABEL[k] || k}{(n as number) > 1 ? ` x${n}` : ""}</Chip>)}<MoveChip move={l.move} quiet /></div></td>
             </tr>))}</tbody>
