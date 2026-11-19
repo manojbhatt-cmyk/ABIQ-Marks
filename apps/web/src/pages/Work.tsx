@@ -1,5 +1,5 @@
 import { ArrowRight, CheckCircle2, Clock, FastForward, Hourglass, MessagesSquare, Play } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, fmt, ROLE_LABEL, useApi } from "../api";
 import { Card, Chip, Empty, ErrorState, Loading, MoveChip, PageHeader } from "../components/ui";
@@ -78,13 +78,14 @@ const LOOP_LABEL: Record<string, string> = { QA: "sent back to Lincoln", QB: "CM
 /** PM Team view: every loan's current stage, who it waits on and for how long. */
 function LoanStages({ loans }: { loans: any[] }) {
   const nav = useNavigate();
+  const [open, setOpen] = useState<string | null>(null);
   return (
-    <Card title="Where each loan is" subtitle="Each loan moves on its own. Click a loan to open it.">
+    <Card title="Where each loan is" subtitle="Each loan moves on its own. Click a loan to see the way it has come, send-backs included.">
       <div className="-mx-1 overflow-x-auto">
         <table className="w-full min-w-[640px]">
           <thead><tr><th className="th">Loan</th><th className="th">Now</th><th className="th">Waiting on</th><th className="th">Lincoln</th><th className="th">Flags</th></tr></thead>
-          <tbody>{loans.map((l) => (
-            <tr key={l.id} className="cursor-pointer hover:bg-sunken" onClick={() => nav(`/loans/${l.id}`)}>
+          <tbody>{loans.map((l) => (<Fragment key={l.id}>
+            <tr className="cursor-pointer hover:bg-sunken" onClick={() => setOpen(open === l.id ? null : l.id)}>
               <td className="td"><div className="font-medium text-ink">{l.borrower}</div><div className="text-xs text-muted">{l.team}</div></td>
               <td className="td"><div className="text-[13px] text-ink">{l.now}</div><div className="text-xs text-muted">Step {String(l.step || "").replace("Q", "")}</div></td>
               <td className="td"><div className="text-[13px]">{l.waiting_on}</div>{l.due_day != null && (l.late_days > 0
@@ -92,7 +93,17 @@ function LoanStages({ loans }: { loans: any[] }) {
                 : <div className="text-xs text-muted">due day {l.due_day}</div>)}</td>
               <td className="td text-[13px] text-muted">{l.lincoln}</td>
               <td className="td"><div className="flex flex-wrap gap-1">{Object.entries(l.loops || {}).filter(([, n]) => (n as number) > 0).map(([k, n]) => <Chip key={k} tone="amber">{LOOP_LABEL[k] || k}{(n as number) > 1 ? ` x${n}` : ""}</Chip>)}<MoveChip move={l.move} quiet /></div></td>
-            </tr>))}</tbody>
+            </tr>
+            {open === l.id && <tr><td colSpan={5} className="bg-raised px-4 py-3">
+              {(l.journey || []).length ? <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-2 text-[12.5px]">{l.journey.map((j: any, k: number) => (
+                <li key={k} className="flex items-center gap-1.5">
+                  {k > 0 && <span className="text-faint" aria-hidden="true">→</span>}
+                  <span className={`rounded-control border px-2 py-1 ${j.kind === "back" ? "border-danger-100 bg-danger-50 text-danger-700" : j.kind === "loop" ? "border-warn-100 bg-warn-50 text-warn-700" : j.kind === "flag" ? "border-warn-100 bg-warn-50 text-warn-700" : "border-line bg-surface text-ink"}`}>
+                    <span className="num text-muted">Day {j.day}</span> {j.text}</span></li>))}</ol>
+                : <div className="text-[13px] text-muted">Nothing has happened on this loan yet.</div>}
+              <button className="btn-ghost btn-sm mt-2" onClick={() => nav(`/loans/${l.id}`)}>Open the loan</button>
+            </td></tr>}
+          </Fragment>))}</tbody>
         </table>
       </div>
     </Card>);

@@ -32,6 +32,9 @@ SETTING = "demo.autopilot_except"
 # Days an analyst or lead takes for each of their steps on a loan: each team works at its own speed.
 GAP = {"F-0001": 3, "F-0003": 3, "F-0013": 3, "F-0015": 2}
 REVIEW_DAYS = 2  # a reviewer (A/C Manager, PM Team, SCT) takes two days
+# One loan very late on purpose: its analyst is away (no Deal Team work between these days), so it misses the
+# Gate 1 deadline and the agenda date. It needs no committee, so it is approved at its Deal Team mark when done.
+AWAY = {"F-0001": (7, 24)}
 FIX_DAYS = 2  # days to answer a send-back that is not scripted (for example one the presenter makes)
 
 # Review send-backs: stage, days the analyst needs, the reviewer's comments and the fix.
@@ -161,6 +164,14 @@ MILESTONES = tuple(STEPS)  # every Deal Team step is a stop for the next-event b
 
 def plan(session: Session, cl: CycleLoan) -> tuple[str, int] | None:
     """The loan's next Deal Team step and the earliest day it happens; None when it waits on someone else."""
+    p = _plan(session, cl)
+    away = AWAY.get(cl.facility_id)
+    if p and away and away[0] <= p[1] <= away[1] and p[0] != "propose":
+        return p[0], away[1] + 1
+    return p
+
+
+def _plan(session: Session, cl: CycleLoan) -> tuple[str, int] | None:
     if cl.package_status != "complete":
         return None
     start = _complete_day(session, cl)

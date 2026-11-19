@@ -109,9 +109,12 @@ def my_work(session: Session, actor: Actor, cycle_id: str | None) -> dict:
         from domain.services.committee import latest_agenda
 
         ag = latest_agenda(session, cyc.id)
-        if all_g1 and not ag:
-            items.append(_item("Q16", "Build the committee agenda", "Every loan has passed G1. Run the agenda tests.",
-                               "/committee", priority=1))
+        q16 = session.query(Deadline).filter_by(cycle_id=cyc.id, step_code="Q16").first()
+        if not ag and (all_g1 or (q16 and cyc.current_day >= q16.due_day and any(
+                cl.status in ("approved", "on_agenda") for cl in loans))):
+            items.append(_item("Q16", "Build the committee agenda", "Every loan has passed G1. Run the agenda tests."
+                               if all_g1 else "The agenda date has come. Loans not through Gate 1 yet are left out and "
+                               "shown as late.", "/committee", priority=1))
         g1_due = session.query(Deadline).filter_by(cycle_id=cyc.id, step_code="Q14").first()
         late = [cl.borrower for cl in loans if g1_due and cyc.current_day > g1_due.due_day and cl.status in (
             "not_started", "waiting_on_borrower", "in_progress", "in_review", "sent_back", "waiting_on_lincoln")]
@@ -311,6 +314,50 @@ def cycle_stage(session: Session, cycle_id: str) -> tuple[int, float]:
     return step, round((step - 1) / 22, 3)
 
 
+REVIEWER = {"ac_manager": "A/C Manager", "pm_team": "PM Team", "sct": "SCT"}
+
+
+def journey(session: Session, cl: CycleLoan) -> list[dict]:
+    """The loan's way through the quarter so far, day by day, from the audit trail: what happened, and which events
+    were loops (send-backs, revisions) or flags. Shown under the loan in the PM Team's view."""
+    from domain.models import AuditEvent
+
+    out, sent_back = [], False
+    for e in session.query(AuditEvent).filter_by(cycle_loan_id=cl.id).order_by(AuditEvent.occurred_at):
+        a, x, kind = e.action, e.after_json or {}, "step"
+        if a == "package.completeness_changed" and x.get("package_status") == "complete":
+            text = "Borrower package complete"
+        elif a == "lincoln_package.shared":
+            text = "Package shared with Lincoln"
+        elif a == "spread.approved":
+            text = "Spread approved"
+        elif a == "cmr.submitted":
+            text, kind = ("CMR resubmitted", "loop") if sent_back else ("CMR submitted", "step")
+        elif a == "cmr.review_outcome" and x.get("outcome") == "sent_back":
+            text, kind, sent_back = f"CMR sent back by the {REVIEWER.get(x.get('stage'), x.get('stage'))}", "back", True
+        elif a == "cmr.review_outcome" and x.get("outcome") == "passed":
+            text = f"{REVIEWER.get(x.get('stage'), x.get('stage'))} review passed"
+        elif a == "cmr.filed":
+            text = "CMR filed"
+        elif a == "lincoln_valuation.received":
+            v = x.get("version", 1)
+            text, kind = (f"Lincoln draft v{v}: {x.get('point', 0):.2f}", "loop" if v > 1 else "step")
+            if v > 1:
+                text = f"Lincoln revised the mark (v{v}): {x.get('point', 0):.2f}"
+        elif a == "valuation_decision.sent_back":
+            text, kind = "Gate 1: mark sent back to Lincoln", "back"
+        elif a == "valuation_decision.approved":
+            text = f"Gate 1 approved at {x['mark']:.2f}" if x.get("mark") is not None else "Gate 1 approved"
+        elif a == "mark_move.flagged":
+            text, kind = f"Mark move flagged ({x.get('move', 0) * 100:+.1f} percent)", "flag"
+        elif a == "committee_decision.recorded":
+            text = f"Committee: {x.get('outcome')}" + (f" at {x['decided']:.2f}" if x.get("decided") is not None else "")
+        else:
+            continue
+        out.append({"day": e.cycle_day, "text": text, "kind": kind})
+    return out
+
+
 def loan_stages(session: Session, cycle_id: str) -> list[dict]:
     """Where every loan is right now, for the PM Team: the step, who it waits on and for how long, Lincoln's side,
     the loops so far and the mark-move flag. Derived from the records on every request."""
@@ -367,6 +414,6 @@ def loan_stages(session: Session, cycle_id: str) -> list[dict]:
         out.append({"id": cl.id, "borrower": cl.borrower, "facility_id": cl.facility_id, "team": cl.team_name,
                     "step": cl.current_step, "now": now_, "waiting_on": waiting, "lincoln": lincoln_state,
                     "due_day": due, "late_days": max(0, cyc.current_day - due) if due is not None else 0,
-                    "loops": cl.loop_counts_json or {}, "status": cl.status,
+                    "loops": cl.loop_counts_json or {}, "status": cl.status, "journey": journey(session, cl),
                     "move": mark_moves.current(session, tr) if tr else None})
     return out

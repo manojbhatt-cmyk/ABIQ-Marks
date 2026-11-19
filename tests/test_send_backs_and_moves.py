@@ -86,3 +86,16 @@ def test_pm_team_sees_where_each_loan_is(cycle_id):
         assert len(rows) == 5
         assert all(r["now"] and r["waiting_on"] and r["lincoln"] for r in rows.values())
         assert rows["F-0013"]["loops"].get("QB") == 1 and rows["F-0015"]["loops"].get("QA") == 1
+
+
+def test_journey_shows_send_backs_and_one_loan_is_very_late(cycle_id):
+    from domain.services import work
+
+    with session_scope() as s:
+        rows = {r["facility_id"]: r for r in work.loan_stages(s, cycle_id)}
+        orchard = [j["text"] for j in rows["F-0013"]["journey"]]
+        assert "CMR sent back by the PM Team" in orchard and "CMR resubmitted" in orchard
+        kestrel = [j["kind"] for j in rows["F-0015"]["journey"]]
+        assert "back" in kestrel and "loop" in kestrel  # sent back to Lincoln, Lincoln revised
+        maple_g1 = s.query(ValuationDecision).filter_by(cycle_loan_id=_loan(s, "F-0001").id).one()
+        assert maple_g1.decided_day > 31  # past the Gate 1 deadline on purpose
