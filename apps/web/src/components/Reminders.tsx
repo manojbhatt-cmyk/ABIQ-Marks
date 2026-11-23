@@ -60,7 +60,15 @@ export function RemindButton({ row, onSent }: { row: DeadlineRow; onSent?: () =>
 }
 
 /** Open steps by deadline. The PM Team sees everyone's; others see only steps they own. */
-export function DeadlinesCard({ loanId, limit = 8 }: { loanId?: string; limit?: number }) {
+export function DeadlinesCard({
+  loanId,
+  limit = 8,
+  className = "",
+}: {
+  loanId?: string;
+  limit?: number;
+  className?: string;
+}) {
   const { user, cycle } = useApp();
   const { data, reload } = useApi<DeadlineRow[]>(cycle ? `/cycles/${cycle.id}/deadlines/status` : null, [cycle?.id, cycle?.day]);
   const [sent, setSent] = useState<string | null>(null);
@@ -68,20 +76,68 @@ export function DeadlinesCard({ loanId, limit = 8 }: { loanId?: string; limit?: 
   const pm = user.role === "pm_team" || user.role === "admin";
   const rows = (data || []).filter((r) => (loanId ? r.cycle_loan_id === loanId : true) && (pm || r.owners.includes(user.email)));
   return (
-    <Card title={<span className="flex items-center gap-2"><CalendarClock size={18} className="text-slate-500" aria-hidden="true" /> Deadlines</span>}
-      subtitle={pm ? "Open steps across the cycle. ABIQ reminds owners 2 days before, on the day and when overdue." : "Your open steps. ABIQ reminds you 2 days before, on the day and when overdue."}>
-      {sent && <div role="status" className="mb-3 rounded-tile border border-line-200 px-3 py-2 text-[13px] text-ink-700">{sent}</div>}
-      {rows.length ? <ul className="divide-y divide-line-200">{rows.slice(0, limit).map((r) => (
-        <li key={`${r.step}-${r.cycle_loan_id}`} className="flex items-center gap-3 py-2.5">
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[13.5px] font-medium text-ink-900" title={`Step ${String(r.step).replace("Q", "")} of 22: ${r.step_name}`}>{r.loan ? `${r.loan}: ` : ""}{r.step_name}</div>
-            <div className="truncate text-xs text-slate-500">{r.owners.map(who).join(", ")} · Day {r.due_day}</div>
+    <Card
+      className={`h-full flex flex-col shadow-sm ${className}`}
+      title={
+        <span className="flex items-center gap-2">
+          <CalendarClock size={17} className="text-brand-600" aria-hidden="true" />
+          <span>Deadlines</span>
+        </span>
+      }
+      subtitle={
+        pm
+          ? "Cycle milestone tracking and automated reminders"
+          : "Your upcoming milestones and automated reminders"
+      }
+    >
+      {sent && (
+        <div role="status" className="mb-3 rounded-control border border-line bg-surface-2 px-3 py-2 text-xs font-semibold text-ink">
+          {sent}
+        </div>
+      )}
+      <div className="flex-1 flex flex-col justify-between">
+        {rows.length ? (
+          <ul className="divide-y divide-line/60 max-h-[260px] overflow-y-auto pr-1">
+            {rows.slice(0, limit).map((r) => (
+              <li key={`${r.step}-${r.cycle_loan_id}`} className="flex items-center gap-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div
+                    className="truncate text-[13px] font-medium text-ink"
+                    title={`Step ${String(r.step).replace("Q", "")} of 22: ${r.step_name}`}
+                  >
+                    {r.loan ? `${r.loan}: ` : ""}
+                    {r.step_name}
+                  </div>
+                  <div className="truncate text-xs text-muted">
+                    {r.owners.map(who).join(", ")} · Day {r.due_day}
+                  </div>
+                </div>
+                <DueChip days={r.days_left} />
+                <RemindButton
+                  row={r}
+                  onSent={() => {
+                    setSent(`Reminder sent: ${r.step_name}${r.loan ? ` for ${r.loan}` : ""}.`);
+                    reload();
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty text="No open deadlines" hint="Steps appear here once the cycle is running." />
+        )}
+        {rows.length > limit ? (
+          <div className="pt-2.5 text-xs text-muted border-t border-line/60 mt-2 flex items-center justify-between">
+            <span>Showing top {limit} deadlines</span>
+            <span className="font-semibold text-ink num">and {rows.length - limit} more</span>
           </div>
-          <DueChip days={r.days_left} />
-          <RemindButton row={r} onSent={() => { setSent(`Reminder sent: ${r.step_name}${r.loan ? ` for ${r.loan}` : ""}.`); reload(); }} />
-        </li>))}</ul>
-        : <Empty text="No open deadlines" hint="Steps appear here once the cycle is running." />}
-      {rows.length > limit && <div className="pt-2 text-xs text-slate-500">and {rows.length - limit} more</div>}
+        ) : (
+          <div className="pt-2.5 text-xs text-muted border-t border-line/60 mt-2 flex items-center justify-between">
+            <span>Active Cycle Milestones</span>
+            <span className="font-semibold text-ink num">{rows.length} Steps</span>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

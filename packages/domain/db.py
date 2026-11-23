@@ -14,7 +14,20 @@ _engines: dict[str, object] = {}
 def get_engine(url: str | None = None):
     url = url or settings.database_url
     if url not in _engines:
-        _engines[url] = create_engine(url, pool_pre_ping=True, future=True)
+        kwargs = {"pool_pre_ping": True, "future": True}
+        if url.startswith("sqlite"):
+            kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
+        eng = create_engine(url, **kwargs)
+        if url.startswith("sqlite"):
+            from sqlalchemy import event
+
+            @event.listens_for(eng, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.close()
+        _engines[url] = eng
     return _engines[url]
 
 

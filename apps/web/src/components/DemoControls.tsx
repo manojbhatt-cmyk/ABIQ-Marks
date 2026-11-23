@@ -1,4 +1,4 @@
-import { Eraser, Loader2, Send } from "lucide-react";
+import { Eraser, Loader2, Send, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, useApi } from "../api";
@@ -59,22 +59,52 @@ export default function DemoControls() {
   };
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-card border border-dashed border-strong bg-raised px-4 py-3 text-[13.5px]">
-      <span className="text-[11.5px] font-medium text-slate-500">Demo controls</span>
-      <button className="btn-secondary" disabled={!!busy} onClick={() => setAsk(true)}>
-        {busy === "clear" ? <Loader2 size={16} className="animate-spin" /> : <Eraser size={14} />} Clear cycle
-      </button>
-      {next && (next.to_day ? <button className="btn-primary" disabled={!!busy} onClick={outside} title={next.detail}>
-          {busy === "event" ? <Loader2 size={16} className="animate-spin" /> : <Send size={14} />} {next.label}
-        </button> : <span className="badge badge-amber" title={next.detail}>{next.label}</span>)}
-      {msg && <span className="text-xs text-slate-600">{msg}</span>}
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface-2/70 px-4 py-2.5 text-[13px] shadow-sm">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted border border-line shadow-sm">
+          <SlidersHorizontal size={13} className="text-brand-600" /> Demo Sandbox
+        </span>
+        <button 
+          className="btn btn-secondary btn-sm !min-h-[28px] !text-[12px] font-medium" 
+          disabled={!!busy} 
+          onClick={() => setAsk(true)}
+        >
+          {busy === "clear" ? <Loader2 size={13} className="animate-spin" /> : <Eraser size={13} />} Clear cycle
+        </button>
+        {next && (next.to_day ? (
+          <button 
+            className="btn btn-primary btn-sm !min-h-[28px] !text-[12px] font-medium" 
+            disabled={!!busy} 
+            onClick={outside} 
+            title={next.detail}
+          >
+            {busy === "event" ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} {next.label}
+          </button>
+        ) : (
+          <span className="badge badge-amber !text-[11.5px]" title={next.detail}>{next.label}</span>
+        ))}
+      </div>
+      {msg && (
+        <span className="text-xs font-medium text-muted bg-surface px-2.5 py-1 rounded border border-line max-w-[500px] truncate" title={msg}>
+          {msg}
+        </span>
+      )}
       {ask && (
-        <Modal title="Clear the cycle?" onClose={() => setAsk(false)} footer={<>
-          <button className="btn-secondary" onClick={() => setAsk(false)}>Cancel</button>
-          <button className="btn-danger" onClick={clear}>Clear everything</button></>}>
-          This deletes the current cycle and everything in it (messages, emails, documents, spreads, CMRs, decisions, audit
-          history) and reloads Snowflake clean. You then start again from Kickoff.
-        </Modal>)}
+        <Modal 
+          title="Clear the cycle?" 
+          onClose={() => setAsk(false)} 
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setAsk(false)}>Cancel</button>
+              <button className="btn-danger" onClick={clear}>Clear everything</button>
+            </>
+          }
+        >
+          <p className="text-[13.5px] leading-relaxed text-muted">
+            This deletes the current cycle and everything in it (messages, emails, documents, spreads, CMRs, decisions, audit history) and reloads Snowflake clean. You then start again from Kickoff.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

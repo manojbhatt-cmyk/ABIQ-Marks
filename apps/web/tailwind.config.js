@@ -10,6 +10,7 @@ const success = { ...ramp("success", [50, 100, 500, 600, 700]), 400: v("success-
 const warn = { ...ramp("warning", [50, 100, 500, 600, 700]), 300: v("warning-500") };
 
 export default {
+  darkMode: ["selector", '[data-theme="dark"]'],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -29,7 +30,9 @@ export default {
         line: { DEFAULT: v("border"), 200: v("border") },
         strong: v("border-strong"),
         canvas: { 50: v("surface-2"), 100: v("surface-3"), 200: v("border") },
-        surface: { DEFAULT: v("surface"), 0: v("surface"), 50: v("surface-2") },
+        surface: { DEFAULT: v("surface"), 0: v("surface"), 2: v("surface-2"), 3: v("surface-3"), 50: v("surface-2") },
+        "surface-2": v("surface-2"),
+        "surface-3": v("surface-3"),
         raised: v("surface-2"),
         sunken: v("surface-3"),
         page: v("bg"),

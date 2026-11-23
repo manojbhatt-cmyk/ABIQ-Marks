@@ -1,3 +1,4 @@
+import { AlertCircle, CheckCircle2, Clock, FileDown, MessageSquare, Send, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, fmt, openFile, useApi } from "../api";
 import { AssumedChip, Card, Chip, Empty, ErrorState, Field, Loading, LoopBadge, PageHeader, StatusChip, useAction, useConfirm } from "../components/ui";
@@ -15,67 +16,285 @@ export default function Reviews() {
   const confirm = useConfirm();
   const [section, setSection] = useState("summary");
   const [text, setText] = useState("");
+
   useEffect(() => setText(""), [item?.cmr_id]);
-  if (!cycle) return <Empty text="No cycle yet" />;
-  if (q.loading && !q.data) return <Loading />;
+
+  if (!cycle) return <Empty text="No active cycle found" />;
+  if (q.loading && !q.data) return <Loading label="Loading review queue..." />;
   if (q.error) return <ErrorState error={q.error} retry={q.reload} />;
-  const refresh = () => { q.reload(); cmr.reload(); };
+
+  const refresh = () => {
+    q.reload();
+    cmr.reload();
+  };
+
   const c = cmr.data;
   const review = c?.reviews?.find((r: any) => r.id === item?.review_id);
   const checklist = review?.checklist || [];
   const myStage = { ac_manager: "ac_manager", pm_team: "pm_team", sct: "sct" }[user!.role as string];
   const canAct = review && review.stage === myStage && !review.outcome;
+
   return (
-    <>
-      <PageHeader title="Review queue" ai subtitle="A/C Manager, PM Team and SCT reviews, then filing. Comments go straight to the analyst." actions={<AssumedChip dq="DQ10" what="reviewer order" />} />
-      {act.node}{confirm.node}
-      {["pm_team", "sct", "admin"].includes(user!.role) && <SctSessions cycleId={cycle.id} canBuild={user!.role === "pm_team"} />}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="card xl:col-span-3 p-2">
-          {q.data!.length ? q.data!.map((x) => (
-            <button key={x.cmr_id} onClick={() => setSel(x.cmr_id)} className={`mb-1 w-full rounded-lg px-3 py-2 text-left ${item?.cmr_id === x.cmr_id ? "bg-brand-50" : "hover:bg-canvas-100"}`}>
-              <div className="flex justify-between text-sm font-medium"><span>{x.borrower}</span><LoopBadge code="QB" n={x.loops} /></div>
-              <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">v{x.version} {x.stage ? <Chip tone="amber">{fmt.label(x.stage)}</Chip> : <StatusChip status={x.status} />}{x.due_day && <span>due {dayDate(x.due_day)}</span>}</div>
-            </button>)) : <Empty text="Nothing awaiting your stage" />}
+    <div className="space-y-6">
+      <PageHeader
+        title="Review Queue"
+        ai
+        subtitle="Multi-tier governance review: A/C Manager initial review, PM Team verification, SCT session review, and final SharePoint filing."
+        actions={<AssumedChip dq="DQ10" what="reviewer order" />}
+      />
+
+      {act.node}
+      {confirm.node}
+
+      {/* SCT Sessions Bar */}
+      {["pm_team", "sct", "admin"].includes(user!.role) && (
+        <SctSessions cycleId={cycle.id} canBuild={user!.role === "pm_team"} />
+      )}
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12 items-start">
+        {/* Left: Queue Items (3 cols) */}
+        <div className="card shadow-sm xl:col-span-3 p-3 max-h-[75vh] overflow-y-auto space-y-1">
+          <div className="text-xs font-bold uppercase tracking-wider text-muted px-2 py-1.5 border-b border-line mb-1">
+            Pending Reviews ({q.data!.length})
+          </div>
+          {q.data!.length ? (
+            q.data!.map((x) => (
+              <button
+                key={x.cmr_id}
+                onClick={() => setSel(x.cmr_id)}
+                className={`w-full rounded-control p-2.5 text-left transition-colors flex flex-col gap-1 ${
+                  item?.cmr_id === x.cmr_id
+                    ? "bg-brand-50/70 dark:bg-brand-950/40 border border-brand-300 dark:border-brand-800"
+                    : "hover:bg-surface-2 border border-transparent"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-[13px] text-ink truncate">{x.borrower}</span>
+                  <LoopBadge code="QB" n={x.loops} />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted">
+                  <span>v{x.version}</span>
+                  {x.stage ? (
+                    <span className="badge badge-amber !text-[9.5px]">{fmt.label(x.stage)}</span>
+                  ) : (
+                    <StatusChip status={x.status} />
+                  )}
+                  {x.due_day && <span className="num font-semibold">Due {dayDate(x.due_day)}</span>}
+                </div>
+              </button>
+            ))
+          ) : (
+            <Empty text="No reviews awaiting your stage" />
+          )}
         </div>
-        <div className="xl:col-span-6">
+
+        {/* Center: Selected CMR Content & Section Feedback (6 cols) */}
+        <div className="space-y-6 xl:col-span-6">
           {c && item ? (
-            <Card title={`${item.borrower} CMR v${c.cmr.version}`} actions={<button className="btn-ghost" onClick={() => openFile(`/api/cmr/${c.cmr.id}/pdf`)}>PDF</button>}>
-              {c.sections.map((s: any) => (
-                <div key={s.id} className="mb-4">
-                  <div className="flex items-center justify-between"><div className="text-sm font-semibold">{s.title}</div><button className="text-xs text-brand-700" onClick={() => setSection(s.code)}>comment here</button></div>
-                  <div className="whitespace-pre-wrap text-sm text-slate-700">{s.body || <span className="text-slate-400">empty</span>}</div>
-                  {c.reviews.flatMap((r: any) => r.comments.filter((x: any) => x.section === s.code).map((x: any) => ({ ...x, stage: r.stage }))).map((x: any) => (
-                    <div key={x.id} className={`mt-1 rounded px-2 py-1 text-xs ${x.resolved ? "bg-canvas-100 text-slate-500" : "bg-danger-100 text-danger-700"}`}>{fmt.label(x.stage)}: {x.text}{x.resolved ? ` (resolved: ${x.resolution_note})` : ""}</div>))}
-                </div>))}
-              <div className="mt-2 text-sm"><b>Evidence attached:</b> {c.evidence.map((e: any) => e.file_name).join(", ") || "none"}</div>
-            </Card>) : <Empty text="Select a CMR" />}
-        </div>
-        <div className="xl:col-span-3 space-y-4">
-          {item?.stage === "file" && user?.role === "pm_team" && (
-            <Card title="Q8 File the CMR"><div className="mb-2 text-sm">A/C Manager and PM Team passed. Filing renders the PDF to SharePoint and writes the CMR and rating to Everest.</div>
-              <button className="btn-primary" onClick={() => confirm.ask(`File ${item.borrower} CMR v${item.version} to SharePoint and Everest?`, async () => { await api(`/cmr/${item.cmr_id}/file`, { body: {} }); refresh(); })}>File CMR</button></Card>)}
-          {c && c.cmr.status === "filed" && !c.cmr.stage && user?.role === "pm_team" && (
-            <Card title="Re-file after SCT"><button className="btn-primary" onClick={() => act.run(async () => { await api(`/cmr/${c.cmr.id}/file`, { body: {} }); refresh(); })}>Re-file as v{c.cmr.version + 1}</button></Card>)}
-          {review && (
-            <Card title={`Checklist: ${fmt.label(review.stage)}`} ai>
-              {checklist.length ? checklist.map((f: any, i: number) => <div key={i} className="mb-1.5 text-sm"><StatusChip status={f.result === "pass" ? "passed" : f.result} /> <b>{fmt.label(f.item)}</b><div className="text-xs text-slate-500">{f.reason}</div></div>) : <div className="text-sm text-slate-400">No checklist at this stage.</div>}
-              {review.stage === "pm_team" && <div className="mt-2"><AssumedChip dq="DQ11" what="PM Team checklist" /></div>}
-            </Card>)}
-          {canAct && (
-            <Card title="Comment and decide">
-              <Field label="Section"><select className="input" value={section} onChange={(e) => setSection(e.target.value)}>{c.sections.map((s: any) => <option key={s.code} value={s.code}>{s.title}</option>)}</select></Field>
-              <textarea className="input mt-2 h-20" value={text} onChange={(e) => setText(e.target.value)} placeholder="Comment for the analyst" />
-              <button className="btn-secondary mt-2" disabled={!text} onClick={() => act.run(async () => { await api(`/reviews/${review.id}/comments`, { body: { section, text } }); setText(""); refresh(); })}>Add comment</button>
-              <div className="mt-4 flex gap-2">
-                <button className="btn-primary" onClick={() => confirm.ask(`Pass ${item.borrower} at the ${fmt.label(review.stage)} stage?`, async () => { await api(`/reviews/${review.id}/decide`, { body: { outcome: "passed" } }); refresh(); })}>Pass</button>
-                <button className="btn-danger" onClick={() => confirm.ask(`Send ${item.borrower} back to the analyst with your comments (loop QB)?`, async () => { await api(`/reviews/${review.id}/decide`, { body: { outcome: "sent_back" } }); refresh(); }, true)}>Send back</button>
-                {review.stage === "sct" && <button className="btn-accent" onClick={() => confirm.ask(`Defer ${item.borrower} to the follow-up SCT session? Add a comment first saying why.`, async () => { await api(`/reviews/${review.id}/decide`, { body: { outcome: "deferred" } }); refresh(); })}>Defer to follow-up</button>}
+            <Card
+              title={`${item.borrower} · CMR Memorandum v${c.cmr.version}`}
+              subtitle="Review document sections and attach reviewer notes"
+              actions={
+                <button className="btn btn-secondary btn-sm gap-1.5" onClick={() => openFile(`/api/cmr/${c.cmr.id}/pdf`)}>
+                  <FileDown size={13} />
+                  <span>View PDF</span>
+                </button>
+              }
+            >
+              <div className="space-y-5">
+                {c.sections.map((s: any) => (
+                  <div key={s.id} className="rounded-card border border-line bg-surface-2/30 p-4">
+                    <div className="flex items-center justify-between border-b border-line/60 pb-2 mb-2">
+                      <span className="font-bold text-[13.5px] text-ink">{s.title}</span>
+                      <button
+                        className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1"
+                        onClick={() => setSection(s.code)}
+                      >
+                        <MessageSquare size={12} />
+                        <span>Add Comment</span>
+                      </button>
+                    </div>
+
+                    <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink font-sans">
+                      {s.body || <span className="text-muted italic">Section has not been written yet.</span>}
+                    </div>
+
+                    {/* Section Comments */}
+                    {c.reviews
+                      .flatMap((r: any) => r.comments.filter((x: any) => x.section === s.code).map((x: any) => ({ ...x, stage: r.stage })))
+                      .map((x: any) => (
+                        <div
+                          key={x.id}
+                          className={`mt-2.5 rounded p-2 text-xs leading-relaxed ${
+                            x.resolved
+                              ? "bg-surface-2 text-muted border border-line"
+                              : "bg-danger-50 text-danger-800 border border-danger-200"
+                          }`}
+                        >
+                          <b>{fmt.label(x.stage)}:</b> {x.text}{" "}
+                          {x.resolved && <span className="text-muted font-normal">(Resolved: {x.resolution_note})</span>}
+                        </div>
+                      ))}
+                  </div>
+                ))}
               </div>
-              <div className="mt-2 text-[11px] text-slate-400">A failed checklist item needs a comment before Pass. Send back requires at least one comment.</div>
-            </Card>)}
+
+              <div className="mt-4 pt-3 border-t border-line text-xs text-muted">
+                <b>Supporting Attachments:</b> {c.evidence.map((e: any) => e.file_name).join(", ") || "None"}
+              </div>
+            </Card>
+          ) : (
+            <Empty text="Select a CMR from the queue to review" />
+          )}
+        </div>
+
+        {/* Right: Actions, Checklist & Decision (3 cols) */}
+        <div className="space-y-6 xl:col-span-3">
+          {item?.stage === "file" && user?.role === "pm_team" && (
+            <Card title="Step Q8: File Credit Memorandum" subtitle="Final publication to SharePoint and Everest">
+              <p className="text-xs text-muted mb-3 leading-relaxed">
+                A/C Manager and PM Team stages have passed. Filing commits the PDF to SharePoint and records final ratings to Everest.
+              </p>
+              <button
+                className="btn btn-primary btn-sm w-full justify-center"
+                onClick={() =>
+                  confirm.ask(`File ${item.borrower} CMR v${item.version} to SharePoint and Everest?`, async () => {
+                    await api(`/cmr/${item.cmr_id}/file`, { body: {} });
+                    refresh();
+                  })
+                }
+              >
+                File CMR to Everest
+              </button>
+            </Card>
+          )}
+
+          {c && c.cmr.status === "filed" && !c.cmr.stage && user?.role === "pm_team" && (
+            <Card title="Re-file Post SCT Session">
+              <button
+                className="btn btn-primary btn-sm w-full justify-center"
+                onClick={() =>
+                  act.run(async () => {
+                    await api(`/cmr/${c.id}/file`, { body: {} });
+                    refresh();
+                  })
+                }
+              >
+                Re-file as v{c.cmr.version + 1}
+              </button>
+            </Card>
+          )}
+
+          {review && (
+            <Card title={`Checklist: ${fmt.label(review.stage)}`} ai subtitle="Mandatory stage review checks">
+              {checklist.length ? (
+                <div className="space-y-2 text-xs">
+                  {checklist.map((f: any, i: number) => (
+                    <div key={i} className="p-2.5 rounded border border-line bg-surface-2/40">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <StatusChip status={f.result === "pass" ? "passed" : f.result} />
+                        <span className="font-bold text-ink">{fmt.label(f.item)}</span>
+                      </div>
+                      <div className="text-muted leading-relaxed">{f.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-muted">No automated checklist defined for this stage.</div>
+              )}
+            </Card>
+          )}
+
+          {canAct && (
+            <Card title="Record Review Decision" subtitle="Submit feedback or progress memorandum">
+              <Field label="Target Section">
+                <select
+                  className="input text-xs"
+                  value={section}
+                  onChange={(e) => setSection(e.target.value)}
+                >
+                  {c.sections.map((s: any) => (
+                    <option key={s.code} value={s.code}>
+                      {s.title}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <div className="mt-2.5">
+                <Field label="Reviewer Comment">
+                  <textarea
+                    className="input h-20 text-xs"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Provide specific notes for the analyst..."
+                  />
+                </Field>
+                <button
+                  className="btn btn-secondary btn-sm mt-2 w-full justify-center"
+                  disabled={!text}
+                  onClick={() =>
+                    act.run(async () => {
+                      await api(`/reviews/${review.id}/comments`, { body: { section, text } });
+                      setText("");
+                      refresh();
+                    })
+                  }
+                >
+                  Add Comment
+                </button>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-line space-y-2">
+                <button
+                  className="btn btn-primary btn-sm w-full justify-center"
+                  onClick={() =>
+                    confirm.ask(`Pass ${item.borrower} at the ${fmt.label(review.stage)} stage?`, async () => {
+                      await api(`/reviews/${review.id}/decide`, { body: { outcome: "passed" } });
+                      refresh();
+                    })
+                  }
+                >
+                  Pass Review Stage
+                </button>
+
+                <button
+                  className="btn btn-secondary btn-sm w-full justify-center text-danger-600 hover:text-danger-700 hover:bg-danger-50"
+                  onClick={() =>
+                    confirm.ask(
+                      `Return ${item.borrower} to the analyst with your comments (Loop QB)?`,
+                      async () => {
+                        await api(`/reviews/${review.id}/decide`, { body: { outcome: "sent_back" } });
+                        refresh();
+                      },
+                      true
+                    )
+                  }
+                >
+                  Send Back (Loop QB)
+                </button>
+
+                {review.stage === "sct" && (
+                  <button
+                    className="btn btn-secondary btn-sm w-full justify-center"
+                    onClick={() =>
+                      confirm.ask(
+                        `Defer ${item.borrower} to the follow-up SCT session?`,
+                        async () => {
+                          await api(`/reviews/${review.id}/decide`, { body: { outcome: "deferred" } });
+                          refresh();
+                        }
+                      )
+                    }
+                  >
+                    Defer to Follow-up
+                  </button>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

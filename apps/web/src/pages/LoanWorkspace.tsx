@@ -1,4 +1,4 @@
-import { Download, FileText } from "lucide-react";
+import { ArrowLeft, Clock, Download, FileText, Layers, ShieldCheck } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { downloadFile, fmt, openFile, useApi } from "../api";
 import { Card, Chip, ErrorState, Loading, Loops, PageHeader, StatusChip, Tabs } from "../components/ui";
@@ -12,45 +12,206 @@ export default function LoanWorkspace() {
   const { id, tab = "overview" } = useParams();
   const nav = useNavigate();
   const { data, error, loading, reload } = useApi<any>(`/loans/${id}`, [id, tab]);
+
   if (loading && !data) return <Loading />;
   if (error) return <ErrorState error={error} retry={reload} />;
+
   const l = data.loan;
   const t = data.tracker || {};
   const cov = data.covenant;
+
   return (
-    <>
-      <PageHeader title={l.borrower} subtitle={`${l.facility_id}, ${l.team}, ${fmt.label(l.facility_type)}, sponsor ${l.sponsor}, matures ${l.maturity}`} />
-      <div className="card mb-6 flex flex-wrap items-center gap-6 px-5 py-4 text-sm">
-        <div><div className="label">Commitment / funded</div><div className="num font-semibold">{fmt.num(l.commitment)} / {fmt.num(l.funded)}</div></div>
-        <div><div className="label">Previous mark</div><div className="num font-semibold">{fmt.mark(l.previous_mark)}</div></div>
-        <div><div className="label">Marks</div><div className="flex gap-1">
-          <Chip tone="blue" title="Lincoln draft">L {fmt.mark(t.lincoln_draft_mark)}</Chip><Chip tone="violet" title="Deal Team">DT {fmt.mark(t.deal_team_mark)}</Chip>
-          <Chip tone="amber" title="Committee">C {fmt.mark(t.committee_mark)}</Chip><Chip tone="green" title="Final">F {fmt.mark(t.final_mark)}</Chip></div></div>
-        <div><div className="label">Rating</div><div className="num font-semibold">{l.previous_rating} to {t.current_rating ?? l.previous_rating}</div></div>
-        <div><div className="label">Watchlist</div>{(t.watchlist_flag ?? l.previous_watchlist) ? <Chip tone="amber">yes</Chip> : <Chip>no</Chip>}</div>
-        <div><div className="label">Covenant</div>{cov?.result === "fail" ? <Chip tone="red">Covenant breached {fmt.x(cov.actual)} vs {fmt.x(cov.threshold)}</Chip> : cov?.result ? <Chip tone="green">pass {fmt.x(cov.actual)} vs {fmt.x(cov.threshold)}</Chip> : <Chip>not spread</Chip>}
-          {data.net_leverage_after_equity && <div className="mt-1 text-[11px] text-slate-500">net of sponsor equity {fmt.x(data.net_leverage_after_equity)}</div>}</div>
-        <div><div className="label">Step</div><Chip tone="blue">{l.current_step}</Chip> <StatusChip status={l.status} /></div>
-        <div><Loops loops={l.loops} /></div>
+    <div className="space-y-6">
+      <PageHeader
+        title={l.borrower}
+        subtitle={`Facility ${l.facility_id} · ${l.team} · ${fmt.label(l.facility_type)} · Sponsor: ${l.sponsor} · Matures: ${l.maturity}`}
+        back={
+          <button
+            onClick={() => nav("/loans")}
+            className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:underline"
+          >
+            <ArrowLeft size={13} />
+            <span>Back to Loans Inventory</span>
+          </button>
+        }
+      />
+
+      {/* Key Metrics Header Strip */}
+      <div className="card p-5 shadow-sm">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 items-start">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Commitment / Funded</div>
+            <div className="text-[15px] font-bold num text-ink mt-0.5">
+              {fmt.num(l.commitment)} / {fmt.num(l.funded)}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Previous Mark</div>
+            <div className="text-[15px] font-bold num text-ink mt-0.5">{fmt.mark(l.previous_mark)}</div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Quarter Marks Progress</div>
+            <div className="flex flex-wrap items-center gap-1 mt-1">
+              <span className="badge badge-gray !text-[10px] num" title="Lincoln Draft">
+                L {fmt.mark(t.lincoln_draft_mark)}
+              </span>
+              <span className="badge badge-info !text-[10px] num" title="Deal Team Gate 1">
+                DT {fmt.mark(t.deal_team_mark)}
+              </span>
+              <span className="badge badge-amber !text-[10px] num" title="Committee Decision">
+                C {fmt.mark(t.committee_mark)}
+              </span>
+              <span className="badge badge-green !text-[10px] num" title="Final Dispatched Mark">
+                F {fmt.mark(t.final_mark)}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Rating & Watchlist</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="font-bold text-ink num text-[14px]">
+                {l.previous_rating} → {t.current_rating ?? l.previous_rating}
+              </span>
+              {(t.watchlist_flag ?? l.previous_watchlist) ? (
+                <span className="badge badge-amber !text-[10px]">Watchlist</span>
+              ) : null}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Covenant Test</div>
+            <div className="mt-0.5">
+              {cov?.result === "fail" ? (
+                <span className="badge badge-red !text-[10.5px]">
+                  Breached ({fmt.x(cov.actual)} vs {fmt.x(cov.threshold)})
+                </span>
+              ) : cov?.result ? (
+                <span className="badge badge-green !text-[10.5px]">
+                  Pass ({fmt.x(cov.actual)} vs {fmt.x(cov.threshold)})
+                </span>
+              ) : (
+                <span className="badge badge-gray !text-[10.5px]">Not Spread</span>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted">Stage & Loops</div>
+            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+              <span className="badge badge-info font-bold num !text-[10.5px]">
+                Step {String(l.current_step).replace("Q", "")}
+              </span>
+              <StatusChip status={l.status} />
+              <Loops loops={l.loops} />
+            </div>
+          </div>
+        </div>
       </div>
-      <Tabs active={tab} onChange={(x) => nav(`/loans/${id}/${x}`)} tabs={[{ id: "overview", label: "Overview" }, { id: "documents", label: "Documents" }, { id: "spread", label: "Spread" }, { id: "cmr", label: "CMR" }, { id: "pricing", label: "Pricing (G1)" }, { id: "lineage", label: "Lineage" }]} />
-      {tab === "overview" && <div className="mb-6"><DeadlinesCard loanId={l.id} /></div>}
+
+      {/* Workspace Tabs */}
+      <Tabs
+        active={tab}
+        onChange={(x) => nav(`/loans/${id}/${x}`)}
+        tabs={[
+          { id: "overview", label: "Overview & Audit" },
+          { id: "documents", label: "Documents" },
+          { id: "spread", label: "Financial Spread" },
+          { id: "cmr", label: "Credit Review (CMR)" },
+          { id: "pricing", label: "Pricing Panel (G1)" },
+          { id: "lineage", label: "Data Lineage" },
+        ]}
+      />
+
+      {/* Tab 1: Overview */}
       {tab === "overview" && (
-        <Card title="Timeline of this loan">
-          <table className="w-full"><thead><tr>{["Day", "When", "Who", "Role", "Action", "Detail"].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
-            <tbody>{data.timeline.map((e: any) => <tr key={e.id}><td className="tdn">{e.day}</td><td className="td text-xs">{fmt.date(e.at)}</td><td className="td text-xs">{e.actor}</td><td className="td text-xs">{fmt.label(e.role)}</td><td className="td"><Chip tone="blue">{e.action}</Chip></td>
-              <td className="td max-w-md truncate text-xs text-slate-500" title={JSON.stringify(e.after)}>{e.after ? JSON.stringify(e.after).slice(0, 140) : ""}</td></tr>)}</tbody></table>
-        </Card>
+        <div className="space-y-6">
+          <DeadlinesCard loanId={l.id} />
+
+          <Card
+            title={
+              <span className="flex items-center gap-2">
+                <Clock size={16} className="text-brand-600" /> Loan Governance Timeline & Decision History
+              </span>
+            }
+            subtitle="Full chronological record of automated agent submissions and human approval decisions"
+            flush
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-line bg-surface-2/40 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                    <th className="py-2.5 px-4 w-16">Day</th>
+                    <th className="py-2.5 px-3 w-32">Timestamp</th>
+                    <th className="py-2.5 px-3 w-40">Actor</th>
+                    <th className="py-2.5 px-3 w-36">Role</th>
+                    <th className="py-2.5 px-3 w-36">Action</th>
+                    <th className="py-2.5 px-4">Audit Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line/70 text-[12.5px]">
+                  {data.timeline.map((e: any) => (
+                    <tr key={e.id} className="hover:bg-surface-2 transition-colors">
+                      <td className="py-2.5 px-4 num font-bold text-muted">Day {e.day}</td>
+                      <td className="py-2.5 px-3 num text-muted">{fmt.date(e.at)}</td>
+                      <td className="py-2.5 px-3 font-semibold text-ink">{e.actor}</td>
+                      <td className="py-2.5 px-3 text-muted">{fmt.label(e.role)}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="badge badge-info">{e.action}</span>
+                      </td>
+                      <td className="py-2.5 px-4 text-muted font-mono text-[11.5px] truncate max-w-md" title={JSON.stringify(e.after)}>
+                        {e.after ? JSON.stringify(e.after).slice(0, 120) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       )}
+
+      {/* Tab 2: Documents */}
       {tab === "documents" && (
-        <Card title="Documents">
-          {data.documents.map((d: any) => <div key={d.id} className="flex items-center justify-between border-b border-canvas-100 py-2 text-sm"><span className="flex items-center gap-2"><button className="flex items-center gap-1 font-medium text-ink underline-offset-2 hover:underline" onClick={() => openFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><FileText size={13} />{d.file_name}</button><button title="Download" className="text-slate-400 hover:text-brand-600" onClick={() => downloadFile(`/api/files/${d.store}/${d.path}`, d.file_name)}><Download size={13} /></button></span><span className="flex gap-2"><Chip tone="blue">{fmt.label(d.doc_type)}</Chip><StatusChip status={d.status === "indexed" ? "done" : d.status} /></span></div>)}
+        <Card title="Loan Facility Documents" subtitle="Verified borrower packages and external filings">
+          <div className="space-y-2">
+            {data.documents.map((d: any) => (
+              <div
+                key={d.id}
+                className="flex items-center justify-between p-3 rounded-control border border-line bg-surface-2/30 hover:bg-surface-2 transition-colors text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-muted shrink-0" />
+                  <button
+                    className="font-bold text-ink hover:text-brand-600 hover:underline"
+                    onClick={() => openFile(`/api/files/${d.store}/${d.path}`, d.file_name)}
+                  >
+                    {d.file_name}
+                  </button>
+                  <button
+                    title="Download document"
+                    className="text-muted hover:text-brand-600"
+                    onClick={() => downloadFile(`/api/files/${d.store}/${d.path}`, d.file_name)}
+                  >
+                    <Download size={13} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="badge badge-info">{fmt.label(d.doc_type)}</span>
+                  <StatusChip status={d.status === "indexed" ? "done" : d.status} />
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
+
       {tab === "spread" && <Spread loanId={id!} onChange={reload} />}
       {tab === "cmr" && <CmrEditor loanId={id!} onChange={reload} />}
       {tab === "pricing" && <Pricing loanId={id!} onChange={reload} />}
       {tab === "lineage" && <LineageView loanId={id!} />}
-    </>
+    </div>
   );
 }

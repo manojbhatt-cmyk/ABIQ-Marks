@@ -53,7 +53,12 @@ function useTheme(): [Theme, () => void] {
   const [theme, setTheme] = useState<Theme>(read);
   useEffect(() => {
     const el = document.documentElement;
-    if (theme === "system") el.removeAttribute("data-theme"); else el.setAttribute("data-theme", theme);
+    if (theme === "system") {
+      const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      el.setAttribute("data-theme", isDark ? "dark" : "light");
+    } else {
+      el.setAttribute("data-theme", theme);
+    }
     try { theme === "system" ? localStorage.removeItem("tiq_theme") : localStorage.setItem("tiq_theme", theme); } catch {}
   }, [theme]);
   const next = () => setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system");
@@ -79,70 +84,104 @@ export default function Shell({ children }: { children: ReactNode }) {
   const team = user.deal_team_id ? `, Team ${user.deal_team_id.replace("DT-", "").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}` : "";
   const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
   return (
-    <div className="flex min-h-full">
+    <div className="flex min-h-full bg-page">
       {drawer && <div className="anim-scrim scrim fixed inset-0 z-30 lg:hidden" onClick={() => setDrawer(false)} />}
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[232px] flex-col border-r border-line bg-surface transition-transform duration-200 lg:z-20 lg:translate-x-0 ${drawer ? "translate-x-0 shadow-float" : "-translate-x-full"}`}>
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-line px-4"><Logo />
-          <button className="icon-btn lg:hidden" aria-label="Close menu" onClick={() => setDrawer(false)}><X size={18} /></button></div>
-        <nav className="flex-1 overflow-y-auto py-2" aria-label="Main">
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[256px] flex-col border-r border-line bg-surface transition-transform duration-200 lg:z-20 lg:translate-x-0 ${drawer ? "translate-x-0 shadow-float" : "-translate-x-full"}`}>
+        <div className="flex h-[60px] shrink-0 items-center justify-between border-b border-line px-5">
+          <Logo />
+          <button className="icon-btn lg:hidden" aria-label="Close menu" onClick={() => setDrawer(false)}><X size={18} /></button>
+        </div>
+        <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Main">
           {GROUPS.map(([label, items], gi) => {
             const mine = items.filter((i) => i.roles.includes(user.role));
             if (!mine.length) return null;
             return (
-              <div key={label} className={gi ? "mt-2 border-t border-line pt-2" : ""}>
-                <div className="px-5 pb-1 pt-1.5 text-[11px] font-medium text-faint">{label}</div>
-                {mine.map((i) => (
-                  <NavLink key={i.to} to={i.to} className="nav-item mx-2 my-px">
-                    <i.icon aria-hidden="true" /> {i.label}
-                  </NavLink>))}
+              <div key={label} className={gi ? "mt-4 pt-3 border-t border-line" : ""}>
+                <div className="px-3 pb-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-faint">{label}</div>
+                <div className="space-y-0.5">
+                  {mine.map((i) => (
+                    <NavLink key={i.to} to={i.to} className="nav-item">
+                      <i.icon aria-hidden="true" size={17} /> 
+                      <span className="truncate">{i.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
               </div>
             );
           })}
         </nav>
-        <div className="flex items-center gap-2.5 border-t border-line px-3 py-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sunken text-[12px] font-semibold text-muted">{initials}</span>
+        <div className="flex items-center gap-3 border-t border-line bg-surface-2/60 px-4 py-3.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[12px] font-bold text-brand-700 shadow-sm border border-brand-200">{initials}</span>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-semibold text-ink">{user.name}</div>
-            <div className="truncate text-xs text-muted">{ROLE_LABEL[user.role]}{team}</div>
+            <div className="truncate text-[13.5px] font-semibold text-ink leading-tight">{user.name}</div>
+            <div className="truncate text-[11.5px] font-medium text-muted">{ROLE_LABEL[user.role]}{team}</div>
           </div>
-          <button className="icon-btn" title="Sign out" aria-label="Sign out" onClick={() => { localStorage.removeItem("tiq_token"); setUser(null); nav("/login"); }}><LogOut size={16} /></button>
+          <button className="icon-btn" title="Sign out" aria-label="Sign out" onClick={() => { localStorage.removeItem("tiq_token"); setUser(null); nav("/login"); }}>
+            <LogOut size={16} />
+          </button>
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 lg:ml-[232px]">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-line bg-surface px-4 sm:px-6">
+      <main className="min-w-0 flex-1 lg:ml-[256px]">
+        <header className="sticky top-0 z-10 flex h-[60px] items-center gap-3 border-b border-line bg-surface/95 backdrop-blur-sm px-4 sm:px-8">
           <button className="icon-btn lg:hidden" aria-label="Open menu" onClick={() => setDrawer(true)}><Menu size={18} /></button>
-          <div className="min-w-0 truncate text-[13px] text-muted">
-            {crumbItem ? <>{crumbItem[0]} <span className="text-faint">/</span> <span className="font-medium text-ink">{crumbItem[1].label}</span></> : null}
+          <div className="min-w-0 truncate text-[13px] text-muted flex items-center gap-2">
+            {crumbItem ? (
+              <>
+                <span className="text-muted hover:text-ink transition-colors">{crumbItem[0]}</span>
+                <span className="text-faint font-light">/</span>
+                <span className="font-semibold text-ink">{crumbItem[1].label}</span>
+              </>
+            ) : null}
           </div>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-2">
             {cycle && (
               <>
-                <select aria-label="Cycle" className="input !min-h-[28px] !w-auto !py-0 !text-[12px] font-medium max-sm:hidden" value={cycle.id} onChange={(e) => setCycleId(e.target.value)}>
-                  {cycles.filter((c) => c.cycle_type === "quarterly").map((c) => <option key={c.id} value={c.id}>{c.period} quarterly</option>)}
-                </select>
-                <span title={`Where the ${cycle.period} cycle stands`} className="badge badge-gray mr-1 max-md:hidden">
-                  <span className="h-1.5 w-10 overflow-hidden rounded-full bg-sunken"><span className="block h-full rounded-full bg-accent-500" style={{ width: `${Math.max(4, (cycle.status === "closed" ? 1 : cycle.progress ?? 0) * 100)}%` }} /></span>
-                  {phase}
-                </span>
+                <div className="relative max-sm:hidden">
+                  <select 
+                    aria-label="Cycle" 
+                    className="input !h-[32px] !w-auto !py-0 !pl-2.5 !pr-7 !text-[12.5px] font-semibold bg-surface border-line rounded-control text-ink hover:border-strong cursor-pointer shadow-sm" 
+                    value={cycle.id} 
+                    onChange={(e) => setCycleId(e.target.value)}
+                  >
+                    {cycles.filter((c) => c.cycle_type === "quarterly").map((c) => (
+                      <option key={c.id} value={c.id}>{c.period} Quarterly</option>
+                    ))}
+                  </select>
+                </div>
+                <div title={`Where the ${cycle.period} cycle stands`} className="badge badge-gray mr-1 max-md:hidden h-[30px] px-3 gap-2 border-line shadow-sm">
+                  <div className="h-1.5 w-12 overflow-hidden rounded-full bg-surface-3">
+                    <div 
+                      className="h-full rounded-full bg-brand-600 transition-all duration-300" 
+                      style={{ width: `${Math.max(6, (cycle.status === "closed" ? 1 : cycle.progress ?? 0) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="font-semibold text-[11.5px] text-ink">{phase}</span>
+                </div>
               </>
             )}
-            <button className="icon-btn" onClick={nextTheme} title={`Theme: ${theme} (click to change)`} aria-label={`Theme: ${theme}. Change theme`}><ThemeIcon size={17} /></button>
+            <button className="icon-btn" onClick={nextTheme} title={`Theme: ${theme} (click to change)`} aria-label={`Theme: ${theme}. Change theme`}><ThemeIcon size={16} /></button>
             <div className="relative">
               <button className="icon-btn relative" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} onClick={() => { setBell(!bell); if (!bell && unread) api("/notifications/read", { body: {} }).then(() => setTimeout(notes.reload, 400)); }}>
-                <Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-semibold text-white num">{unread}</span>}
+                <Bell size={16} />
+                {unread > 0 && <span className="absolute 1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white num">{unread}</span>}
               </button>
               {bell && (
-                <div className="anim-modal absolute right-0 mt-2 w-[min(384px,calc(100vw-32px))] rounded-card border border-line bg-surface p-2 shadow-raised">
-                  <div className="px-2 py-1.5 text-xs font-medium text-muted">Notifications</div>
-                  <div className="max-h-96 overflow-y-auto">
+                <div className="anim-modal absolute right-0 mt-2 w-[min(384px,calc(100vw-32px))] rounded-card border border-line bg-surface p-2 shadow-raised z-50">
+                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted border-b border-line">Notifications</div>
+                  <div className="max-h-96 overflow-y-auto divide-y divide-line/60">
                     {(notes.data || []).length ? notes.data!.map((n) => (
-                      <button key={n.id} onClick={() => { setBell(false); if (n.link) nav(n.link); }} className="flex w-full items-start gap-2.5 rounded-control px-2.5 py-2 text-left transition-colors duration-150 hover:bg-sunken">
-                        <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${n.read ? "bg-transparent" : n.kind === "deadline_reminder" && n.title.startsWith("Overdue") ? "bg-danger-500" : "bg-accent-500"}`} aria-hidden="true" />
-                        <span className="min-w-0"><span className="block text-[13px] font-medium text-ink">{n.title}</span><span className="block text-xs text-muted">{fmt.date(n.at)}</span></span>
-                      </button>)) : <div className="px-3 py-4 text-[13px] text-muted">Nothing yet. Notifications appear when someone needs you.</div>}
+                      <button key={n.id} onClick={() => { setBell(false); if (n.link) nav(n.link); }} className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-surface-2">
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read ? "bg-transparent" : n.kind === "deadline_reminder" && n.title.startsWith("Overdue") ? "bg-danger-500" : "bg-brand-500"}`} aria-hidden="true" />
+                        <span className="min-w-0">
+                          <span className="block text-[13px] font-semibold text-ink leading-snug">{n.title}</span>
+                          <span className="block text-xs text-muted mt-0.5">{fmt.date(n.at)}</span>
+                        </span>
+                      </button>
+                    )) : <div className="px-3 py-6 text-center text-[13px] text-muted">Nothing yet. Notifications appear when someone needs you.</div>}
                   </div>
-                </div>)}
+                </div>
+              )}
             </div>
             <button className="icon-btn" aria-label="How this screen works" title="How this screen works" onClick={() => setHelp(true)}><HelpCircle size={17} /></button>
           </div>
