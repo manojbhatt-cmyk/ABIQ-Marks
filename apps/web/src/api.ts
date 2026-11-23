@@ -26,7 +26,8 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(opts.body);
   }
-  const res = await fetch(`/api${path}`, { method: opts.method || (body ? "POST" : "GET"), headers, body });
+  const apiBase = (((import.meta as any).env?.VITE_API_BASE as string) || "/api").replace(/\/$/, "");
+  const res = await fetch(`${apiBase}${path}`, { method: opts.method || (body ? "POST" : "GET"), headers, body });
   if (res.status === 401 && !path.startsWith("/auth/login")) {
     localStorage.removeItem("tiq_token");
     window.location.href = "/login";

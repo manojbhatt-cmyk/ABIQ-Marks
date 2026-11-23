@@ -7,4 +7,15 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": process.env.VITE_API_PROXY || "http://localhost:8000" },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          icons: ["lucide-react"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
 });
